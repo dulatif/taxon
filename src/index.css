@@ -1,0 +1,195 @@
+@import "tailwindcss";
+
+/* TAXON-120: OLED Black Mode overrides
+   When .oled-black is added to <body>, all card surfaces become pure #000000
+   for maximum OLED battery efficiency and contrast */
+body.oled-black .bg-\[\#0A0A0A\],
+body.oled-black .bg-\[\#141313\],
+body.oled-black .bg-\[\#121212\],
+body.oled-black .bg-\[\#201F1F\],
+body.oled-black .bg-\[\#1C1B1B\] {
+  background-color: #000000 !important;
+}
+
+body.oled-black .border-\[\#27272A\] {
+  border-color: #1a1a1a !important;
+}
+
+/* Non-OLED mode: softer dark backgrounds (default is already dark) */
+body:not(.oled-black) {
+  /* Default styling uses the existing palette */
+}
+
+/* ===================================
+   react-day-picker Calendar Styles
+   Matching the Taxon OLED dark theme
+   =================================== */
+
+.taxon-calendar {
+  --rdp-cell-size: 40px;
+  width: 100%;
+  color: #fff;
+}
+
+.taxon-months {
+  display: flex;
+  justify-content: center;
+}
+
+.taxon-month {
+  width: 100%;
+}
+
+.taxon-caption {
+  display: none; /* We handle caption externally */
+}
+
+.taxon-nav {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  margin-bottom: 0.75rem;
+}
+
+.taxon-nav-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid #27272A;
+  background: #141313;
+  color: #8E9192;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.taxon-nav-button:hover {
+  color: #fff;
+  border-color: #fff;
+  background: #201F1F;
+}
+
+.taxon-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.taxon-head-row {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 4px;
+}
+
+.taxon-head-cell {
+  flex: 1;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #8E9192;
+  padding: 6px 0;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.taxon-row {
+  display: flex;
+  justify-content: space-around;
+}
+
+.taxon-cell {
+  flex: 1;
+  text-align: center;
+  padding: 2px;
+}
+
+.taxon-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #C4C7C8;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+}
+
+.taxon-day:hover {
+  background: #141313;
+  border-color: #27272A;
+  color: #fff;
+}
+
+.taxon-day-selected .taxon-day {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
+  font-weight: 800;
+}
+
+.taxon-day-today .taxon-day {
+  border-color: #fff;
+  color: #fff;
+  font-weight: 800;
+}
+
+.taxon-day-outside .taxon-day {
+  color: #27272A;
+}
+
+.taxon-day-outside .taxon-day:hover {
+  color: #8E9192;
+}
+
+/* Indicator dot for days with tasks */
+.taxon-has-tasks .taxon-day {
+  position: relative;
+}
+
+.taxon-has-tasks .taxon-day::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #8E9192;
+}
+
+.taxon-has-tasks.taxon-day-selected .taxon-day::after {
+  background: #000;
+}
+
+/* Scrollbar styling */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #27272A;
+  border-radius: 2px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #3f3f46;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}

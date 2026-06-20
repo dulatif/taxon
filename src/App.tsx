@@ -1,0 +1,861 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  Plus, 
+  Search, 
+  Timer, 
+  Check, 
+  X, 
+  Settings as SettingsIcon, 
+  HelpCircle,
+  Sparkles,
+  Smartphone,
+  CheckCircle2,
+  Trash2,
+  Lock,
+  Flame,
+  Award
+} from 'lucide-react';
+import Sidebar from './components/Sidebar';
+import DashboardView from './components/DashboardView';
+import ProjectsView from './components/ProjectsView';
+import ProjectDetailView from './components/ProjectDetailView';
+import FocusModeView from './components/FocusModeView';
+import KanbanView from './components/KanbanView';
+import CalendarView from './components/CalendarView';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry } from './types';
+import { 
+  INITIAL_PROJECTS, 
+  INITIAL_TASKS, 
+  INITIAL_FILES, 
+  INITIAL_DAILY_ACTIVITY 
+} from './data';
+import { useFocusTimer } from './hooks/useFocusTimer';
+import { useSettings } from './contexts/SettingsContext';
+import {
+  createLogEntry,
+  aggregateActivityData,
+  updateDailyActivityWithCompletion,
+  getCompletionsToday,
+  getFocusedHoursToday,
+} from './services/activityLogger';
+
+// Local storage key constants
+const STORAGE_PREFIX = 'axon_tasking_';
+
+export default function App() {
+  // --- Persistent States ---
+  const [projects, setProjects] = useState<Project[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}projects`);
+    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
+  });
+
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}tasks`);
+    return saved ? JSON.parse(saved) : INITIAL_TASKS;
+  });
+
+  const [files, setFiles] = useState<DocumentFile[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}files`);
+    return saved ? JSON.parse(saved) : INITIAL_FILES;
+  });
+
+  const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}activity`);
+    return saved ? JSON.parse(saved) : INITIAL_DAILY_ACTIVITY;
+  });
+
+  // TAXON-112/113: Activity log for real analytics
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>(() => {
+    const saved = localStorage.getItem(`${STORAGE_PREFIX}activityLog`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  // --- Settings from Context ---
+  const { settings, toggleSetting } = useSettings();
+
+  // --- UI Navigation/Layout States ---
+  const [currentView, setCurrentView] = useState<string>('dashboard');
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  // --- Modal Dialog States ---
+  const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [newProjName, setNewProjName] = useState('');
+  const [newProjDesc, setNewProjDesc] = useState('');
+  const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Active');
+
+  // --- Synchronization Effects ---
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}projects`, JSON.stringify(projects));
+  }, [projects]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}tasks`, JSON.stringify(tasks));
+  }, [tasks]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}files`, JSON.stringify(files));
+  }, [files]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}activity`, JSON.stringify(dailyActivity));
+  }, [dailyActivity]);
+
+  useEffect(() => {
+    localStorage.setItem(`${STORAGE_PREFIX}activityLog`, JSON.stringify(activityLog));
+  }, [activityLog]);
+
+  // TC-1.3: Global keyboard shortcut Ctrl/Cmd + K to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        const searchInput = document.getElementById('global-search-input');
+        if (searchInput) {
+          (searchInput as HTMLInputElement).focus();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  // --- Activity Log Helper ---
+  const logCompletion = useCallback((taskId: string, taskTitle: string) => {
+    const entry = createLogEntry(taskId, taskTitle);
+    setActivityLog(prev => [...prev, entry]);
+  }, []);
+
+  // --- Handlers & Mutators ---
+  const handleCompleteTaskDirectly = useCallback((id: string) => {
+    let targetProjId: string | null = null;
+    let completedTaskTitle = '';
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        targetProjId = t.projectId;
+        completedTaskTitle = t.title;
+        return { ...t, completed: true, status: 'Done' as const };
+      }
+      return t;
+    }));
+
+    // Log the completion for analytics
+    if (completedTaskTitle) {
+      logCompletion(id, completedTaskTitle);
+    }
+
+    // Update daily activity chart
+    setDailyActivity(prev => updateDailyActivityWithCompletion(prev));
+
+    if (targetProjId) {
+      recalculateProjectProgress(targetProjId);
+    }
+  }, [logCompletion]);
+
+  const handleToggleTask = (id: string) => {
+    let targetProjId: string | null = null;
+    setTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === id) {
+          targetProjId = t.projectId;
+          const willComplete = !t.completed;
+          if (willComplete) {
+            // Log completion for analytics
+            logCompletion(t.id, t.title);
+            // Update daily activity
+            setDailyActivity(prevAct => updateDailyActivityWithCompletion(prevAct));
+          }
+          return { 
+            ...t, 
+            completed: willComplete,
+            status: willComplete ? ('Done' as const) : ('To Do' as const)
+          };
+        }
+        return t;
+      });
+      return updated;
+    });
+
+    setTimeout(() => {
+      if (targetProjId) {
+        recalculateProjectProgress(targetProjId);
+      }
+    }, 50);
+  };
+
+  const recalculateProjectProgress = (projId: string) => {
+    setTasks(latestTasks => {
+      const pTasks = latestTasks.filter(t => t.projectId === projId);
+      if (pTasks.length === 0) return latestTasks;
+      const completed = pTasks.filter(t => t.completed).length;
+      const computedPercentage = Math.round((completed / pTasks.length) * 100);
+      
+      setProjects(prevProjs => prevProjs.map(p => {
+        if (p.id === projId) {
+          return { 
+            ...p, 
+            progress: computedPercentage,
+            category: computedPercentage === 100 ? 'Completed' as const : p.category
+          };
+        }
+        return p;
+      }));
+      return latestTasks;
+    });
+  };
+
+  const handleAddTask = (title: string, projectId?: string) => {
+    const newTask: Task = {
+      id: `task_${Date.now()}`,
+      projectId: projectId || null,
+      title,
+      completed: false,
+      duration: '45m',
+      priority: 'Medium',
+      status: 'To Do'
+    };
+    setTasks(prev => [newTask, ...prev]);
+
+    if (projectId) {
+      setTimeout(() => recalculateProjectProgress(projectId), 50);
+    }
+  };
+
+  const handleDeleteTask = (id: string) => {
+    const task = tasks.find(t => t.id === id);
+    setTasks(prev => prev.filter(t => t.id !== id));
+    if (task?.projectId) {
+      setTimeout(() => recalculateProjectProgress(task.projectId!), 50);
+    }
+  };
+
+  const handleCreateProject = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjName.trim()) return;
+
+    const newId = `proj_${Date.now()}`;
+    const newProj: Project = {
+      id: newId,
+      name: newProjName.trim(),
+      description: newProjDesc.trim() || 'No description provided.',
+      category: newProjCategory,
+      progress: 0,
+      dueDays: Math.floor(Math.random() * 20) + 10
+    };
+
+    setProjects(prev => [...prev, newProj]);
+    setNewProjName('');
+    setNewProjDesc('');
+    setIsAddProjectOpen(false);
+
+    // Automatically navigate to detail view for editing
+    setSelectedProjectId(newId);
+    setCurrentView('project-details');
+  };
+
+  // TAXON-104: Delete project with cascade delete of associated tasks
+  const handleDeleteProject = (projectId: string) => {
+    setProjects(prev => prev.filter(p => p.id !== projectId));
+    setTasks(prev => prev.filter(t => t.projectId !== projectId));
+    setFiles(prev => prev.filter(f => f.projectId !== projectId));
+    
+    // Navigate back to projects list
+    setSelectedProjectId(null);
+    setCurrentView('projects');
+  };
+
+  const handleCompleteProject = (projectId: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        return { ...p, category: 'Completed' as const, progress: 100 };
+      }
+      return p;
+    }));
+    // Complete all its tasks
+    setTasks(prev => prev.map(t => {
+      if (t.projectId === projectId && !t.completed) {
+        logCompletion(t.id, t.title);
+        return { ...t, completed: true, status: 'Done' as const };
+      }
+      return t;
+    }));
+  };
+
+  const handleEditProject = (projectId: string, name: string, description: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        return { ...p, name, description };
+      }
+      return p;
+    }));
+  };
+
+  const handleAddFile = (projectId: string, name: string, size: string, type: DocumentFile['type']) => {
+    const newFile: DocumentFile = {
+      id: `file_${Date.now()}`,
+      projectId,
+      name,
+      size,
+      type
+    };
+    setFiles(prev => [...prev, newFile]);
+  };
+
+  const handleDeleteFile = (id: string) => {
+    setFiles(prev => prev.filter(f => f.id !== id));
+  };
+
+  // Switch task status values dynamically (Board view drag / shift)
+  const handleMoveTaskStatus = (taskId: string, newStatus: Task['status']) => {
+    let targetProjId: string | null = null;
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        targetProjId = t.projectId;
+        const willComplete = newStatus === 'Done';
+        if (willComplete && !t.completed) {
+          logCompletion(t.id, t.title);
+          setDailyActivity(prevAct => updateDailyActivityWithCompletion(prevAct));
+        }
+        return { 
+          ...t, 
+          status: newStatus,
+          completed: willComplete 
+        };
+      }
+      return t;
+    }));
+
+    if (targetProjId) {
+      setTimeout(() => recalculateProjectProgress(targetProjId!), 50);
+    }
+  };
+
+  // --- TAXON-109/110/111: Focus Timer Hook ---
+  const focusTimer = useFocusTimer({
+    onTimerComplete: (task) => {
+      if (task) {
+        handleCompleteTaskDirectly(task.id);
+      }
+    },
+    soundEnabled: settings.soundAlerts,
+  });
+
+  // --- TAXON-114/115: Computed Analytics ---
+  const completedTasks = tasks.filter(t => t.completed);
+  const analyticsData = aggregateActivityData(activityLog, tasks.length);
+  const completionsToday = getCompletionsToday(activityLog);
+  const focusedHoursToday = getFocusedHoursToday(activityLog);
+
+  // --- Render Mappings ---
+  const getHeaderTitle = () => {
+    switch (currentView) {
+      case 'dashboard':
+        return 'Dashboard';
+      case 'projects':
+        return 'Workspace Projects';
+      case 'todo':
+        return 'Active Todo List';
+      case 'completed':
+        return 'Done / Archived Tasks';
+      case 'scheduled':
+        return 'Calendar / Scheduled Task List';
+      case 'analytics':
+        return 'Productivity Analytics';
+      case 'settings':
+        return 'Platform Settings';
+      case 'help':
+        return 'Onyx Help Desk';
+      case 'project-details':
+        const p = projects.find(pr => pr.id === selectedProjectId);
+        return p ? `${p.name} Details` : 'Project Management';
+      default:
+        return 'Taxon Tasking';
+    }
+  };
+
+  // Filtered Task views based on navbar selected page
+  const getFilteredViewTasks = () => {
+    if (currentView === 'todo') {
+      return tasks.filter(t => !t.completed);
+    }
+    if (currentView === 'completed') {
+      return tasks.filter(t => t.completed);
+    }
+    if (currentView === 'scheduled') {
+      return tasks;
+    }
+    return tasks;
+  };
+
+  // Global search
+  const filteredSearchTasks = searchQuery.trim() === ''
+    ? []
+    : tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  return (
+    <div className="flex min-h-screen bg-black text-white font-sans antialiased selection:bg-white/10 selection:text-white">
+      
+      {/* Absolute immersive focus container overlay */}
+      {focusTimer.isFocusModeActive && (
+        <FocusModeView
+          activeTask={focusTimer.activeFocusTask}
+          projects={projects}
+          tasks={tasks}
+          timerSeconds={focusTimer.timerSeconds}
+          timerIsRunning={focusTimer.timerIsRunning}
+          onToggleTimer={focusTimer.toggleTimer}
+          onSkipTimer={focusTimer.skipTimer}
+          onEndFocusMode={focusTimer.endFocusMode}
+          onSelectTaskToFocus={focusTimer.selectTaskToFocus}
+        />
+      )}
+
+      {/* Main Side Navigation */}
+      <Sidebar 
+        currentView={currentView}
+        onViewChange={(v) => {
+          setSelectedProjectId(null);
+          setCurrentView(v);
+        }}
+        projects={projects}
+        selectedProjectId={selectedProjectId}
+        onProjectSelect={(id) => {
+          setSelectedProjectId(id);
+          setCurrentView('project-details');
+        }}
+        onAddProjectClick={() => setIsAddProjectOpen(true)}
+      />
+
+      {/* Main Application Core viewport container */}
+      <div className="flex-1 flex flex-col h-screen overflow-hidden">
+        
+        {/* Universal Top Header Menu */}
+        <header className="flex justify-between items-center h-16 border-b border-[#27272A] px-8 bg-black sticky top-0 z-40 shrink-0">
+          <div className="flex items-center gap-4">
+            <h1 className="text-white font-bold text-sm tracking-tight uppercase tracking-wider font-mono">
+              {getHeaderTitle()}
+            </h1>
+          </div>
+
+          {/* Quick global utility actions */}
+          <div className="flex items-center gap-6">
+            
+            {/* Global Search Interface */}
+            <div className="relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] w-3.5 h-3.5" />
+              <input 
+                id="global-search-input"
+                type="text"
+                placeholder="Search tasks... (⌘K)"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => setIsSearchFocused(true)}
+                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                className="bg-[#141313] border border-[#27272A] rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-[#8E9192]/60 focus:outline-none focus:border-white w-64 transition-all"
+              />
+
+              {/* Dynamic search results overlay dashboard */}
+              {isSearchFocused && searchQuery.trim() !== '' && (
+                <div className="absolute right-0 top-10 bg-[#0A0A0A] border border-[#27272A] w-80 rounded-xl p-3 z-50 shadow-2xl max-h-[300px] overflow-y-auto">
+                  <h4 className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] mb-2 font-mono">
+                    Search Results ({filteredSearchTasks.length})
+                  </h4>
+                  {filteredSearchTasks.length === 0 ? (
+                    <div className="text-xs text-[#8E9192] py-4 text-center">No tasks match queries</div>
+                  ) : (
+                    <div className="divide-y divide-[#27272A]/50">
+                      {filteredSearchTasks.map(t => (
+                        <div 
+                          key={t.id}
+                          className="py-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#141313] px-1 rounded transition-colors"
+                          onClick={() => {
+                            if (t.projectId) {
+                              setSelectedProjectId(t.projectId);
+                              setCurrentView('project-details');
+                            } else {
+                              setCurrentView('dashboard');
+                            }
+                          }}
+                        >
+                          <span className={`${t.completed ? 'line-through text-[#8E9192]' : 'text-white'} truncate max-w-[200px]`}>
+                            {t.title}
+                          </span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleTask(t.id);
+                            }}
+                            className="p-1 hover:bg-[#201F1F] rounded"
+                          >
+                            <Check className={`w-3 h-3 ${t.completed ? 'text-green-400' : 'text-[#8E9192]'}`} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Immersive Focus Mode launcher button */}
+            <button 
+              id="header-focus-mode"
+              onClick={focusTimer.launchFocusMode}
+              title="Launch Immersive Focus Mode"
+              className="active:scale-95 transition-transform p-2 border border-[#27272A] hover:border-white bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
+            >
+              <Timer className="w-4 h-4 text-white" />
+            </button>
+          </div>
+        </header>
+
+        {/* Inner Scrollable Frame Canvas Area */}
+        <main className="flex-1 overflow-y-auto bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0A0A0A] via-[#000000] to-[#000000] focus:outline-none scrollbar-thin">
+          
+          {/* Main Content Router */}
+          {currentView === 'dashboard' && (
+            <DashboardView 
+              tasks={tasks}
+              projects={projects}
+              dailyActivity={dailyActivity}
+              onToggleTask={handleToggleTask}
+              onAddTask={handleAddTask}
+              onStartFocus={focusTimer.startFocusSession}
+              timerSeconds={focusTimer.timerSeconds}
+              timerIsRunning={focusTimer.timerIsRunning}
+              onToggleTimer={focusTimer.toggleTimer}
+              onResetTimer={focusTimer.resetTimer}
+              onSkipTimer={focusTimer.skipTimer}
+              activeFocusTask={focusTimer.activeFocusTask}
+              totalCompletedCount={completionsToday}
+              totalFocusedHours={focusedHoursToday}
+            />
+          )}
+
+          {currentView === 'projects' && (
+            <ProjectsView 
+              projects={projects}
+              tasks={tasks}
+              onProjectSelect={(id) => setSelectedProjectId(id)}
+              onViewChange={setCurrentView}
+              onAddProjectClick={() => setIsAddProjectOpen(true)}
+              onMoveTaskStatus={handleMoveTaskStatus}
+              onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
+            />
+          )}
+
+          {currentView === 'project-details' && selectedProjectId && (
+            <ProjectDetailView 
+              project={projects.find(p => p.id === selectedProjectId)!}
+              tasks={tasks}
+              files={files}
+              onToggleTask={handleToggleTask}
+              onAddTask={handleAddTask}
+              onDeleteTask={handleDeleteTask}
+              onCompleteProject={handleCompleteProject}
+              onEditProject={handleEditProject}
+              onDeleteProject={handleDeleteProject}
+              onAddFile={handleAddFile}
+              onDeleteFile={handleDeleteFile}
+              onBackToProjects={() => {
+                setSelectedProjectId(null);
+                setCurrentView('projects');
+              }}
+            />
+          )}
+
+          {/* Simple task lists views templates mapped cleanly */}
+          {(currentView === 'todo' || currentView === 'completed') && (
+            <div className="max-w-4xl mx-auto py-8 px-6">
+              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
+                <div className="flex justify-between items-center mb-6 pb-2 border-b border-[#27272A]/50">
+                  <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono leading-none">
+                    {getHeaderTitle()}
+                  </h2>
+                  <span className="text-[10px] font-mono font-bold bg-[#141313] border border-[#27272A] text-[#8E9192] px-2 py-0.5 rounded">
+                    {getFilteredViewTasks().length} Items Listed
+                  </span>
+                </div>
+
+                <div className="divide-y divide-[#27272A]/50">
+                  {getFilteredViewTasks().length === 0 ? (
+                    <div className="py-12 text-center text-xs text-[#8E9192]">No records match current parameters.</div>
+                  ) : (
+                    getFilteredViewTasks().map((task) => (
+                      <div key={task.id} className="py-3.5 flex items-center justify-between group">
+                        <div className="flex items-center gap-4 min-w-0">
+                          <button 
+                            onClick={() => handleToggleTask(task.id)}
+                            className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
+                          >
+                            <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+                          </button>
+                          <span className={`text-xs font-semibold truncate max-w-lg ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
+                            {task.title}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-[9px] font-mono tracking-wide py-0.5 px-1.5 bg-[#141313] border border-[#27272A]/40 text-[#8E9192] rounded">
+                            {task.duration || '25m'}
+                          </span>
+                          <button 
+                            onClick={() => handleDeleteTask(task.id)}
+                            className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAXON-117/118: Calendar / Scheduled View */}
+          {currentView === 'scheduled' && (
+            <CalendarView
+              tasks={tasks}
+              projects={projects}
+              onToggleTask={handleToggleTask}
+            />
+          )}
+
+          {/* Productivity Analytics dashboard — TAXON-115: Real data */}
+          {currentView === 'analytics' && (
+            <div className="max-w-4xl mx-auto py-8 px-6 space-y-6">
+              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
+                <div>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Performance Analytics</h2>
+                  <p className="text-xs text-[#8E9192] mt-1">Daily metrics report mapping metrics across sprints.</p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 relative overflow-hidden">
+                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Focus Velocity</span>
+                    <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.focusVelocity}%</div>
+                    <p className="text-[10px] text-[#8E9192] mt-1">Completion rate across all tasks</p>
+                  </div>
+                  <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5">
+                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Task Accomplishments</span>
+                    <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.taskAccomplishments}</div>
+                    <p className="text-[10px] text-[#8E9192] mt-1">Completed across 30 days</p>
+                  </div>
+                  <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5">
+                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Uninterrupted Streaks</span>
+                    <div className="text-3xl font-bold font-mono text-white mt-2 flex items-center gap-2">
+                      <Flame className="w-6 h-6 text-white fill-current animate-pulse" />
+                      <span>{analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}</span>
+                    </div>
+                    <p className="text-[10px] text-[#8E9192] mt-1">Maintained focus sprint daily</p>
+                  </div>
+                </div>
+
+                {/* Grid chart representation */}
+                <div className="border-t border-[#27272A]/50 pt-6">
+                  <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-4">Strategic Activity Load</h3>
+                  <div className="h-48 flex items-end justify-between gap-4">
+                    {dailyActivity.map((d, i) => (
+                      <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group">
+                        <div className="text-xs text-[#8E9192] opacity-0 group-hover:opacity-100 transition-opacity font-mono">{d.completions}t / {(d.hours * 60).toFixed(0)}m</div>
+                        <div 
+                          style={{ height: `${(d.hours / 6) * 100}%` }}
+                          className={`w-full rounded-t-sm transition-all duration-300 ${d.isToday ? 'bg-white' : 'bg-[#1C1B1B] hover:bg-zinc-700'}`}
+                        ></div>
+                        <span className="text-[10px] uppercase font-bold font-mono text-[#8E9192]">{d.day}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Simple modular platform settings — TAXON-119/120: Wired to SettingsContext */}
+          {currentView === 'settings' && (
+            <div className="max-w-2xl mx-auto py-8 px-6">
+              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
+                <div>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">System Preferences</h2>
+                  <p className="text-xs text-[#8E9192] mt-1">Onyx default hardware battery saving metrics.</p>
+                </div>
+
+                <div className="space-y-4">
+                  {/* OLED Black Mode Toggle */}
+                  <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A] rounded-lg">
+                    <div>
+                      <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">OLED Black Mode</h4>
+                      <p className="text-[10px] text-[#8E9192] mt-0.5">Force completely black pixel rendering.</p>
+                    </div>
+                    <button
+                      onClick={() => toggleSetting('oledBlackMode')}
+                      className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
+                        settings.oledBlackMode ? 'bg-white' : 'bg-[#27272A]'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                        settings.oledBlackMode
+                          ? 'bg-black ml-auto'
+                          : 'bg-[#8E9192] ml-0'
+                      }`}></div>
+                    </button>
+                  </div>
+
+                  {/* Sound Alerts Toggle */}
+                  <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Sound Alerts</h4>
+                      <p className="text-[10px] text-[#8E9192] mt-0.5">Strategic alarm alerts upon sprint completions.</p>
+                    </div>
+                    <button
+                      onClick={() => toggleSetting('soundAlerts')}
+                      className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
+                        settings.soundAlerts ? 'bg-white' : 'bg-[#27272A]'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                        settings.soundAlerts
+                          ? 'bg-black ml-auto'
+                          : 'bg-[#8E9192] ml-0'
+                      }`}></div>
+                    </button>
+                  </div>
+
+                  {/* Cloud Sync (Disabled) */}
+                  <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
+                    <div>
+                      <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Cloud Auto Synchronization</h4>
+                      <p className="text-[10px] text-[#8E9192] mt-0.5">Persist workspace and details in live sync.</p>
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#8E9192]/80 bg-black px-2 py-1 rounded border border-[#27272A]">
+                      <Lock className="w-3 h-3" />
+                      <span>Standby</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Simple modular help and support */}
+          {currentView === 'help' && (
+            <div className="max-w-2xl mx-auto py-8 px-6">
+              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
+                <div>
+                  <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                    <HelpCircle className="w-4 h-4 text-white" />
+                    Help &amp; Support Desk
+                  </h2>
+                  <p className="text-xs text-[#8E9192] mt-1">Documentation, guidelines, and feedback options.</p>
+                </div>
+
+                <div className="space-y-4 text-xs leading-relaxed text-[#C4C7C8]">
+                  <p>
+                    Welcome to <strong>Taxon - Precision Tasking</strong>. This platform is optimized on 
+                    <strong>Precision in Darkness</strong> aesthetic guidelines. It facilitates absolute visual focus, 
+                    battery efficiency on high contrast OLED matrices, and robust daily tracking.
+                  </p>
+
+                  <h4 className="font-bold text-white font-mono uppercase tracking-wider text-[11px] pt-2">How to Use focus session:</h4>
+                  <ul className="list-disc pl-4 space-y-1 text-[#8E9192]">
+                    <li>Select a task on the dashboard or inside a project list.</li>
+                    <li>Click the Play action button to transition into fullscreen Focus Mode immediately.</li>
+                    <li>Click the central circle to toggle timer countdown pausing/resumption.</li>
+                    <li>Upon completing the timer, your accomplishments increment instantly.</li>
+                  </ul>
+
+                  <div className="p-4 bg-[#141313] border border-[#27272A] rounded-lg mt-4 text-center">
+                    <p className="font-bold text-white font-mono uppercase tracking-wider text-[10px] mb-2">Need direct engineer support?</p>
+                    <a 
+                      href="mailto:support@taxon.io"
+                      className="text-white hover:underline text-xs"
+                      onClick={(e) => { e.preventDefault(); alert("For support queries, contact us at: support@taxon.io"); }}
+                    >
+                      support@taxon.io
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </main>
+      </div>
+
+      {/* Overlaid Modal Dialog: Create Project */}
+      {isAddProjectOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative">
+            <button 
+              onClick={() => setIsAddProjectOpen(false)}
+              className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="text-md font-bold text-white uppercase tracking-widest font-mono mb-4">
+              Add New Project
+            </h3>
+
+            <form onSubmit={handleCreateProject} className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">Project Name</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="e.g. Mobile Companion App"
+                  className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-2.5 w-full focus:outline-none focus:border-white focus:ring-0"
+                  value={newProjName}
+                  onChange={(e) => setNewProjName(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">Description / Objectives</label>
+                <textarea 
+                  placeholder="Summarize key features, scopes, or launch schedules..."
+                  className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-2.5 w-full h-24 focus:outline-none focus:border-white focus:ring-0"
+                  value={newProjDesc}
+                  onChange={(e) => setNewProjDesc(e.target.value)}
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">Category Tag</label>
+                <select 
+                  className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded-lg p-2.5 w-full focus:outline-none focus:border-white"
+                  value={newProjCategory}
+                  onChange={(e) => setNewProjCategory(e.target.value as Project['category'])}
+                >
+                  <option value="Active">Active Module</option>
+                  <option value="Design">Architecture / Design</option>
+                  <option value="Planning">Q3 Planning / Ideation</option>
+                </select>
+              </div>
+
+              <div className="flex gap-3 justify-end pt-4">
+                <button 
+                  type="button" 
+                  onClick={() => setIsAddProjectOpen(false)}
+                  className="text-xs font-semibold text-[#8E9192] hover:text-white px-3 py-2 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newProjName.trim()}
+                  className="bg-white text-black font-bold text-xs px-4 py-2 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
+                >
+                  Create Board
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Taxon",
+  "description": "Precision Tasking: A developer-centric productivity platform with interactive project boards, Pomodoro timer, document manager, and full-screen immersive Focus Mode.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
