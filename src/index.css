@@ -1,5 +1,9 @@
 @import "tailwindcss";
 
+html, body, #root {
+  background: transparent !important;
+}
+
 /* TAXON-120: OLED Black Mode overrides
    When .oled-black is added to <body>, all card surfaces become pure #000000
    for maximum OLED battery efficiency and contrast */

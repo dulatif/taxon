@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  Plus, 
-  Search, 
-  Timer, 
-  Check, 
-  X, 
-  Settings as SettingsIcon, 
+import {
+  Plus,
+  Search,
+  Timer,
+  Check,
+  X,
+  Settings as SettingsIcon,
   HelpCircle,
   Sparkles,
   Smartphone,
@@ -13,7 +13,9 @@ import {
   Trash2,
   Lock,
   Flame,
-  Award
+  Award,
+  Minus,
+  Square
 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import DashboardView from './components/DashboardView';
@@ -23,11 +25,11 @@ import FocusModeView from './components/FocusModeView';
 import KanbanView from './components/KanbanView';
 import CalendarView from './components/CalendarView';
 import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry } from './types';
-import { 
-  INITIAL_PROJECTS, 
-  INITIAL_TASKS, 
-  INITIAL_FILES, 
-  INITIAL_DAILY_ACTIVITY 
+import {
+  INITIAL_PROJECTS,
+  INITIAL_TASKS,
+  INITIAL_FILES,
+  INITIAL_DAILY_ACTIVITY
 } from './data';
 import { useFocusTimer } from './hooks/useFocusTimer';
 import { useSettings } from './contexts/SettingsContext';
@@ -39,13 +41,14 @@ import {
   getFocusedHoursToday,
 } from './services/activityLogger';
 
-import { 
-  getProjects, saveProject, deleteProject, 
+import {
+  getProjects, saveProject, deleteProject,
   getTasks, saveTask, deleteTask, deleteTasksByProject,
   getFiles, saveFile, deleteFile, deleteFilesByProject,
   getActivity, saveActivity, getActivityLog, saveActivityLogEntry
 } from './services/database';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 
 // Local storage key constants
 const STORAGE_PREFIX = 'axon_tasking_';
@@ -58,6 +61,25 @@ export default function App() {
   const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
+
+  // Track window maximization to toggle border radius
+  useEffect(() => {
+    const win = getCurrentWindow();
+    win.isMaximized().then(setIsMaximized);
+
+    const unlistenPromise = listen('tauri://resize', async () => {
+      try {
+        setIsMaximized(await win.isMaximized());
+      } catch (e) {
+        // Ignore errors during window destruction
+      }
+    });
+
+    return () => {
+      unlistenPromise.then(unlisten => unlisten());
+    };
+  }, []);
 
   // --- Initialize Database and Migrate ---
   useEffect(() => {
@@ -91,17 +113,17 @@ export default function App() {
             for (const a of dbActivity) await saveActivity(a);
             for (const l of dbLog) await saveActivityLogEntry(l);
           } else {
-             // Just use defaults if both are empty
-             dbProjects = INITIAL_PROJECTS;
-             dbTasks = INITIAL_TASKS;
-             dbFiles = INITIAL_FILES;
-             dbActivity = INITIAL_DAILY_ACTIVITY;
-             dbLog = [];
+            // Just use defaults if both are empty
+            dbProjects = INITIAL_PROJECTS;
+            dbTasks = INITIAL_TASKS;
+            dbFiles = INITIAL_FILES;
+            dbActivity = INITIAL_DAILY_ACTIVITY;
+            dbLog = [];
 
-             for (const p of dbProjects) await saveProject(p);
-             for (const t of dbTasks) await saveTask(t);
-             for (const f of dbFiles) await saveFile(f);
-             for (const a of dbActivity) await saveActivity(a);
+            for (const p of dbProjects) await saveProject(p);
+            for (const t of dbTasks) await saveTask(t);
+            for (const f of dbFiles) await saveFile(f);
+            for (const a of dbActivity) await saveActivity(a);
           }
         }
 
@@ -140,21 +162,21 @@ export default function App() {
       // Logic for quick add from tray
       const title = prompt("Quick Add Task:");
       if (title) {
-         const newTask: Task = {
-            id: `task_${Date.now()}`,
-            projectId: null,
-            title,
-            completed: false,
-            duration: '25m',
-            priority: 'Medium',
-            status: 'To Do'
-         };
-         setTasks(prev => [newTask, ...prev]);
-         saveTask(newTask);
+        const newTask: Task = {
+          id: `task_${Date.now()}`,
+          projectId: null,
+          title,
+          completed: false,
+          duration: '25m',
+          priority: 'Medium',
+          status: 'To Do'
+        };
+        setTasks(prev => [newTask, ...prev]);
+        saveTask(newTask);
       }
     });
     const unlistenFocus = listen('tray-start-focus', () => {
-       setCurrentView('todo');
+      setCurrentView('todo');
     });
 
     return () => {
@@ -232,8 +254,8 @@ export default function App() {
               return acts;
             });
           }
-          const updatedTask = { 
-            ...t, 
+          const updatedTask = {
+            ...t,
             completed: willComplete,
             status: willComplete ? ('Done' as const) : ('To Do' as const)
           };
@@ -258,11 +280,11 @@ export default function App() {
       if (pTasks.length === 0) return latestTasks;
       const completed = pTasks.filter(t => t.completed).length;
       const computedPercentage = Math.round((completed / pTasks.length) * 100);
-      
+
       setProjects(prevProjs => prevProjs.map(p => {
         if (p.id === projId) {
-          const updatedProj = { 
-            ...p, 
+          const updatedProj = {
+            ...p,
             progress: computedPercentage,
             category: computedPercentage === 100 ? 'Completed' as const : p.category
           };
@@ -331,11 +353,11 @@ export default function App() {
     setProjects(prev => prev.filter(p => p.id !== projectId));
     setTasks(prev => prev.filter(t => t.projectId !== projectId));
     setFiles(prev => prev.filter(f => f.projectId !== projectId));
-    
+
     deleteProject(projectId);
     deleteTasksByProject(projectId);
     deleteFilesByProject(projectId);
-    
+
     // Navigate back to projects list
     setSelectedProjectId(null);
     setCurrentView('projects');
@@ -405,10 +427,10 @@ export default function App() {
             return acts;
           });
         }
-        const updatedTask = { 
-          ...t, 
+        const updatedTask = {
+          ...t,
           status: newStatus,
-          completed: willComplete 
+          completed: willComplete
         };
         saveTask(updatedTask);
         return updatedTask;
@@ -488,8 +510,41 @@ export default function App() {
   }
 
   return (
-    <div className="flex min-h-screen bg-black text-white font-sans antialiased selection:bg-white/10 selection:text-white">
-      
+    <div className={`flex flex-col h-screen overflow-hidden bg-black text-white font-sans antialiased selection:bg-white/10 selection:text-white ${isMaximized ? '' : 'rounded-xl border border-[#27272A] shadow-2xl'}`}>
+
+      {/* Custom Title Bar (macOS Style) */}
+      <div
+        data-tauri-drag-region
+        className="relative z-[9999] shrink-0 h-10 flex items-center justify-end select-none bg-[#0A0A0A] border-b border-[#27272A] w-full px-4"
+      >
+        {/* Title (Center) */}
+        <div data-tauri-drag-region className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <span className="text-xs font-semibold text-[#8E9192]">Taxon</span>
+        </div>
+
+        {/* macOS Traffic Lights (Right) */}
+        <div className="flex items-center gap-2 z-10">
+          <button
+            onClick={() => getCurrentWindow().minimize()}
+            className="w-4 h-4 rounded-full bg-[#FFBD2E] border border-[#DEA123] flex items-center justify-center group"
+          >
+            <Minus className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity" strokeWidth={3} />
+          </button>
+          <button
+            onClick={() => getCurrentWindow().toggleMaximize()}
+            className="w-4 h-4 rounded-full bg-[#27C93F] border border-[#1AAB29] flex items-center justify-center group"
+          >
+            <Square className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity" strokeWidth={3} fill="currentColor" />
+          </button>
+          <button
+            onClick={() => getCurrentWindow().close()}
+            className="w-4 h-4 rounded-full bg-[#FF5F56] border border-[#E0443E] flex items-center justify-center group"
+          >
+            <X className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity" strokeWidth={3} />
+          </button>
+        </div>
+      </div>
+
       {/* Absolute immersive focus container overlay */}
       {focusTimer.isFocusModeActive && (
         <FocusModeView
@@ -505,384 +560,383 @@ export default function App() {
         />
       )}
 
-      {/* Main Side Navigation */}
-      <Sidebar 
-        currentView={currentView}
-        onViewChange={(v) => {
-          setSelectedProjectId(null);
-          setCurrentView(v);
-        }}
-        projects={projects}
-        selectedProjectId={selectedProjectId}
-        onProjectSelect={(id) => {
-          setSelectedProjectId(id);
-          setCurrentView('project-details');
-        }}
-        onAddProjectClick={() => setIsAddProjectOpen(true)}
-      />
+      {/* Main app row container */}
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Main Side Navigation */}
+        <Sidebar
+          currentView={currentView}
+          onViewChange={(v) => {
+            setSelectedProjectId(null);
+            setCurrentView(v);
+          }}
+          projects={projects}
+          selectedProjectId={selectedProjectId}
+          onProjectSelect={(id) => {
+            setSelectedProjectId(id);
+            setCurrentView('project-details');
+          }}
+          onAddProjectClick={() => setIsAddProjectOpen(true)}
+        />
 
-      {/* Main Application Core viewport container */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        
-        {/* Universal Top Header Menu */}
-        <header className="flex justify-between items-center h-16 border-b border-[#27272A] px-8 bg-black sticky top-0 z-40 shrink-0">
-          <div className="flex items-center gap-4">
-            <h1 className="text-white font-bold text-sm tracking-tight uppercase tracking-wider font-mono">
-              {getHeaderTitle()}
-            </h1>
-          </div>
+        {/* Main Application Core viewport container */}
+        <div className="flex-1 flex flex-col overflow-hidden">
 
-          {/* Quick global utility actions */}
-          <div className="flex items-center gap-6">
-            
-            {/* Global Search Interface */}
-            <div className="relative group">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] w-3.5 h-3.5" />
-              <input 
-                id="global-search-input"
-                type="text"
-                placeholder="Search tasks... (⌘K)"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => setIsSearchFocused(true)}
-                onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                className="bg-[#141313] border border-[#27272A] rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-[#8E9192]/60 focus:outline-none focus:border-white w-64 transition-all"
-              />
+          {/* Universal Top Header Menu */}
+          <header className="flex justify-between items-center h-16 border-b border-[#27272A] px-8 bg-black sticky top-0 z-40 shrink-0">
+            <div className="flex items-center gap-4">
+              <h1 className="text-white font-bold text-sm tracking-tight uppercase tracking-wider font-mono">
+                {getHeaderTitle()}
+              </h1>
+            </div>
 
-              {/* Dynamic search results overlay dashboard */}
-              {isSearchFocused && searchQuery.trim() !== '' && (
-                <div className="absolute right-0 top-10 bg-[#0A0A0A] border border-[#27272A] w-80 rounded-xl p-3 z-50 shadow-2xl max-h-[300px] overflow-y-auto">
-                  <h4 className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] mb-2 font-mono">
-                    Search Results ({filteredSearchTasks.length})
-                  </h4>
-                  {filteredSearchTasks.length === 0 ? (
-                    <div className="text-xs text-[#8E9192] py-4 text-center">No tasks match queries</div>
-                  ) : (
-                    <div className="divide-y divide-[#27272A]/50">
-                      {filteredSearchTasks.map(t => (
-                        <div 
-                          key={t.id}
-                          className="py-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#141313] px-1 rounded transition-colors"
-                          onClick={() => {
-                            if (t.projectId) {
-                              setSelectedProjectId(t.projectId);
-                              setCurrentView('project-details');
-                            } else {
-                              setCurrentView('dashboard');
-                            }
-                          }}
-                        >
-                          <span className={`${t.completed ? 'line-through text-[#8E9192]' : 'text-white'} truncate max-w-[200px]`}>
-                            {t.title}
-                          </span>
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleToggleTask(t.id);
+            {/* Quick global utility actions */}
+            <div className="flex items-center gap-6">
+
+              {/* Global Search Interface */}
+              <div className="relative group">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] w-3.5 h-3.5" />
+                <input
+                  id="global-search-input"
+                  type="text"
+                  placeholder="Search tasks... (⌘K)"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
+                  className="bg-[#141313] border border-[#27272A] rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-[#8E9192]/60 focus:outline-none focus:border-white w-64 transition-all"
+                />
+
+                {/* Dynamic search results overlay dashboard */}
+                {isSearchFocused && searchQuery.trim() !== '' && (
+                  <div className="absolute right-0 top-10 bg-[#0A0A0A] border border-[#27272A] w-80 rounded-xl p-3 z-50 shadow-2xl max-h-[300px] overflow-y-auto">
+                    <h4 className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] mb-2 font-mono">
+                      Search Results ({filteredSearchTasks.length})
+                    </h4>
+                    {filteredSearchTasks.length === 0 ? (
+                      <div className="text-xs text-[#8E9192] py-4 text-center">No tasks match queries</div>
+                    ) : (
+                      <div className="divide-y divide-[#27272A]/50">
+                        {filteredSearchTasks.map(t => (
+                          <div
+                            key={t.id}
+                            className="py-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#141313] px-1 rounded transition-colors"
+                            onClick={() => {
+                              if (t.projectId) {
+                                setSelectedProjectId(t.projectId);
+                                setCurrentView('project-details');
+                              } else {
+                                setCurrentView('dashboard');
+                              }
                             }}
-                            className="p-1 hover:bg-[#201F1F] rounded"
                           >
-                            <Check className={`w-3 h-3 ${t.completed ? 'text-green-400' : 'text-[#8E9192]'}`} />
-                          </button>
+                            <span className={`${t.completed ? 'line-through text-[#8E9192]' : 'text-white'} truncate max-w-[200px]`}>
+                              {t.title}
+                            </span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleTask(t.id);
+                              }}
+                              className="p-1 hover:bg-[#201F1F] rounded"
+                            >
+                              <Check className={`w-3 h-3 ${t.completed ? 'text-green-400' : 'text-[#8E9192]'}`} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Immersive Focus Mode launcher button */}
+              <button
+                id="header-focus-mode"
+                onClick={focusTimer.launchFocusMode}
+                title="Launch Immersive Focus Mode"
+                className="active:scale-95 transition-transform p-2 border border-[#27272A] hover:border-white bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
+              >
+                <Timer className="w-4 h-4 text-white" />
+              </button>
+            </div>
+          </header>
+
+          {/* Inner Scrollable Frame Canvas Area */}
+          <main className="flex-1 overflow-y-auto bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0A0A0A] via-[#000000] to-[#000000] focus:outline-none scrollbar-thin">
+
+            {/* Main Content Router */}
+            {currentView === 'dashboard' && (
+              <DashboardView
+                tasks={tasks}
+                projects={projects}
+                dailyActivity={dailyActivity}
+                onToggleTask={handleToggleTask}
+                onAddTask={handleAddTask}
+                onStartFocus={focusTimer.startFocusSession}
+                timerSeconds={focusTimer.timerSeconds}
+                timerIsRunning={focusTimer.timerIsRunning}
+                onToggleTimer={focusTimer.toggleTimer}
+                onResetTimer={focusTimer.resetTimer}
+                onSkipTimer={focusTimer.skipTimer}
+                activeFocusTask={focusTimer.activeFocusTask}
+                totalCompletedCount={completionsToday}
+                totalFocusedHours={focusedHoursToday}
+              />
+            )}
+
+            {currentView === 'projects' && (
+              <ProjectsView
+                projects={projects}
+                tasks={tasks}
+                onProjectSelect={(id) => setSelectedProjectId(id)}
+                onViewChange={setCurrentView}
+                onAddProjectClick={() => setIsAddProjectOpen(true)}
+                onMoveTaskStatus={handleMoveTaskStatus}
+                onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
+              />
+            )}
+
+            {currentView === 'project-details' && selectedProjectId && (
+              <ProjectDetailView
+                project={projects.find(p => p.id === selectedProjectId)!}
+                tasks={tasks}
+                files={files}
+                onToggleTask={handleToggleTask}
+                onAddTask={handleAddTask}
+                onDeleteTask={handleDeleteTask}
+                onCompleteProject={handleCompleteProject}
+                onEditProject={handleEditProject}
+                onDeleteProject={handleDeleteProject}
+                onAddFile={handleAddFile}
+                onDeleteFile={handleDeleteFile}
+                onBackToProjects={() => {
+                  setSelectedProjectId(null);
+                  setCurrentView('projects');
+                }}
+              />
+            )}
+
+            {/* Simple task lists views templates mapped cleanly */}
+            {(currentView === 'todo' || currentView === 'completed') && (
+              <div className="max-w-4xl mx-auto py-8 px-6">
+                <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
+                  <div className="flex justify-between items-center mb-6 pb-2 border-b border-[#27272A]/50">
+                    <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono leading-none">
+                      {getHeaderTitle()}
+                    </h2>
+                    <span className="text-[10px] font-mono font-bold bg-[#141313] border border-[#27272A] text-[#8E9192] px-2 py-0.5 rounded">
+                      {getFilteredViewTasks().length} Items Listed
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-[#27272A]/50">
+                    {getFilteredViewTasks().length === 0 ? (
+                      <div className="py-12 text-center text-xs text-[#8E9192]">No records match current parameters.</div>
+                    ) : (
+                      getFilteredViewTasks().map((task) => (
+                        <div key={task.id} className="py-3.5 flex items-center justify-between group">
+                          <div className="flex items-center gap-4 min-w-0">
+                            <button
+                              onClick={() => handleToggleTask(task.id)}
+                              className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
+                            >
+                              <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
+                            </button>
+                            <span className={`text-xs font-semibold truncate max-w-lg ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
+                              {task.title}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span className="text-[9px] font-mono tracking-wide py-0.5 px-1.5 bg-[#141313] border border-[#27272A]/40 text-[#8E9192] rounded">
+                              {task.duration || '25m'}
+                            </span>
+                            <button
+                              onClick={() => handleDeleteTask(task.id)}
+                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAXON-117/118: Calendar / Scheduled View */}
+            {currentView === 'scheduled' && (
+              <CalendarView
+                tasks={tasks}
+                projects={projects}
+                onToggleTask={handleToggleTask}
+              />
+            )}
+
+            {/* Productivity Analytics dashboard — TAXON-115: Real data */}
+            {currentView === 'analytics' && (
+              <div className="max-w-4xl mx-auto py-8 px-6 space-y-6">
+                <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
+                  <div>
+                    <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Performance Analytics</h2>
+                    <p className="text-xs text-[#8E9192] mt-1">Daily metrics report mapping metrics across sprints.</p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 relative overflow-hidden">
+                      <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Focus Velocity</span>
+                      <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.focusVelocity}%</div>
+                      <p className="text-[10px] text-[#8E9192] mt-1">Completion rate across all tasks</p>
+                    </div>
+                    <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5">
+                      <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Task Accomplishments</span>
+                      <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.taskAccomplishments}</div>
+                      <p className="text-[10px] text-[#8E9192] mt-1">Completed across 30 days</p>
+                    </div>
+                    <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5">
+                      <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Uninterrupted Streaks</span>
+                      <div className="text-3xl font-bold font-mono text-white mt-2 flex items-center gap-2">
+                        <Flame className="w-6 h-6 text-white fill-current animate-pulse" />
+                        <span>{analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}</span>
+                      </div>
+                      <p className="text-[10px] text-[#8E9192] mt-1">Maintained focus sprint daily</p>
+                    </div>
+                  </div>
+
+                  {/* Grid chart representation */}
+                  <div className="border-t border-[#27272A]/50 pt-6">
+                    <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-4">Strategic Activity Load</h3>
+                    <div className="h-48 flex items-end justify-between gap-4">
+                      {dailyActivity.map((d, i) => (
+                        <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group">
+                          <div className="text-xs text-[#8E9192] opacity-0 group-hover:opacity-100 transition-opacity font-mono">{d.completions}t / {(d.hours * 60).toFixed(0)}m</div>
+                          <div
+                            style={{ height: `${(d.hours / 6) * 100}%` }}
+                            className={`w-full rounded-t-sm transition-all duration-300 ${d.isToday ? 'bg-white' : 'bg-[#1C1B1B] hover:bg-zinc-700'}`}
+                          ></div>
+                          <span className="text-[10px] uppercase font-bold font-mono text-[#8E9192]">{d.day}</span>
                         </div>
                       ))}
                     </div>
-                  )}
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
 
-            {/* Immersive Focus Mode launcher button */}
-            <button 
-              id="header-focus-mode"
-              onClick={focusTimer.launchFocusMode}
-              title="Launch Immersive Focus Mode"
-              className="active:scale-95 transition-transform p-2 border border-[#27272A] hover:border-white bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
-            >
-              <Timer className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        </header>
+            {/* Simple modular platform settings — TAXON-119/120: Wired to SettingsContext */}
+            {currentView === 'settings' && (
+              <div className="max-w-2xl mx-auto py-8 px-6">
+                <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
+                  <div>
+                    <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">System Preferences</h2>
+                    <p className="text-xs text-[#8E9192] mt-1">Onyx default hardware battery saving metrics.</p>
+                  </div>
 
-        {/* Inner Scrollable Frame Canvas Area */}
-        <main className="flex-1 overflow-y-auto bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0A0A0A] via-[#000000] to-[#000000] focus:outline-none scrollbar-thin">
-          
-          {/* Main Content Router */}
-          {currentView === 'dashboard' && (
-            <DashboardView 
-              tasks={tasks}
-              projects={projects}
-              dailyActivity={dailyActivity}
-              onToggleTask={handleToggleTask}
-              onAddTask={handleAddTask}
-              onStartFocus={focusTimer.startFocusSession}
-              timerSeconds={focusTimer.timerSeconds}
-              timerIsRunning={focusTimer.timerIsRunning}
-              onToggleTimer={focusTimer.toggleTimer}
-              onResetTimer={focusTimer.resetTimer}
-              onSkipTimer={focusTimer.skipTimer}
-              activeFocusTask={focusTimer.activeFocusTask}
-              totalCompletedCount={completionsToday}
-              totalFocusedHours={focusedHoursToday}
-            />
-          )}
-
-          {currentView === 'projects' && (
-            <ProjectsView 
-              projects={projects}
-              tasks={tasks}
-              onProjectSelect={(id) => setSelectedProjectId(id)}
-              onViewChange={setCurrentView}
-              onAddProjectClick={() => setIsAddProjectOpen(true)}
-              onMoveTaskStatus={handleMoveTaskStatus}
-              onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
-            />
-          )}
-
-          {currentView === 'project-details' && selectedProjectId && (
-            <ProjectDetailView 
-              project={projects.find(p => p.id === selectedProjectId)!}
-              tasks={tasks}
-              files={files}
-              onToggleTask={handleToggleTask}
-              onAddTask={handleAddTask}
-              onDeleteTask={handleDeleteTask}
-              onCompleteProject={handleCompleteProject}
-              onEditProject={handleEditProject}
-              onDeleteProject={handleDeleteProject}
-              onAddFile={handleAddFile}
-              onDeleteFile={handleDeleteFile}
-              onBackToProjects={() => {
-                setSelectedProjectId(null);
-                setCurrentView('projects');
-              }}
-            />
-          )}
-
-          {/* Simple task lists views templates mapped cleanly */}
-          {(currentView === 'todo' || currentView === 'completed') && (
-            <div className="max-w-4xl mx-auto py-8 px-6">
-              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
-                <div className="flex justify-between items-center mb-6 pb-2 border-b border-[#27272A]/50">
-                  <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono leading-none">
-                    {getHeaderTitle()}
-                  </h2>
-                  <span className="text-[10px] font-mono font-bold bg-[#141313] border border-[#27272A] text-[#8E9192] px-2 py-0.5 rounded">
-                    {getFilteredViewTasks().length} Items Listed
-                  </span>
-                </div>
-
-                <div className="divide-y divide-[#27272A]/50">
-                  {getFilteredViewTasks().length === 0 ? (
-                    <div className="py-12 text-center text-xs text-[#8E9192]">No records match current parameters.</div>
-                  ) : (
-                    getFilteredViewTasks().map((task) => (
-                      <div key={task.id} className="py-3.5 flex items-center justify-between group">
-                        <div className="flex items-center gap-4 min-w-0">
-                          <button 
-                            onClick={() => handleToggleTask(task.id)}
-                            className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
-                          >
-                            <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
-                          </button>
-                          <span className={`text-xs font-semibold truncate max-w-lg ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
-                            {task.title}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-[9px] font-mono tracking-wide py-0.5 px-1.5 bg-[#141313] border border-[#27272A]/40 text-[#8E9192] rounded">
-                            {task.duration || '25m'}
-                          </span>
-                          <button 
-                            onClick={() => handleDeleteTask(task.id)}
-                            className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                  <div className="space-y-4">
+                    {/* OLED Black Mode Toggle */}
+                    <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A] rounded-lg">
+                      <div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">OLED Black Mode</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Force completely black pixel rendering.</p>
                       </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAXON-117/118: Calendar / Scheduled View */}
-          {currentView === 'scheduled' && (
-            <CalendarView
-              tasks={tasks}
-              projects={projects}
-              onToggleTask={handleToggleTask}
-            />
-          )}
-
-          {/* Productivity Analytics dashboard — TAXON-115: Real data */}
-          {currentView === 'analytics' && (
-            <div className="max-w-4xl mx-auto py-8 px-6 space-y-6">
-              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
-                <div>
-                  <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">Performance Analytics</h2>
-                  <p className="text-xs text-[#8E9192] mt-1">Daily metrics report mapping metrics across sprints.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 relative overflow-hidden">
-                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Focus Velocity</span>
-                    <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.focusVelocity}%</div>
-                    <p className="text-[10px] text-[#8E9192] mt-1">Completion rate across all tasks</p>
-                  </div>
-                  <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5">
-                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Task Accomplishments</span>
-                    <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.taskAccomplishments}</div>
-                    <p className="text-[10px] text-[#8E9192] mt-1">Completed across 30 days</p>
-                  </div>
-                  <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5">
-                    <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Uninterrupted Streaks</span>
-                    <div className="text-3xl font-bold font-mono text-white mt-2 flex items-center gap-2">
-                      <Flame className="w-6 h-6 text-white fill-current animate-pulse" />
-                      <span>{analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}</span>
+                      <button
+                        onClick={() => toggleSetting('oledBlackMode')}
+                        className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${settings.oledBlackMode ? 'bg-white' : 'bg-[#27272A]'
+                          }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full transition-all duration-200 ${settings.oledBlackMode
+                            ? 'bg-black ml-auto'
+                            : 'bg-[#8E9192] ml-0'
+                          }`}></div>
+                      </button>
                     </div>
-                    <p className="text-[10px] text-[#8E9192] mt-1">Maintained focus sprint daily</p>
-                  </div>
-                </div>
 
-                {/* Grid chart representation */}
-                <div className="border-t border-[#27272A]/50 pt-6">
-                  <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-4">Strategic Activity Load</h3>
-                  <div className="h-48 flex items-end justify-between gap-4">
-                    {dailyActivity.map((d, i) => (
-                      <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group">
-                        <div className="text-xs text-[#8E9192] opacity-0 group-hover:opacity-100 transition-opacity font-mono">{d.completions}t / {(d.hours * 60).toFixed(0)}m</div>
-                        <div 
-                          style={{ height: `${(d.hours / 6) * 100}%` }}
-                          className={`w-full rounded-t-sm transition-all duration-300 ${d.isToday ? 'bg-white' : 'bg-[#1C1B1B] hover:bg-zinc-700'}`}
-                        ></div>
-                        <span className="text-[10px] uppercase font-bold font-mono text-[#8E9192]">{d.day}</span>
+                    {/* Sound Alerts Toggle */}
+                    <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
+                      <div>
+                        <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Sound Alerts</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Strategic alarm alerts upon sprint completions.</p>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Simple modular platform settings — TAXON-119/120: Wired to SettingsContext */}
-          {currentView === 'settings' && (
-            <div className="max-w-2xl mx-auto py-8 px-6">
-              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
-                <div>
-                  <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono">System Preferences</h2>
-                  <p className="text-xs text-[#8E9192] mt-1">Onyx default hardware battery saving metrics.</p>
-                </div>
-
-                <div className="space-y-4">
-                  {/* OLED Black Mode Toggle */}
-                  <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A] rounded-lg">
-                    <div>
-                      <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">OLED Black Mode</h4>
-                      <p className="text-[10px] text-[#8E9192] mt-0.5">Force completely black pixel rendering.</p>
+                      <button
+                        onClick={() => toggleSetting('soundAlerts')}
+                        className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${settings.soundAlerts ? 'bg-white' : 'bg-[#27272A]'
+                          }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full transition-all duration-200 ${settings.soundAlerts
+                            ? 'bg-black ml-auto'
+                            : 'bg-[#8E9192] ml-0'
+                          }`}></div>
+                      </button>
                     </div>
-                    <button
-                      onClick={() => toggleSetting('oledBlackMode')}
-                      className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
-                        settings.oledBlackMode ? 'bg-white' : 'bg-[#27272A]'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                        settings.oledBlackMode
-                          ? 'bg-black ml-auto'
-                          : 'bg-[#8E9192] ml-0'
-                      }`}></div>
-                    </button>
-                  </div>
 
-                  {/* Sound Alerts Toggle */}
-                  <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
-                    <div>
-                      <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Sound Alerts</h4>
-                      <p className="text-[10px] text-[#8E9192] mt-0.5">Strategic alarm alerts upon sprint completions.</p>
-                    </div>
-                    <button
-                      onClick={() => toggleSetting('soundAlerts')}
-                      className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
-                        settings.soundAlerts ? 'bg-white' : 'bg-[#27272A]'
-                      }`}
-                    >
-                      <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                        settings.soundAlerts
-                          ? 'bg-black ml-auto'
-                          : 'bg-[#8E9192] ml-0'
-                      }`}></div>
-                    </button>
-                  </div>
-
-                  {/* Cloud Sync (Disabled) */}
-                  <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
-                    <div>
-                      <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Cloud Auto Synchronization</h4>
-                      <p className="text-[10px] text-[#8E9192] mt-0.5">Persist workspace and details in live sync.</p>
-                    </div>
-                    <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#8E9192]/80 bg-black px-2 py-1 rounded border border-[#27272A]">
-                      <Lock className="w-3 h-3" />
-                      <span>Standby</span>
+                    {/* Cloud Sync (Disabled) */}
+                    <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
+                      <div>
+                        <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Cloud Auto Synchronization</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Persist workspace and details in live sync.</p>
+                      </div>
+                      <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#8E9192]/80 bg-black px-2 py-1 rounded border border-[#27272A]">
+                        <Lock className="w-3 h-3" />
+                        <span>Standby</span>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Simple modular help and support */}
-          {currentView === 'help' && (
-            <div className="max-w-2xl mx-auto py-8 px-6">
-              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
-                <div>
-                  <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                    <HelpCircle className="w-4 h-4 text-white" />
-                    Help &amp; Support Desk
-                  </h2>
-                  <p className="text-xs text-[#8E9192] mt-1">Documentation, guidelines, and feedback options.</p>
-                </div>
+            {/* Simple modular help and support */}
+            {currentView === 'help' && (
+              <div className="max-w-2xl mx-auto py-8 px-6">
+                <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
+                  <div>
+                    <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                      <HelpCircle className="w-4 h-4 text-white" />
+                      Help &amp; Support Desk
+                    </h2>
+                    <p className="text-xs text-[#8E9192] mt-1">Documentation, guidelines, and feedback options.</p>
+                  </div>
 
-                <div className="space-y-4 text-xs leading-relaxed text-[#C4C7C8]">
-                  <p>
-                    Welcome to <strong>Taxon - Precision Tasking</strong>. This platform is optimized on 
-                    <strong>Precision in Darkness</strong> aesthetic guidelines. It facilitates absolute visual focus, 
-                    battery efficiency on high contrast OLED matrices, and robust daily tracking.
-                  </p>
+                  <div className="space-y-4 text-xs leading-relaxed text-[#C4C7C8]">
+                    <p>
+                      Welcome to <strong>Taxon - Precision Tasking</strong>. This platform is optimized on
+                      <strong>Precision in Darkness</strong> aesthetic guidelines. It facilitates absolute visual focus,
+                      battery efficiency on high contrast OLED matrices, and robust daily tracking.
+                    </p>
 
-                  <h4 className="font-bold text-white font-mono uppercase tracking-wider text-[11px] pt-2">How to Use focus session:</h4>
-                  <ul className="list-disc pl-4 space-y-1 text-[#8E9192]">
-                    <li>Select a task on the dashboard or inside a project list.</li>
-                    <li>Click the Play action button to transition into fullscreen Focus Mode immediately.</li>
-                    <li>Click the central circle to toggle timer countdown pausing/resumption.</li>
-                    <li>Upon completing the timer, your accomplishments increment instantly.</li>
-                  </ul>
+                    <h4 className="font-bold text-white font-mono uppercase tracking-wider text-[11px] pt-2">How to Use focus session:</h4>
+                    <ul className="list-disc pl-4 space-y-1 text-[#8E9192]">
+                      <li>Select a task on the dashboard or inside a project list.</li>
+                      <li>Click the Play action button to transition into fullscreen Focus Mode immediately.</li>
+                      <li>Click the central circle to toggle timer countdown pausing/resumption.</li>
+                      <li>Upon completing the timer, your accomplishments increment instantly.</li>
+                    </ul>
 
-                  <div className="p-4 bg-[#141313] border border-[#27272A] rounded-lg mt-4 text-center">
-                    <p className="font-bold text-white font-mono uppercase tracking-wider text-[10px] mb-2">Need direct engineer support?</p>
-                    <a 
-                      href="mailto:support@taxon.io"
-                      className="text-white hover:underline text-xs"
-                      onClick={(e) => { e.preventDefault(); alert("For support queries, contact us at: support@taxon.io"); }}
-                    >
-                      support@taxon.io
-                    </a>
+                    <div className="p-4 bg-[#141313] border border-[#27272A] rounded-lg mt-4 text-center">
+                      <p className="font-bold text-white font-mono uppercase tracking-wider text-[10px] mb-2">Need direct engineer support?</p>
+                      <a
+                        href="mailto:support@taxon.io"
+                        className="text-white hover:underline text-xs"
+                        onClick={(e) => { e.preventDefault(); alert("For support queries, contact us at: support@taxon.io"); }}
+                      >
+                        support@taxon.io
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
 
-        </main>
+          </main>
+        </div>
       </div>
 
       {/* Overlaid Modal Dialog: Create Project */}
       {isAddProjectOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative">
-            <button 
+            <button
               onClick={() => setIsAddProjectOpen(false)}
               className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white"
             >
@@ -896,7 +950,7 @@ export default function App() {
             <form onSubmit={handleCreateProject} className="space-y-4">
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">Project Name</label>
-                <input 
+                <input
                   type="text"
                   required
                   placeholder="e.g. Mobile Companion App"
@@ -908,7 +962,7 @@ export default function App() {
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">Description / Objectives</label>
-                <textarea 
+                <textarea
                   placeholder="Summarize key features, scopes, or launch schedules..."
                   className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-2.5 w-full h-24 focus:outline-none focus:border-white focus:ring-0"
                   value={newProjDesc}
@@ -918,7 +972,7 @@ export default function App() {
 
               <div>
                 <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">Category Tag</label>
-                <select 
+                <select
                   className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded-lg p-2.5 w-full focus:outline-none focus:border-white"
                   value={newProjCategory}
                   onChange={(e) => setNewProjCategory(e.target.value as Project['category'])}
@@ -930,8 +984,8 @@ export default function App() {
               </div>
 
               <div className="flex gap-3 justify-end pt-4">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsAddProjectOpen(false)}
                   className="text-xs font-semibold text-[#8E9192] hover:text-white px-3 py-2 cursor-pointer"
                 >

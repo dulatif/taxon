@@ -51,7 +51,7 @@ export default function Sidebar({
   };
 
   return (
-    <aside className="h-screen w-64 flex flex-col py-6 px-4 bg-black border-r border-[#27272A] shrink-0 overflow-y-auto scrollbar-thin">
+    <aside className="h-full w-64 flex flex-col py-6 px-4 bg-black border-r border-[#27272A] shrink-0 overflow-y-auto scrollbar-thin">
       {/* Brand Header */}
       <div className="mb-10 px-2 cursor-pointer" onClick={() => { onViewChange('dashboard'); onProjectSelect(''); }}>
         <h1 className="text-xl font-black text-white tracking-tighter">Taxon</h1>
