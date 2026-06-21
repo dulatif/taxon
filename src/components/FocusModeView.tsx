@@ -10,6 +10,7 @@ import {
   Sparkles,
   Award
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Task, Project } from '../types';
 
 interface FocusModeViewProps {
@@ -61,7 +62,12 @@ export default function FocusModeView({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#000000] text-white z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-[#000000] text-white z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none"
+    >
       
       {/* Subtle background ambient overlay glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.02)_0%,_rgba(0,0,0,0)_60%)] pointer-events-none"></div>
@@ -195,6 +201,6 @@ export default function FocusModeView({
         </div>
       </div>
 
-    </div>
+    </motion.div>
   );
 }

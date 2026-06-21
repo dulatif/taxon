@@ -49,6 +49,8 @@ import {
 } from './services/database';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
+import { motion, AnimatePresence } from 'motion/react';
 
 // Local storage key constants
 const STORAGE_PREFIX = 'axon_tasking_';
@@ -156,6 +158,9 @@ export default function App() {
   const [newProjDesc, setNewProjDesc] = useState('');
   const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Active');
 
+  const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
+  const [quickTaskTitle, setQuickTaskTitle] = useState('');
+
   // System Tray Listeners
   useEffect(() => {
     const unlistenAdd = listen('tray-quick-add', () => {
@@ -184,19 +189,42 @@ export default function App() {
       unlistenFocus.then(f => f());
     }
   }, []);
-  // TC-1.3: Global keyboard shortcut Ctrl/Cmd + K to focus search
+  // TC-1.3 & TAXON-307: Global keyboard shortcuts
   useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        const searchInput = document.getElementById('global-search-input');
-        if (searchInput) {
-          (searchInput as HTMLInputElement).focus();
-        }
+    const setupShortcuts = async () => {
+      try {
+        await unregisterAll();
+        
+        await register('CommandOrControl+K', (e) => {
+          if (e.state === 'Pressed') {
+            const searchInput = document.getElementById('global-search-input');
+            if (searchInput) {
+              (searchInput as HTMLInputElement).focus();
+            }
+          }
+        });
+
+        await register('CommandOrControl+N', (e) => {
+          if (e.state === 'Pressed') {
+            setIsQuickAddTaskOpen(true);
+          }
+        });
+
+        await register('CommandOrControl+F', (e) => {
+          if (e.state === 'Pressed') {
+            document.getElementById('header-focus-mode')?.click();
+          }
+        });
+      } catch (err) {
+        console.error("Failed to register global shortcuts:", err);
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+
+    setupShortcuts();
+
+    return () => {
+      unregisterAll().catch(console.error);
+    };
   }, []);
 
   // --- Activity Log Helper ---
@@ -730,14 +758,31 @@ export default function App() {
                   </div>
 
                   <div className="divide-y divide-[#27272A]/50">
+                    <AnimatePresence>
                     {getFilteredViewTasks().length === 0 ? (
-                      <div className="py-12 text-center text-xs text-[#8E9192]">No records match current parameters.</div>
+                      <motion.div 
+                        initial={{ opacity: 0 }} 
+                        animate={{ opacity: 1 }} 
+                        exit={{ opacity: 0 }}
+                        className="py-12 text-center text-xs text-[#8E9192]"
+                      >
+                        No records match current parameters.
+                      </motion.div>
                     ) : (
-                      getFilteredViewTasks().map((task) => (
-                        <div key={task.id} className="py-3.5 flex items-center justify-between group">
+                      getFilteredViewTasks().map((task, index) => (
+                        <motion.div 
+                          key={task.id} 
+                          layout
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, x: 50 }}
+                          transition={{ delay: index * 0.05 }}
+                          className="py-3.5 flex items-center justify-between group"
+                        >
                           <div className="flex items-center gap-4 min-w-0">
                             <button
                               onClick={() => handleToggleTask(task.id)}
+                              aria-label="Toggle Complete"
                               className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
                             >
                               <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
@@ -752,14 +797,16 @@ export default function App() {
                             </span>
                             <button
                               onClick={() => handleDeleteTask(task.id)}
+                              aria-label="Delete Task"
                               className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
                           </div>
-                        </div>
+                        </motion.div>
                       ))
                     )}
+                    </AnimatePresence>
                   </div>
                 </div>
               </div>
@@ -933,10 +980,17 @@ export default function App() {
       </div>
 
       {/* Overlaid Modal Dialog: Create Project */}
+      <AnimatePresence>
       {isAddProjectOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative"
+          >
             <button
+              aria-label="Close"
               onClick={() => setIsAddProjectOpen(false)}
               className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white"
             >
@@ -1000,9 +1054,74 @@ export default function App() {
                 </button>
               </div>
             </form>
-          </div>
+          </motion.div>
         </div>
       )}
+      </AnimatePresence>
+
+      {/* Overlaid Modal Dialog: Quick Add Task */}
+      <AnimatePresence>
+      {isQuickAddTaskOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-sm p-6 relative"
+          >
+            <button
+              aria-label="Close"
+              onClick={() => setIsQuickAddTaskOpen(false)}
+              className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <h3 className="text-md font-bold text-white uppercase tracking-widest font-mono mb-4">
+              Quick Add Task
+            </h3>
+
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              if (quickTaskTitle.trim()) {
+                handleAddTask(quickTaskTitle.trim());
+                setQuickTaskTitle('');
+                setIsQuickAddTaskOpen(false);
+              }
+            }} className="space-y-4">
+              <div>
+                <input
+                  type="text"
+                  required
+                  autoFocus
+                  placeholder="What needs to be done?"
+                  className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-3 w-full focus:outline-none focus:border-white focus:ring-0"
+                  value={quickTaskTitle}
+                  onChange={(e) => setQuickTaskTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddTaskOpen(false)}
+                  className="text-xs font-semibold text-[#8E9192] hover:text-white px-3 py-2 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!quickTaskTitle.trim()}
+                  className="bg-white text-black font-bold text-xs px-4 py-2 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
+                >
+                  Add Task
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      </AnimatePresence>
 
     </div>
   );
