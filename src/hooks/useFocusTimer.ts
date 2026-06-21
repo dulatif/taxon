@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Task } from '../types';
+import { sendNotification } from '@tauri-apps/plugin-notification';
 
 const DEFAULT_DURATION = 1500; // 25 minutes in seconds
 
@@ -99,8 +100,14 @@ export function useFocusTimer({ onTimerComplete, soundEnabled }: UseFocusTimerOp
             // TAXON-111: Play completion sound
             playCompletionBeep();
 
-            // TAXON-110: Fire completion callback
+            // TAXON-210: Native Notification
             const currentTask = activeFocusTaskRef.current;
+            sendNotification({
+              title: 'Focus Complete',
+              body: currentTask ? `You completed focus session for: ${currentTask.title}` : 'Your focus session has ended.',
+            });
+
+            // TAXON-110: Fire completion callback
             onTimerCompleteRef.current(currentTask);
 
             if (currentTask) {

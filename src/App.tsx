@@ -39,36 +39,85 @@ import {
   getFocusedHoursToday,
 } from './services/activityLogger';
 
+import { 
+  getProjects, saveProject, deleteProject, 
+  getTasks, saveTask, deleteTask, deleteTasksByProject,
+  getFiles, saveFile, deleteFile, deleteFilesByProject,
+  getActivity, saveActivity, getActivityLog, saveActivityLogEntry
+} from './services/database';
+import { listen } from '@tauri-apps/api/event';
+
 // Local storage key constants
 const STORAGE_PREFIX = 'axon_tasking_';
 
 export default function App() {
   // --- Persistent States ---
-  const [projects, setProjects] = useState<Project[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}projects`);
-    return saved ? JSON.parse(saved) : INITIAL_PROJECTS;
-  });
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [files, setFiles] = useState<DocumentFile[]>([]);
+  const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
+  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
+  const [isDataLoaded, setIsDataLoaded] = useState(false);
 
-  const [tasks, setTasks] = useState<Task[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}tasks`);
-    return saved ? JSON.parse(saved) : INITIAL_TASKS;
-  });
+  // --- Initialize Database and Migrate ---
+  useEffect(() => {
+    const initData = async () => {
+      try {
+        let dbProjects = await getProjects();
+        let dbTasks = await getTasks();
+        let dbFiles = await getFiles();
+        let dbActivity = await getActivity();
+        let dbLog = await getActivityLog();
 
-  const [files, setFiles] = useState<DocumentFile[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}files`);
-    return saved ? JSON.parse(saved) : INITIAL_FILES;
-  });
+        // Migration from localStorage if DB is empty
+        if (dbProjects.length === 0 && dbTasks.length === 0) {
+          const lsProjects = localStorage.getItem(`${STORAGE_PREFIX}projects`);
+          const lsTasks = localStorage.getItem(`${STORAGE_PREFIX}tasks`);
+          const lsFiles = localStorage.getItem(`${STORAGE_PREFIX}files`);
+          const lsActivity = localStorage.getItem(`${STORAGE_PREFIX}activity`);
+          const lsLog = localStorage.getItem(`${STORAGE_PREFIX}activityLog`);
 
-  const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}activity`);
-    return saved ? JSON.parse(saved) : INITIAL_DAILY_ACTIVITY;
-  });
+          if (lsProjects || lsTasks) {
+            dbProjects = lsProjects ? JSON.parse(lsProjects) : INITIAL_PROJECTS;
+            dbTasks = lsTasks ? JSON.parse(lsTasks) : INITIAL_TASKS;
+            dbFiles = lsFiles ? JSON.parse(lsFiles) : INITIAL_FILES;
+            dbActivity = lsActivity ? JSON.parse(lsActivity) : INITIAL_DAILY_ACTIVITY;
+            dbLog = lsLog ? JSON.parse(lsLog) : [];
 
-  // TAXON-112/113: Activity log for real analytics
-  const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>(() => {
-    const saved = localStorage.getItem(`${STORAGE_PREFIX}activityLog`);
-    return saved ? JSON.parse(saved) : [];
-  });
+            // Save to SQLite
+            for (const p of dbProjects) await saveProject(p);
+            for (const t of dbTasks) await saveTask(t);
+            for (const f of dbFiles) await saveFile(f);
+            for (const a of dbActivity) await saveActivity(a);
+            for (const l of dbLog) await saveActivityLogEntry(l);
+          } else {
+             // Just use defaults if both are empty
+             dbProjects = INITIAL_PROJECTS;
+             dbTasks = INITIAL_TASKS;
+             dbFiles = INITIAL_FILES;
+             dbActivity = INITIAL_DAILY_ACTIVITY;
+             dbLog = [];
+
+             for (const p of dbProjects) await saveProject(p);
+             for (const t of dbTasks) await saveTask(t);
+             for (const f of dbFiles) await saveFile(f);
+             for (const a of dbActivity) await saveActivity(a);
+          }
+        }
+
+        setProjects(dbProjects);
+        setTasks(dbTasks);
+        setFiles(dbFiles);
+        setDailyActivity(dbActivity);
+        setActivityLog(dbLog);
+      } catch (e) {
+        console.error("Failed to load DB", e);
+      } finally {
+        setIsDataLoaded(true);
+      }
+    };
+    initData();
+  }, []);
 
   // --- Settings from Context ---
   const { settings, toggleSetting } = useSettings();
@@ -85,27 +134,34 @@ export default function App() {
   const [newProjDesc, setNewProjDesc] = useState('');
   const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Active');
 
-  // --- Synchronization Effects ---
+  // System Tray Listeners
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}projects`, JSON.stringify(projects));
-  }, [projects]);
+    const unlistenAdd = listen('tray-quick-add', () => {
+      // Logic for quick add from tray
+      const title = prompt("Quick Add Task:");
+      if (title) {
+         const newTask: Task = {
+            id: `task_${Date.now()}`,
+            projectId: null,
+            title,
+            completed: false,
+            duration: '25m',
+            priority: 'Medium',
+            status: 'To Do'
+         };
+         setTasks(prev => [newTask, ...prev]);
+         saveTask(newTask);
+      }
+    });
+    const unlistenFocus = listen('tray-start-focus', () => {
+       setCurrentView('todo');
+    });
 
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}tasks`, JSON.stringify(tasks));
-  }, [tasks]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}files`, JSON.stringify(files));
-  }, [files]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}activity`, JSON.stringify(dailyActivity));
-  }, [dailyActivity]);
-
-  useEffect(() => {
-    localStorage.setItem(`${STORAGE_PREFIX}activityLog`, JSON.stringify(activityLog));
-  }, [activityLog]);
-
+    return () => {
+      unlistenAdd.then(f => f());
+      unlistenFocus.then(f => f());
+    }
+  }, []);
   // TC-1.3: Global keyboard shortcut Ctrl/Cmd + K to focus search
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -125,9 +181,9 @@ export default function App() {
   const logCompletion = useCallback((taskId: string, taskTitle: string) => {
     const entry = createLogEntry(taskId, taskTitle);
     setActivityLog(prev => [...prev, entry]);
+    saveActivityLogEntry(entry);
   }, []);
 
-  // --- Handlers & Mutators ---
   const handleCompleteTaskDirectly = useCallback((id: string) => {
     let targetProjId: string | null = null;
     let completedTaskTitle = '';
@@ -135,7 +191,9 @@ export default function App() {
       if (t.id === id) {
         targetProjId = t.projectId;
         completedTaskTitle = t.title;
-        return { ...t, completed: true, status: 'Done' as const };
+        const updatedTask = { ...t, completed: true, status: 'Done' as const };
+        saveTask(updatedTask);
+        return updatedTask;
       }
       return t;
     }));
@@ -146,7 +204,11 @@ export default function App() {
     }
 
     // Update daily activity chart
-    setDailyActivity(prev => updateDailyActivityWithCompletion(prev));
+    setDailyActivity(prev => {
+      const acts = updateDailyActivityWithCompletion(prev);
+      acts.forEach(a => saveActivity(a));
+      return acts;
+    });
 
     if (targetProjId) {
       recalculateProjectProgress(targetProjId);
@@ -164,13 +226,19 @@ export default function App() {
             // Log completion for analytics
             logCompletion(t.id, t.title);
             // Update daily activity
-            setDailyActivity(prevAct => updateDailyActivityWithCompletion(prevAct));
+            setDailyActivity(prevAct => {
+              const acts = updateDailyActivityWithCompletion(prevAct);
+              acts.forEach(a => saveActivity(a));
+              return acts;
+            });
           }
-          return { 
+          const updatedTask = { 
             ...t, 
             completed: willComplete,
             status: willComplete ? ('Done' as const) : ('To Do' as const)
           };
+          saveTask(updatedTask);
+          return updatedTask;
         }
         return t;
       });
@@ -193,11 +261,13 @@ export default function App() {
       
       setProjects(prevProjs => prevProjs.map(p => {
         if (p.id === projId) {
-          return { 
+          const updatedProj = { 
             ...p, 
             progress: computedPercentage,
             category: computedPercentage === 100 ? 'Completed' as const : p.category
           };
+          saveProject(updatedProj);
+          return updatedProj;
         }
         return p;
       }));
@@ -216,6 +286,7 @@ export default function App() {
       status: 'To Do'
     };
     setTasks(prev => [newTask, ...prev]);
+    saveTask(newTask);
 
     if (projectId) {
       setTimeout(() => recalculateProjectProgress(projectId), 50);
@@ -225,6 +296,7 @@ export default function App() {
   const handleDeleteTask = (id: string) => {
     const task = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
+    deleteTask(id);
     if (task?.projectId) {
       setTimeout(() => recalculateProjectProgress(task.projectId!), 50);
     }
@@ -245,6 +317,7 @@ export default function App() {
     };
 
     setProjects(prev => [...prev, newProj]);
+    saveProject(newProj);
     setNewProjName('');
     setNewProjDesc('');
     setIsAddProjectOpen(false);
@@ -254,11 +327,14 @@ export default function App() {
     setCurrentView('project-details');
   };
 
-  // TAXON-104: Delete project with cascade delete of associated tasks
   const handleDeleteProject = (projectId: string) => {
     setProjects(prev => prev.filter(p => p.id !== projectId));
     setTasks(prev => prev.filter(t => t.projectId !== projectId));
     setFiles(prev => prev.filter(f => f.projectId !== projectId));
+    
+    deleteProject(projectId);
+    deleteTasksByProject(projectId);
+    deleteFilesByProject(projectId);
     
     // Navigate back to projects list
     setSelectedProjectId(null);
@@ -268,7 +344,9 @@ export default function App() {
   const handleCompleteProject = (projectId: string) => {
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
-        return { ...p, category: 'Completed' as const, progress: 100 };
+        const up = { ...p, category: 'Completed' as const, progress: 100 };
+        saveProject(up);
+        return up;
       }
       return p;
     }));
@@ -276,7 +354,9 @@ export default function App() {
     setTasks(prev => prev.map(t => {
       if (t.projectId === projectId && !t.completed) {
         logCompletion(t.id, t.title);
-        return { ...t, completed: true, status: 'Done' as const };
+        const ut = { ...t, completed: true, status: 'Done' as const };
+        saveTask(ut);
+        return ut;
       }
       return t;
     }));
@@ -285,7 +365,9 @@ export default function App() {
   const handleEditProject = (projectId: string, name: string, description: string) => {
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
-        return { ...p, name, description };
+        const up = { ...p, name, description };
+        saveProject(up);
+        return up;
       }
       return p;
     }));
@@ -300,10 +382,12 @@ export default function App() {
       type
     };
     setFiles(prev => [...prev, newFile]);
+    saveFile(newFile);
   };
 
   const handleDeleteFile = (id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
+    deleteFile(id);
   };
 
   // Switch task status values dynamically (Board view drag / shift)
@@ -315,13 +399,19 @@ export default function App() {
         const willComplete = newStatus === 'Done';
         if (willComplete && !t.completed) {
           logCompletion(t.id, t.title);
-          setDailyActivity(prevAct => updateDailyActivityWithCompletion(prevAct));
+          setDailyActivity(prevAct => {
+            const acts = updateDailyActivityWithCompletion(prevAct);
+            acts.forEach(a => saveActivity(a));
+            return acts;
+          });
         }
-        return { 
+        const updatedTask = { 
           ...t, 
           status: newStatus,
           completed: willComplete 
         };
+        saveTask(updatedTask);
+        return updatedTask;
       }
       return t;
     }));
@@ -392,6 +482,10 @@ export default function App() {
   const filteredSearchTasks = searchQuery.trim() === ''
     ? []
     : tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
+
+  if (!isDataLoaded) {
+    return <div className="flex items-center justify-center h-screen bg-black text-white">Loading database...</div>;
+  }
 
   return (
     <div className="flex min-h-screen bg-black text-white font-sans antialiased selection:bg-white/10 selection:text-white">

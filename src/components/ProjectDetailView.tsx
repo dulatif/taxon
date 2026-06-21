@@ -13,9 +13,13 @@ import {
   Download,
   Trash2,
   Square,
-  CheckSquare
+  CheckSquare,
+  ExternalLink
 } from 'lucide-react';
 import { Project, Task, DocumentFile } from '../types';
+import { open as openDialog } from '@tauri-apps/plugin-dialog';
+import { stat } from '@tauri-apps/plugin-fs';
+import { open as shellOpen } from '@tauri-apps/plugin-shell';
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -76,14 +80,31 @@ export default function ProjectDetailView({
     setNewTaskTitle('');
   };
 
-  const handleAddFileSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!fileName.trim()) return;
-    const randomSize = Math.floor(Math.random() * 950) + 10;
-    const sizeString = randomSize > 500 ? `${(randomSize/1000).toFixed(1)} MB` : `${randomSize} KB`;
-    onAddFile(project.id, fileName, sizeString, fileType);
-    setFileName('');
-    setIsAddingFile(false);
+  const handleNativeAddFile = async () => {
+    try {
+      const selected = await openDialog({
+        multiple: false,
+      });
+      if (selected && typeof selected === 'string') {
+        let sizeStr = 'Unknown';
+        try {
+          const fileStat = await stat(selected);
+          const size = fileStat.size;
+          sizeStr = size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`;
+        } catch (e) {
+          console.error('Stat error', e);
+        }
+        
+        let determinedType: DocumentFile['type'] = 'code';
+        if (selected.match(/\.(png|jpe?g|svg|webp|gif)$/i)) determinedType = 'image';
+        else if (selected.match(/\.pdf$/i)) determinedType = 'pdf';
+        
+        // Store absolute path as name
+        onAddFile(project.id, selected, sizeStr, determinedType);
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleSaveProjectEdit = (e: React.FormEvent) => {
@@ -328,44 +349,12 @@ export default function ProjectDetailView({
                 Documents
               </h3>
               <button 
-                onClick={() => setIsAddingFile(!isAddingFile)}
+                onClick={handleNativeAddFile}
                 className="text-[10px] text-white hover:underline uppercase tracking-wider font-mono"
               >
-                {isAddingFile ? 'Cancel' : '+ Add file'}
+                + Add file
               </button>
             </div>
-
-            {/* Dynamic File Addition Form */}
-            {isAddingFile && (
-              <form onSubmit={handleAddFileSubmit} className="mb-4 p-3 bg-[#141313] border border-[#27272A] rounded-lg space-y-3">
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1 font-mono">Filename</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. mock-chart.svg"
-                    className="bg-black border border-[#27272A] text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white"
-                    value={fileName}
-                    onChange={(e) => setFileName(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1 font-mono">File Category</label>
-                  <select
-                    className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded p-2 w-full focus:outline-none focus:border-white"
-                    value={fileType}
-                    onChange={(e) => setFileType(e.target.value as DocumentFile['type'])}
-                  >
-                    <option value="code">JSON / Code File</option>
-                    <option value="image">SVG / Vector Banner</option>
-                    <option value="pdf">PDF Document</option>
-                  </select>
-                </div>
-                <button type="submit" className="w-full bg-white text-black font-bold text-xs p-2 rounded-lg">
-                  Upload Asset File
-                </button>
-              </form>
-            )}
 
             <div className="space-y-4">
               <div className="flex items-center gap-2 text-[#8E9192]/80 bg-black/40 p-2 rounded-md border border-[#27272A]/40 mb-1">
@@ -388,7 +377,7 @@ export default function ProjectDetailView({
                         {getFileIcon(file.type)}
                         <div className="min-w-0">
                           <p className="text-xs font-semibold text-white truncate max-w-[150px]" title={file.name}>
-                            {file.name}
+                            {file.name.split(/[/\\]/).pop()}
                           </p>
                           <p className="text-[10px] text-[#8E9192] font-mono mt-0.5">{file.size}</p>
                         </div>
@@ -396,14 +385,17 @@ export default function ProjectDetailView({
 
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button 
-                          onClick={() => {
-                            // Mocking direct download trigger
-                            alert(`Mocking Download: ${file.name}`);
+                          onClick={async () => {
+                            try {
+                              await shellOpen(file.name);
+                            } catch(e) {
+                              console.error('Failed to open file', e);
+                            }
                           }}
                           className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white" 
-                          title="Download document"
+                          title="Open document"
                         >
-                          <Download className="w-3.5 h-3.5" />
+                          <ExternalLink className="w-3.5 h-3.5" />
                         </button>
                         <button 
                           onClick={() => onDeleteFile(file.id)}
