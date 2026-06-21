@@ -297,4 +297,5 @@ export const INITIAL_DAILY_ACTIVITY: DailyActivity[] = generateWeeklyActivity();
 export const DEFAULT_SETTINGS: SettingsState = {
   oledBlackMode: true,
   soundAlerts: true,
+  backupFrequency: 'Never',
 };

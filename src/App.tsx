@@ -45,11 +45,14 @@ import {
   getProjects, saveProject, deleteProject,
   getTasks, saveTask, deleteTask, deleteTasksByProject,
   getFiles, saveFile, deleteFile, deleteFilesByProject,
-  getActivity, saveActivity, getActivityLog, saveActivityLogEntry
+  getActivity, saveActivity, getActivityLog, saveActivityLogEntry,
+  exportWorkspaceData, importWorkspaceData
 } from './services/database';
 import { listen } from '@tauri-apps/api/event';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
+import { save as dialogSave, open as dialogOpen } from '@tauri-apps/plugin-dialog';
+import { writeTextFile, readTextFile } from '@tauri-apps/plugin-fs';
 import { motion, AnimatePresence } from 'motion/react';
 
 // Local storage key constants
@@ -144,7 +147,7 @@ export default function App() {
   }, []);
 
   // --- Settings from Context ---
-  const { settings, toggleSetting } = useSettings();
+  const { settings, toggleSetting, updateSetting } = useSettings();
 
   // --- UI Navigation/Layout States ---
   const [currentView, setCurrentView] = useState<string>('dashboard');
@@ -160,6 +163,9 @@ export default function App() {
 
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
+
+  const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
+  const [importPendingJson, setImportPendingJson] = useState<string | null>(null);
 
   // System Tray Listeners
   useEffect(() => {
@@ -438,6 +444,51 @@ export default function App() {
   const handleDeleteFile = (id: string) => {
     setFiles(prev => prev.filter(f => f.id !== id));
     deleteFile(id);
+  };
+
+  const handleExportData = async () => {
+    try {
+      const json = await exportWorkspaceData();
+      const path = await dialogSave({
+        title: 'Export Workspace Data',
+        defaultPath: 'taxon-workspace.json',
+        filters: [{ name: 'JSON', extensions: ['json'] }]
+      });
+      if (path) {
+        await writeTextFile(path, json);
+      }
+    } catch (err) {
+      console.error('Export failed:', err);
+    }
+  };
+
+  const handleImportDataTrigger = async () => {
+    try {
+      const selected = await dialogOpen({
+        title: 'Import Workspace Data',
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+        multiple: false
+      });
+      if (selected && typeof selected === 'string') {
+        const json = await readTextFile(selected);
+        setImportPendingJson(json);
+        setIsImportConfirmOpen(true);
+      }
+    } catch (err) {
+      console.error('Import failed:', err);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!importPendingJson) return;
+    try {
+      await importWorkspaceData(importPendingJson);
+      setIsImportConfirmOpen(false);
+      setImportPendingJson(null);
+      window.location.reload();
+    } catch (err) {
+      console.error('Import confirmation failed:', err);
+    }
   };
 
   // Switch task status values dynamically (Board view drag / shift)
@@ -917,15 +968,42 @@ export default function App() {
                       </button>
                     </div>
 
-                    {/* Cloud Sync (Disabled) */}
+                    {/* Backup Frequency */}
                     <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
                       <div>
-                        <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Cloud Auto Synchronization</h4>
-                        <p className="text-[10px] text-[#8E9192] mt-0.5">Persist workspace and details in live sync.</p>
+                        <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Local Background Backups</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Automated safety net directly to OS AppData.</p>
                       </div>
-                      <div className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-[#8E9192]/80 bg-black px-2 py-1 rounded border border-[#27272A]">
-                        <Lock className="w-3 h-3" />
-                        <span>Standby</span>
+                      <select
+                        className="bg-black border border-[#27272A] text-[10px] uppercase font-bold text-[#C4C7C8] rounded px-3 py-1.5 focus:outline-none focus:border-white cursor-pointer tracking-wider font-mono"
+                        value={settings.backupFrequency}
+                        onChange={(e) => updateSetting('backupFrequency', e.target.value as any)}
+                      >
+                        <option value="Daily">Daily</option>
+                        <option value="Weekly">Weekly</option>
+                        <option value="Never">Never</option>
+                      </select>
+                    </div>
+
+                    {/* Data Export / Import */}
+                    <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A]/80 rounded-lg">
+                      <div>
+                        <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Workspace Data</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Securely backup or restore local databases.</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={handleExportData}
+                          className="bg-black border border-[#27272A] hover:bg-[#1C1B1B] hover:text-white transition-colors text-[10px] uppercase font-bold text-[#8E9192] rounded px-3 py-1.5 cursor-pointer tracking-wider font-mono"
+                        >
+                          Export
+                        </button>
+                        <button
+                          onClick={handleImportDataTrigger}
+                          className="bg-black border border-[#27272A] hover:bg-[#1C1B1B] hover:text-white transition-colors text-[10px] uppercase font-bold text-[#8E9192] rounded px-3 py-1.5 cursor-pointer tracking-wider font-mono"
+                        >
+                          Import
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -1118,6 +1196,50 @@ export default function App() {
                 </button>
               </div>
             </form>
+          </motion.div>
+        </div>
+      )}
+      </AnimatePresence>
+
+      {/* Overlaid Modal Dialog: Import Confirmation */}
+      <AnimatePresence>
+      {isImportConfirmOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-sm p-6 relative text-center"
+          >
+            <div className="w-12 h-12 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
+              <Trash2 className="w-6 h-6 text-red-500" />
+            </div>
+
+            <h3 className="text-md font-bold text-white uppercase tracking-widest font-mono mb-2">
+              Overwrite Workspace?
+            </h3>
+            
+            <p className="text-xs text-[#8E9192] mb-6">
+              Importing data will <strong>permanently erase</strong> your current projects, tasks, and activity logs. This action cannot be undone.
+            </p>
+
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => {
+                  setIsImportConfirmOpen(false);
+                  setImportPendingJson(null);
+                }}
+                className="text-xs font-semibold text-[#8E9192] hover:text-white px-3 py-2 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmImport}
+                className="bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg hover:bg-red-600 transition-colors"
+              >
+                Confirm Import
+              </button>
+            </div>
           </motion.div>
         </div>
       )}

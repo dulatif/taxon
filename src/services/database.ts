@@ -113,3 +113,51 @@ export const saveActivityLogEntry = async (entry: ActivityLogEntry) => {
     [entry.id, entry.taskId, entry.taskTitle, entry.completedAt]
   );
 };
+
+// --- TAXON-405 & 407: Data Export / Import ---
+export const exportWorkspaceData = async (): Promise<string> => {
+  const projects = await getProjects();
+  const tasks = await getTasks();
+  const files = await getFiles();
+  const activity = await getActivity();
+  const activityLog = await getActivityLog();
+  
+  const data = {
+    projects,
+    tasks,
+    files,
+    activity,
+    activityLog
+  };
+  
+  return JSON.stringify(data, null, 2);
+};
+
+export const importWorkspaceData = async (jsonString: string) => {
+  const data = JSON.parse(jsonString);
+  const d = await initDb();
+  
+  // Clear existing tables
+  await d.execute('DELETE FROM projects');
+  await d.execute('DELETE FROM tasks');
+  await d.execute('DELETE FROM files');
+  await d.execute('DELETE FROM activity');
+  await d.execute('DELETE FROM activityLog');
+
+  // Re-insert data
+  if (data.projects) {
+    for (const p of data.projects) await saveProject(p);
+  }
+  if (data.tasks) {
+    for (const t of data.tasks) await saveTask(t);
+  }
+  if (data.files) {
+    for (const f of data.files) await saveFile(f);
+  }
+  if (data.activity) {
+    for (const a of data.activity) await saveActivity(a);
+  }
+  if (data.activityLog) {
+    for (const al of data.activityLog) await saveActivityLogEntry(al);
+  }
+};

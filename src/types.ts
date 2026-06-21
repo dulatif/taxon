@@ -44,4 +44,5 @@ export interface ActivityLogEntry {
 export interface SettingsState {
   oledBlackMode: boolean;
   soundAlerts: boolean;
+  backupFrequency: 'Daily' | 'Weekly' | 'Never';
 }

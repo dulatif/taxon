@@ -36,6 +36,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     }
   }, [settings.oledBlackMode]);
 
+  // Sync backup frequency with Rust backend
+  useEffect(() => {
+    import('@tauri-apps/api/core').then(({ invoke }) => {
+      invoke('set_backup_frequency', { frequency: settings.backupFrequency }).catch(console.error);
+    }).catch(console.error);
+  }, [settings.backupFrequency]);
+
   const updateSetting = useCallback(<K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
     setSettings(prev => ({ ...prev, [key]: value }));
   }, []);

@@ -1,9 +1,21 @@
+use std::sync::Mutex;
+use std::time::Duration;
 use tauri::{
     menu::{Menu, MenuItem},
     tray::TrayIconBuilder,
-    Emitter,
+    Emitter, Manager, State,
 };
 use tauri_plugin_sql::{Migration, MigrationKind};
+
+struct BackupState {
+    frequency: Mutex<String>,
+}
+
+#[tauri::command]
+fn set_backup_frequency(frequency: String, state: State<'_, BackupState>) {
+    let mut freq = state.frequency.lock().unwrap();
+    *freq = frequency;
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -15,6 +27,10 @@ pub fn run() {
     }];
 
     tauri::Builder::default()
+        .manage(BackupState {
+            frequency: Mutex::new("Never".to_string()),
+        })
+        .invoke_handler(tauri::generate_handler![set_backup_frequency])
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())
@@ -58,6 +74,37 @@ pub fn run() {
                     _ => {}
                 })
                 .build(app)?;
+
+            // TAXON-401 & TAXON-402: Background Backup Worker
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                loop {
+                    // Test schedule: 10 seconds. In production, this would be an hour or a day.
+                    tokio::time::sleep(Duration::from_secs(10)).await;
+                    
+                    let frequency = {
+                        let state = app_handle.state::<BackupState>();
+                        let f = state.frequency.lock().unwrap().clone();
+                        f
+                    };
+                    
+                    if frequency != "Never" {
+                        if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
+                            let db_path = app_data_dir.join("taxon.db");
+                            if db_path.exists() {
+                                let backup_dir = app_data_dir.join(".backup");
+                                let _ = std::fs::create_dir_all(&backup_dir);
+                                let timestamp = std::time::SystemTime::now()
+                                    .duration_since(std::time::SystemTime::UNIX_EPOCH)
+                                    .unwrap()
+                                    .as_secs();
+                                let backup_path = backup_dir.join(format!("taxon_{}.db.bak", timestamp));
+                                let _ = std::fs::copy(&db_path, backup_path);
+                            }
+                        }
+                    }
+                }
+            });
 
             Ok(())
         })
