@@ -932,14 +932,33 @@ export default function App() {
                   </div>
 
                   <div className="space-y-4">
-                    {/* OLED Black Mode Toggle */}
+                    {/* Theme Toggle */}
                     <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A] rounded-lg">
+                      <div>
+                        <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">Light Theme</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Switch to a bright, high-contrast interface.</p>
+                      </div>
+                      <button
+                        onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+                        className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${settings.theme === 'light' ? 'bg-white' : 'bg-[#27272A]'
+                          }`}
+                      >
+                        <div className={`w-4 h-4 rounded-full transition-all duration-200 ${settings.theme === 'light'
+                            ? 'bg-black ml-auto'
+                            : 'bg-[#8E9192] ml-0'
+                          }`}></div>
+                      </button>
+                    </div>
+
+                    {/* OLED Black Mode Toggle */}
+                    <div className={`flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A] rounded-lg transition-opacity ${settings.theme === 'light' ? 'opacity-50 pointer-events-none' : ''}`}>
                       <div>
                         <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">OLED Black Mode</h4>
                         <p className="text-[10px] text-[#8E9192] mt-0.5">Force completely black pixel rendering.</p>
                       </div>
                       <button
                         onClick={() => toggleSetting('oledBlackMode')}
+                        disabled={settings.theme === 'light'}
                         className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${settings.oledBlackMode ? 'bg-white' : 'bg-[#27272A]'
                           }`}
                       >

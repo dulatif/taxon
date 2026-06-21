@@ -295,6 +295,7 @@ function generateWeeklyActivity(): DailyActivity[] {
 export const INITIAL_DAILY_ACTIVITY: DailyActivity[] = generateWeeklyActivity();
 
 export const DEFAULT_SETTINGS: SettingsState = {
+  theme: 'dark',
   oledBlackMode: true,
   soundAlerts: true,
   backupFrequency: 'Never',

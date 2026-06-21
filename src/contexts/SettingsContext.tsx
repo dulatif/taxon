@@ -29,12 +29,21 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // TAXON-120: Apply/remove OLED Black Mode CSS class on <body>
   useEffect(() => {
-    if (settings.oledBlackMode) {
+    if (settings.oledBlackMode && settings.theme === 'dark') {
       document.body.classList.add('oled-black');
     } else {
       document.body.classList.remove('oled-black');
     }
-  }, [settings.oledBlackMode]);
+  }, [settings.oledBlackMode, settings.theme]);
+
+  // Handle Light Theme CSS class
+  useEffect(() => {
+    if (settings.theme === 'light') {
+      document.body.classList.add('light-theme');
+    } else {
+      document.body.classList.remove('light-theme');
+    }
+  }, [settings.theme]);
 
   // Sync backup frequency with Rust backend
   useEffect(() => {

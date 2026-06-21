@@ -25,6 +25,98 @@ body:not(.oled-black) {
 }
 
 /* ===================================
+   TAXON LIGHT THEME OVERRIDES
+   Overrides the hardcoded dark tailwind classes to create a beautiful light theme
+   =================================== */
+body.light-theme {
+  background-color: #F4F4F5 !important; /* Zinc 100 base */
+  color: #18181B !important; /* Zinc 900 text */
+}
+
+/* Background mappings */
+body.light-theme .bg-black { background-color: #F4F4F5 !important; }
+body.light-theme .bg-black\/40 { background-color: rgba(244, 244, 245, 0.4) !important; }
+body.light-theme .bg-\[\#000000\] { background-color: #F4F4F5 !important; }
+body.light-theme .bg-\[\#0E0E0E\] { background-color: #FAFAFA !important; }
+body.light-theme .bg-\[\#0A0A0A\] { background-color: #FFFFFF !important; }
+body.light-theme .bg-\[\#0A0A0A\]\/20 { background-color: rgba(255, 255, 255, 0.2) !important; }
+body.light-theme .bg-\[\#0A0A0A\]\/40 { background-color: rgba(255, 255, 255, 0.4) !important; }
+body.light-theme .bg-\[\#0A0A0A\]\/80 { background-color: rgba(255, 255, 255, 0.8) !important; }
+body.light-theme .bg-\[\#121212\] { background-color: #FAFAFA !important; }
+body.light-theme .bg-\[\#121212\]\/50 { background-color: rgba(250, 250, 250, 0.5) !important; }
+body.light-theme .bg-\[\#141313\] { background-color: #FAFAFA !important; }
+body.light-theme .bg-\[\#141313\]\/30 { background-color: rgba(250, 250, 250, 0.3) !important; }
+body.light-theme .bg-\[\#141313\]\/40 { background-color: rgba(250, 250, 250, 0.4) !important; }
+body.light-theme .bg-\[\#141313\]\/50 { background-color: rgba(250, 250, 250, 0.5) !important; }
+body.light-theme .bg-\[\#141313\]\/70 { background-color: rgba(250, 250, 250, 0.7) !important; }
+body.light-theme .bg-\[\#1C1B1B\] { background-color: #F0F0F0 !important; }
+body.light-theme .bg-\[\#201F1F\] { background-color: #E4E4E7 !important; }
+body.light-theme .bg-\[\#050505\]\/40 { background-color: rgba(244, 244, 245, 0.4) !important; }
+body.light-theme .bg-white\/40 { background-color: rgba(24, 24, 27, 0.4) !important; }
+body.light-theme .bg-white\/50 { background-color: rgba(24, 24, 27, 0.5) !important; }
+body.light-theme .bg-white\/60 { background-color: rgba(24, 24, 27, 0.6) !important; }
+body.light-theme .bg-zinc-800 { background-color: #E4E4E7 !important; color: #18181B !important; }
+body.light-theme .hover\:bg-zinc-700:hover { background-color: #D4D4D8 !important; }
+
+/* Text mappings */
+body.light-theme .text-white { color: #18181B !important; }
+body.light-theme .text-\[\#C4C7C8\] { color: #3F3F46 !important; }
+body.light-theme .text-\[\#c4c7c8\]\/50 { color: rgba(63, 63, 70, 0.5) !important; }
+body.light-theme .text-\[\#c4c7c8\]\/60 { color: rgba(63, 63, 70, 0.6) !important; }
+body.light-theme .text-\[\#c4c7c8\]\/70 { color: rgba(63, 63, 70, 0.7) !important; }
+body.light-theme .text-\[\#c4c7c8\]\/90 { color: rgba(63, 63, 70, 0.9) !important; }
+body.light-theme .text-\[\#C4C7C8\]\/70 { color: rgba(63, 63, 70, 0.7) !important; }
+body.light-theme .text-\[\#C4C7C8\]\/90 { color: rgba(63, 63, 70, 0.9) !important; }
+body.light-theme .text-\[\#8E9192\] { color: #71717A !important; }
+body.light-theme .text-\[\#8E9192\]\/50 { color: rgba(113, 113, 122, 0.5) !important; }
+body.light-theme .text-\[\#8E9192\]\/60 { color: rgba(113, 113, 122, 0.6) !important; }
+body.light-theme .text-\[\#8E9192\]\/80 { color: rgba(113, 113, 122, 0.8) !important; }
+body.light-theme .text-\[\#A1A1AA\] { color: #71717A !important; }
+body.light-theme .text-\[\#27272A\] { color: #D4D4D8 !important; }
+body.light-theme .placeholder-\[\#8E9192\]\/60::placeholder { color: #A1A1AA !important; }
+
+/* Border mappings */
+body.light-theme .border-\[\#27272A\] { border-color: #E4E4E7 !important; }
+body.light-theme .border-\[\#27272A\]\/30 { border-color: #E4E4E74D !important; }
+body.light-theme .border-\[\#27272A\]\/40 { border-color: #E4E4E766 !important; }
+body.light-theme .border-\[\#27272A\]\/50 { border-color: #E4E4E780 !important; }
+body.light-theme .border-\[\#27272A\]\/80 { border-color: #E4E4E7CC !important; }
+body.light-theme .border-white\/20 { border-color: rgba(24, 24, 27, 0.2) !important; }
+body.light-theme .border-white\/30 { border-color: rgba(24, 24, 27, 0.3) !important; }
+
+/* Divide mappings */
+body.light-theme .divide-\[\#27272A\]\/40 > * { border-color: #E4E4E766 !important; }
+body.light-theme .divide-\[\#27272A\]\/50 > * { border-color: #E4E4E780 !important; }
+
+/* Ring mappings */
+body.light-theme .ring-white\/10 { --tw-ring-color: rgba(24, 24, 27, 0.1) !important; }
+body.light-theme .ring-white\/20 { --tw-ring-color: rgba(24, 24, 27, 0.2) !important; }
+
+/* Gradients */
+body.light-theme .from-\[\#0A0A0A\] { --tw-gradient-from: #FFFFFF var(--tw-gradient-from-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to, rgba(255, 255, 255, 0)) !important; }
+body.light-theme .via-\[\#000000\] { --tw-gradient-stops: var(--tw-gradient-from), #F4F4F5 var(--tw-gradient-via-position), var(--tw-gradient-to, rgba(244, 244, 245, 0)) !important; }
+body.light-theme .to-\[\#000000\] { --tw-gradient-to: #F4F4F5 var(--tw-gradient-to-position) !important; }
+
+/* Interactive & Focus States */
+body.light-theme *:focus { border-color: #18181B !important; }
+body.light-theme .hover\:bg-\[\#141313\]:hover { background-color: #E4E4E7 !important; }
+body.light-theme .hover\:bg-\[\#141313\]\/40:hover { background-color: rgba(250, 250, 250, 0.4) !important; }
+body.light-theme .hover\:bg-\[\#141313\]\/50:hover { background-color: rgba(250, 250, 250, 0.5) !important; }
+body.light-theme .hover\:bg-\[\#141313\]\/70:hover { background-color: rgba(250, 250, 250, 0.7) !important; }
+body.light-theme .hover\:bg-\[\#0A0A0A\]\/20:hover { background-color: rgba(255, 255, 255, 0.2) !important; }
+body.light-theme .hover\:bg-white\/50:hover { background-color: rgba(24, 24, 27, 0.5) !important; }
+body.light-theme .hover\:border-white\/20:hover { border-color: rgba(24, 24, 27, 0.2) !important; }
+body.light-theme .hover\:border-white\/30:hover { border-color: rgba(24, 24, 27, 0.3) !important; }
+body.light-theme .focus-within\:border-white\/30:focus-within { border-color: rgba(24, 24, 27, 0.3) !important; }
+body.light-theme .focus-within\:border-white\/40:focus-within { border-color: rgba(24, 24, 27, 0.4) !important; }
+
+/* Group Hover Utilities */
+body.light-theme .group:hover .group-hover\:bg-white\/50 { background-color: rgba(24, 24, 27, 0.5) !important; }
+body.light-theme .group:hover .group-hover\:border-white { border-color: #18181B !important; }
+body.light-theme .group:hover .group-hover\:text-white { color: #18181B !important; }
+body.light-theme .group:hover .group-hover\:text-\[\#8E9192\] { color: #71717A !important; }
+
+/* ===================================
    react-day-picker Calendar Styles
    Matching the Taxon OLED dark theme
    =================================== */
@@ -175,6 +267,17 @@ body:not(.oled-black) {
 .taxon-has-tasks.taxon-day-selected .taxon-day::after {
   background: #000;
 }
+
+/* Light Theme Calendar Overrides */
+body.light-theme .taxon-calendar { color: #18181B; }
+body.light-theme .taxon-nav-button { background: #FFFFFF; border-color: #E4E4E7; color: #71717A; }
+body.light-theme .taxon-nav-button:hover { background: #F4F4F5; border-color: #D4D4D8; color: #18181B; }
+body.light-theme .taxon-day { color: #3F3F46; }
+body.light-theme .taxon-day:hover { background: #F4F4F5; border-color: #E4E4E7; color: #18181B; }
+body.light-theme .taxon-day-selected .taxon-day { background: #18181B !important; color: #FFFFFF !important; border-color: #18181B !important; font-weight: 800; }
+body.light-theme .taxon-day-today .taxon-day { border-color: #18181B; color: #18181B; }
+body.light-theme .taxon-day-outside .taxon-day { color: #A1A1AA; }
+body.light-theme .taxon-has-tasks.taxon-day-selected .taxon-day::after { background: #FFFFFF; }
 
 /* Scrollbar styling */
 .scrollbar-thin::-webkit-scrollbar {

@@ -1,15 +1,15 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Folder, 
-  CheckSquare, 
-  CheckCircle, 
-  Calendar, 
-  BarChart3, 
-  Circle, 
-  Plus, 
-  Settings, 
-  HelpCircle 
+import {
+  LayoutDashboard,
+  Folder,
+  CheckSquare,
+  CheckCircle,
+  Calendar,
+  BarChart3,
+  Circle,
+  Plus,
+  Settings,
+  HelpCircle
 } from 'lucide-react';
 import { Project } from '../types';
 
@@ -43,11 +43,10 @@ export default function Sidebar({
   // Active styles helper
   const getItemClass = (id: string) => {
     const isPrimary = currentView === id && selectedProjectId === null;
-    return `w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
-      isPrimary
+    return `w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${isPrimary
         ? 'text-white font-bold bg-[#1C1B1B] border border-[#27272A]'
-        : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-    }`;
+        : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+      }`;
   };
 
   return (
@@ -93,11 +92,10 @@ export default function Sidebar({
                     onProjectSelect(project.id);
                     onViewChange('project-details');
                   }}
-                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis ${
-                    isSelected
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis ${isSelected
                       ? 'text-white font-semibold bg-[#201F1F] border border-[#27272A]'
-                      : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-                  }`}
+                      : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+                    }`}
                   title={project.name}
                 >
                   <Circle className={`w-2.5 h-2.5 shrink-0 ${isSelected ? 'fill-white text-white' : 'text-[#8E9192]'}`} />
@@ -122,11 +120,10 @@ export default function Sidebar({
         <button
           onClick={() => onViewChange('settings')}
           id="nav-settings"
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
-            currentView === 'settings'
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${currentView === 'settings'
               ? 'text-white font-bold bg-[#1C1B1B] border border-[#27272A]'
-              : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-          }`}
+              : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+            }`}
         >
           <Settings className="w-4 h-4" />
           <span>Settings</span>
@@ -134,11 +131,10 @@ export default function Sidebar({
         <button
           onClick={() => onViewChange('help')}
           id="nav-help"
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
-            currentView === 'help'
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${currentView === 'help'
               ? 'text-white font-bold bg-[#1C1B1B] border border-[#27272A]'
-              : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-          }`}
+              : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+            }`}
         >
           <HelpCircle className="w-4 h-4" />
           <span>Help &amp; Support</span>
