@@ -14,12 +14,14 @@ interface CalendarViewProps {
   tasks: Task[];
   projects: Project[];
   onToggleTask: (id: string) => void;
+  onSelectTask?: (task: Task) => void;
 }
 
 export default function CalendarView({
   tasks,
   projects,
   onToggleTask,
+  onSelectTask,
 }: CalendarViewProps) {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
@@ -139,13 +141,14 @@ export default function CalendarView({
                 {selectedDateTasks.map((task) => (
                   <div
                     key={task.id}
-                    className={`p-3.5 bg-[#141313] border border-[#27272A] rounded-lg group hover:border-white/20 transition-all ${
+                    onClick={() => onSelectTask?.(task)}
+                    className={`p-3.5 bg-[#141313] border border-[#27272A] rounded-lg group hover:border-white/20 transition-all cursor-pointer ${
                       task.completed ? 'opacity-60' : ''
                     }`}
                   >
                     <div className="flex items-start gap-3">
                       <button
-                        onClick={() => onToggleTask(task.id)}
+                        onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
                         className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 mt-0.5 hover:border-white transition-colors"
                       >
                         <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />

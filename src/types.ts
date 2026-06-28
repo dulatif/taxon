@@ -7,6 +7,12 @@ export interface Project {
   dueDays: number;
 }
 
+export interface SubTask {
+  id: string;
+  title: string;
+  completed: boolean;
+}
+
 export interface Task {
   id: string;
   projectId: string | null;
@@ -16,6 +22,11 @@ export interface Task {
   priority: 'Critical' | 'High' | 'Medium' | 'Low';
   status: 'To Do' | 'In Progress' | 'Done';
   dueDate?: string; // ISO date string for calendar mapping
+  description?: string;
+  labels?: string[];
+  reminders?: string[];
+  deadline?: string;
+  subtasks?: SubTask[];
 }
 
 export interface DocumentFile {

@@ -24,6 +24,7 @@ import ProjectDetailView from './components/ProjectDetailView';
 import FocusModeView from './components/FocusModeView';
 import KanbanView from './components/KanbanView';
 import CalendarView from './components/CalendarView';
+import TaskDetailPanel from './components/TaskDetailPanel';
 import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry } from './types';
 import {
   INITIAL_PROJECTS,
@@ -166,6 +167,9 @@ export default function App() {
 
   const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
   const [importPendingJson, setImportPendingJson] = useState<string | null>(null);
+
+  const [selectedDetailTaskId, setSelectedDetailTaskId] = useState<string | null>(null);
+  const selectedDetailTask = tasks.find(t => t.id === selectedDetailTaskId) || null;
 
   // System Tray Listeners
   useEffect(() => {
@@ -350,11 +354,22 @@ export default function App() {
   };
 
   const handleDeleteTask = (id: string) => {
+    if (selectedDetailTaskId === id) {
+      setSelectedDetailTaskId(null);
+    }
     const task = tasks.find(t => t.id === id);
     setTasks(prev => prev.filter(t => t.id !== id));
     deleteTask(id);
     if (task?.projectId) {
       setTimeout(() => recalculateProjectProgress(task.projectId!), 50);
+    }
+  };
+
+  const handleUpdateTaskDetail = (updatedTask: Task) => {
+    setTasks(prev => prev.map(t => t.id === updatedTask.id ? updatedTask : t));
+    saveTask(updatedTask);
+    if (updatedTask.projectId) {
+      setTimeout(() => recalculateProjectProgress(updatedTask.projectId!), 50);
     }
   };
 
@@ -639,6 +654,15 @@ export default function App() {
         />
       )}
 
+      {/* Task Detail Side Panel */}
+      <TaskDetailPanel
+        task={selectedDetailTask}
+        projects={projects}
+        onClose={() => setSelectedDetailTaskId(null)}
+        onUpdateTask={handleUpdateTaskDetail}
+        onDeleteTask={handleDeleteTask}
+      />
+
       {/* Main app row container */}
       <div className="flex flex-1 overflow-hidden relative">
         {/* Main Side Navigation */}
@@ -760,6 +784,7 @@ export default function App() {
                 activeFocusTask={focusTimer.activeFocusTask}
                 totalCompletedCount={completionsToday}
                 totalFocusedHours={focusedHoursToday}
+                onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}
 
@@ -772,6 +797,7 @@ export default function App() {
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
                 onMoveTaskStatus={handleMoveTaskStatus}
                 onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
+                onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}
 
@@ -792,6 +818,7 @@ export default function App() {
                   setSelectedProjectId(null);
                   setCurrentView('projects');
                 }}
+                onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}
 
@@ -828,26 +855,27 @@ export default function App() {
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, x: 50 }}
                           transition={{ delay: index * 0.05 }}
-                          className="py-3.5 flex items-center justify-between group"
+                          className="py-3.5 flex items-center justify-between group hover:bg-[#141313]/50 px-2 rounded-lg transition-colors cursor-pointer"
+                          onClick={() => setSelectedDetailTaskId(task.id)}
                         >
-                          <div className="flex items-center gap-4 min-w-0">
+                          <div className="flex items-center gap-4 min-w-0 flex-1">
                             <button
-                              onClick={() => handleToggleTask(task.id)}
+                              onClick={(e) => { e.stopPropagation(); handleToggleTask(task.id); }}
                               aria-label="Toggle Complete"
                               className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
                             >
                               <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
                             </button>
-                            <span className={`text-xs font-semibold truncate max-w-lg ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
+                            <span className={`text-xs font-semibold truncate max-w-lg hover:text-white ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
                               {task.title}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 shrink-0">
                             <span className="text-[9px] font-mono tracking-wide py-0.5 px-1.5 bg-[#141313] border border-[#27272A]/40 text-[#8E9192] rounded">
                               {task.duration || '25m'}
                             </span>
                             <button
-                              onClick={() => handleDeleteTask(task.id)}
+                              onClick={(e) => { e.stopPropagation(); handleDeleteTask(task.id); }}
                               aria-label="Delete Task"
                               className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white"
                             >
@@ -869,6 +897,7 @@ export default function App() {
                 tasks={tasks}
                 projects={projects}
                 onToggleTask={handleToggleTask}
+                onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}
 
