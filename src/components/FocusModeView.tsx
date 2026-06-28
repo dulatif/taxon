@@ -8,7 +8,9 @@ import {
   CheckSquare, 
   Square,
   Sparkles,
-  Award
+  Award,
+  Unlink,
+  Minimize2
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { Task, Project } from '../types';
@@ -23,6 +25,8 @@ interface FocusModeViewProps {
   onSkipTimer: () => void;
   onEndFocusMode: () => void;
   onSelectTaskToFocus: (task: Task) => void;
+  onUnlinkTask?: () => void;
+  onMinimizeFocusMode: () => void;
 }
 
 export default function FocusModeView({
@@ -35,6 +39,8 @@ export default function FocusModeView({
   onSkipTimer,
   onEndFocusMode,
   onSelectTaskToFocus,
+  onUnlinkTask,
+  onMinimizeFocusMode,
 }: FocusModeViewProps) {
   
   const currentProject = activeTask 
@@ -69,6 +75,16 @@ export default function FocusModeView({
       className="fixed inset-0 bg-[#000000] text-white z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none"
     >
       
+      {/* Hide / Minimize button to close full screen without stopping timer */}
+      <button
+        onClick={onMinimizeFocusMode}
+        className="absolute top-14 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141313]/80 hover:bg-[#1A1919] border border-[#27272A] hover:border-white/40 text-[#8E9192] hover:text-white transition-all cursor-pointer font-mono text-xs uppercase font-semibold"
+        title="Hide full screen focus mode (keep timer running)"
+      >
+        <Minimize2 className="w-3.5 h-3.5" />
+        <span>Hide</span>
+      </button>
+
       {/* Subtle background ambient overlay glow */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,255,255,0.02)_0%,_rgba(0,0,0,0)_60%)] pointer-events-none"></div>
 
@@ -78,18 +94,31 @@ export default function FocusModeView({
           Working On
         </span>
         <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight px-4 leading-normal truncate">
-          {activeTask ? activeTask.title : 'Standby Meditation'}
+          {activeTask ? activeTask.title : 'Standalone Focus'}
         </h2>
         
         {/* Priority tags metadata indicators */}
-        <div className="mt-4 flex items-center justify-center space-x-2 text-[#8E9192] text-xs">
+        <div className="mt-4 flex items-center justify-center space-x-2 text-[#8E9192] text-xs flex-wrap gap-y-2">
           <span className="font-mono uppercase px-2 py-0.5 rounded border border-[#27272A]/80 bg-[#121212]/50">
             {currentProject ? currentProject.name : 'Personal'}
           </span>
           <span className="text-[#27272A] font-bold">•</span>
           <span className="font-mono uppercase font-bold text-white tracking-wider">
-            {activeTask ? activeTask.priority || 'Medium' : 'MEDITATION'}
+            {activeTask ? activeTask.priority || 'Medium' : 'FREE SESSION'}
           </span>
+          {activeTask && onUnlinkTask && (
+            <>
+              <span className="text-[#27272A] font-bold">•</span>
+              <button
+                onClick={onUnlinkTask}
+                className="flex items-center gap-1 font-mono text-[10px] uppercase text-[#8E9192] hover:text-white bg-[#141313] hover:bg-[#1A1919] px-2 py-0.5 rounded border border-[#27272A] transition-colors cursor-pointer"
+                title="Unlink task to run a standalone focus session"
+              >
+                <Unlink className="w-3 h-3" />
+                <span>Unlink Task</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

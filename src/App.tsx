@@ -544,6 +544,22 @@ export default function App() {
         handleCompleteTaskDirectly(task.id);
       }
     },
+    onTickFocusTime: () => {
+      setDailyActivity(prev => {
+        const acts = prev.map(act => {
+          if (act.isToday) {
+            return {
+              ...act,
+              hours: Number((act.hours + (1 / 3600)).toFixed(4)),
+            };
+          }
+          return act;
+        });
+        const todayAct = acts.find(a => a.isToday);
+        if (todayAct) saveActivity(todayAct);
+        return acts;
+      });
+    },
     soundEnabled: settings.soundAlerts,
   });
 
@@ -551,7 +567,7 @@ export default function App() {
   const completedTasks = tasks.filter(t => t.completed);
   const analyticsData = aggregateActivityData(activityLog, tasks.length);
   const completionsToday = getCompletionsToday(activityLog);
-  const focusedHoursToday = getFocusedHoursToday(activityLog);
+  const focusedHoursToday = getFocusedHoursToday(dailyActivity);
 
   // --- Render Mappings ---
   const getHeaderTitle = () => {
@@ -651,6 +667,8 @@ export default function App() {
           onSkipTimer={focusTimer.skipTimer}
           onEndFocusMode={focusTimer.endFocusMode}
           onSelectTaskToFocus={focusTimer.selectTaskToFocus}
+          onUnlinkTask={focusTimer.unlinkTask}
+          onMinimizeFocusMode={focusTimer.minimizeFocusMode}
         />
       )}
 
@@ -679,6 +697,11 @@ export default function App() {
             setCurrentView('project-details');
           }}
           onAddProjectClick={() => setIsAddProjectOpen(true)}
+          timerSeconds={focusTimer.timerSeconds}
+          timerIsRunning={focusTimer.timerIsRunning}
+          activeFocusTaskTitle={focusTimer.activeFocusTask?.title}
+          onLaunchFocusMode={focusTimer.launchFocusMode}
+          onToggleTimer={focusTimer.toggleTimer}
         />
 
         {/* Main Application Core viewport container */}
