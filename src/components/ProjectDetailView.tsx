@@ -34,6 +34,7 @@ interface ProjectDetailViewProps {
   onAddFile: (projectId: string, name: string, size: string, type: DocumentFile['type']) => void;
   onDeleteFile: (id: string) => void;
   onBackToProjects: () => void;
+  onSelectTask?: (task: Task) => void;
 }
 
 export default function ProjectDetailView({
@@ -49,6 +50,7 @@ export default function ProjectDetailView({
   onAddFile,
   onDeleteFile,
   onBackToProjects,
+  onSelectTask,
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'default' | 'completed' | 'pending'>('default');
@@ -277,11 +279,12 @@ export default function ProjectDetailView({
                 sortedTasks.map((task) => (
                   <li 
                     key={task.id} 
-                    className="flex items-start justify-between py-3.5 hover:bg-[#141313]/40 p-2 rounded-lg transition-colors group"
+                    onClick={() => onSelectTask?.(task)}
+                    className="flex items-start justify-between py-3.5 hover:bg-[#141313]/40 p-2 rounded-lg transition-colors group cursor-pointer"
                   >
                     <div className="flex items-start gap-4 flex-1 mr-4">
                       <button 
-                        onClick={() => onToggleTask(task.id)}
+                        onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
                         className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors"
                       >
                         {task.completed ? (
@@ -292,24 +295,24 @@ export default function ProjectDetailView({
                       </button>
                       
                       <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold leading-relaxed text-white ${task.completed ? 'line-through text-[#8E9192]/80 decoration-[#27272A]' : ''}`}>
+                        <p className={`text-xs font-semibold leading-relaxed text-white group-hover:underline ${task.completed ? 'line-through text-[#8E9192]/80 decoration-[#27272A]' : ''}`}>
                           {task.title}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 shrink-0">
                       {task.duration && (
                         <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
                           {task.duration}
                         </span>
                       )}
                       <button 
-                        onClick={() => onDeleteTask(task.id)}
+                        onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
                         className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity"
                         title="Delete task item"
                       >
-                        <Trash2 className="w-3.5 h-3.5 text-white" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </li>

@@ -31,6 +31,7 @@ interface DashboardViewProps {
   // Stats
   totalCompletedCount: number;
   totalFocusedHours: number;
+  onSelectTask?: (task: Task) => void;
 }
 
 export default function DashboardView({
@@ -48,6 +49,7 @@ export default function DashboardView({
   activeFocusTask,
   totalCompletedCount,
   totalFocusedHours,
+  onSelectTask,
 }: DashboardViewProps) {
   const [quickAddText, setQuickAddText] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
@@ -132,17 +134,18 @@ export default function DashboardView({
                   return (
                     <div 
                       key={task.id} 
-                      className="py-3 px-6 flex items-center justify-between hover:bg-[#141313]/70 transition-colors group"
+                      onClick={() => onSelectTask?.(task)}
+                      className="py-3 px-6 flex items-center justify-between hover:bg-[#141313]/70 transition-colors group cursor-pointer"
                     >
                       <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
                         <button 
-                          onClick={() => onToggleTask(task.id)}
+                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
                           className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
                         >
                           <Check className="w-2.5 h-2.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
                         <div className="min-w-0">
-                          <h3 className="text-white font-medium text-sm truncate">{task.title}</h3>
+                          <h3 className="text-white font-medium text-sm truncate group-hover:underline">{task.title}</h3>
                           {proj && (
                             <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block mt-0.5 max-w-[150px] truncate">
                               {proj.name}
@@ -156,7 +159,7 @@ export default function DashboardView({
                           <Clock className="w-3 h-3" /> {task.duration || '25m'}
                         </span>
                         <button 
-                          onClick={() => onStartFocus(task)}
+                          onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
                           title="Start Focus Session"
                           className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
                         >

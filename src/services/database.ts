@@ -1,13 +1,24 @@
 import Database from '@tauri-apps/plugin-sql';
 import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry } from '../types';
 
-let db: Database | null = null;
+let dbPromise: Promise<Database> | null = null;
 
-export const initDb = async () => {
-  if (!db) {
-    db = await Database.load('sqlite:taxon.db');
+export const initDb = (): Promise<Database> => {
+  if (!dbPromise) {
+    dbPromise = (async () => {
+      const database = await Database.load('sqlite:taxon.db');
+      const cols = ['dueDate', 'description', 'labels', 'reminders', 'deadline', 'subtasks'];
+      for (const col of cols) {
+        try {
+          await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`);
+        } catch (_) {
+          // Column already exists or table freshly created
+        }
+      }
+      return database;
+    })();
   }
-  return db;
+  return dbPromise;
 };
 
 // --- Projects ---
@@ -32,19 +43,45 @@ export const deleteProject = async (id: string) => {
 // --- Tasks ---
 export const getTasks = async (): Promise<Task[]> => {
   const d = await initDb();
-  // SQLite stores boolean as 0/1. We need to parse it.
   const rawTasks = await d.select<any[]>('SELECT * FROM tasks');
+  const parseJSON = (val: any) => {
+    if (typeof val === 'string' && val.trim().startsWith('[')) {
+      try { return JSON.parse(val); } catch (_) { return undefined; }
+    }
+    return undefined;
+  };
   return rawTasks.map(t => ({
     ...t,
-    completed: !!t.completed
+    completed: !!t.completed,
+    labels: parseJSON(t.labels),
+    reminders: parseJSON(t.reminders),
+    subtasks: parseJSON(t.subtasks),
   }));
 };
 
 export const saveTask = async (t: Task) => {
   const d = await initDb();
+  const labelsStr = t.labels ? JSON.stringify(t.labels) : null;
+  const remindersStr = t.reminders ? JSON.stringify(t.reminders) : null;
+  const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
+
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status) VALUES ($1, $2, $3, $4, $5, $6, $7)',
-    [t.id, t.projectId, t.title, t.completed ? 1 : 0, t.duration, t.priority, t.status]
+    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+    [
+      t.id, 
+      t.projectId, 
+      t.title, 
+      t.completed ? 1 : 0, 
+      t.duration, 
+      t.priority, 
+      t.status, 
+      t.dueDate || null, 
+      t.description || null, 
+      labelsStr, 
+      remindersStr, 
+      t.deadline || null, 
+      subtasksStr
+    ]
   );
 };
 

@@ -17,6 +17,7 @@ interface KanbanViewProps {
   tasks: Task[];
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
   onAddTaskToProject: (taskTitle: string, projectId: string) => void;
+  onSelectTask?: (task: Task) => void;
 }
 
 export default function KanbanView({
@@ -24,6 +25,7 @@ export default function KanbanView({
   tasks,
   onMoveTaskStatus,
   onAddTaskToProject,
+  onSelectTask,
 }: KanbanViewProps) {
   // Columns state
   const [columns, setColumns] = useState<string[]>(['To Do', 'In Progress', 'Done']);
@@ -163,6 +165,7 @@ export default function KanbanView({
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
+                                onClick={() => onSelectTask?.(task)}
                                 className={`task-card bg-[#0A0A0A] border p-4 transition-all group rounded-lg relative cursor-grab select-none ${
                                   snapshot.isDragging ? 'border-white ring-2 ring-white/20 z-50' : 'border-[#27272A] hover:border-white/30'
                                 } ${colName === 'Done' && !snapshot.isDragging ? 'opacity-65' : ''}`}

@@ -9,7 +9,10 @@ import {
   Circle,
   Plus,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Pause,
+  Play,
+  Timer
 } from 'lucide-react';
 import { Project } from '../types';
 
@@ -20,6 +23,11 @@ interface SidebarProps {
   selectedProjectId: string | null;
   onProjectSelect: (id: string) => void;
   onAddProjectClick: () => void;
+  timerSeconds?: number;
+  timerIsRunning?: boolean;
+  activeFocusTaskTitle?: string;
+  onLaunchFocusMode?: () => void;
+  onToggleTimer?: () => void;
 }
 
 export default function Sidebar({
@@ -29,6 +37,11 @@ export default function Sidebar({
   selectedProjectId,
   onProjectSelect,
   onAddProjectClick,
+  timerSeconds,
+  timerIsRunning,
+  activeFocusTaskTitle,
+  onLaunchFocusMode,
+  onToggleTimer,
 }: SidebarProps) {
   // Main Navigation Items
   const navItems = [
@@ -44,8 +57,8 @@ export default function Sidebar({
   const getItemClass = (id: string) => {
     const isPrimary = currentView === id && selectedProjectId === null;
     return `w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${isPrimary
-        ? 'text-white font-bold bg-[#1C1B1B] border border-[#27272A]'
-        : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+      ? 'text-white font-bold bg-[#201F1F]'
+      : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
       }`;
   };
 
@@ -93,8 +106,8 @@ export default function Sidebar({
                     onViewChange('project-details');
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis ${isSelected
-                      ? 'text-white font-semibold bg-[#201F1F] border border-[#27272A]'
-                      : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+                    ? 'text-white font-semibold bg-[#201F1F]'
+                    : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
                     }`}
                   title={project.name}
                 >
@@ -115,14 +128,46 @@ export default function Sidebar({
         </button>
       </div>
 
+      {/* Active Focus Timer Widget */}
+      {timerIsRunning && currentView !== 'dashboard' && timerSeconds !== undefined && (
+        <div
+          onClick={onLaunchFocusMode}
+          className="mt-6 bg-[#0E0E0E] hover:bg-[#141313] border border-[#27272A]/50 hover:border-[#27272A]/80 rounded-lg p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
+          title="Click to open full screen Focus Mode"
+        >
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#8E9192] group-hover:text-white transition-colors flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+              Focus Active
+            </span>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleTimer?.();
+              }}
+              className="text-[#8E9192] hover:text-white p-1 hover:bg-[#201F1F] rounded transition-colors"
+              title="Pause/Resume Timer"
+            >
+              <Pause className="w-3.5 h-3.5 fill-current" />
+            </button>
+          </div>
+          <div className="text-xl font-bold font-mono text-white tracking-tight leading-none my-1.5">
+            {Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:{(timerSeconds % 60).toString().padStart(2, '0')}
+          </div>
+          <div className="text-xs text-[#8E9192] truncate mt-0.5">
+            {activeFocusTaskTitle || 'Standalone Focus'}
+          </div>
+        </div>
+      )}
+
       {/* Footer Nav */}
       <div className="mt-auto pt-6 space-y-1">
         <button
           onClick={() => onViewChange('settings')}
           id="nav-settings"
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${currentView === 'settings'
-              ? 'text-white font-bold bg-[#1C1B1B] border border-[#27272A]'
-              : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+            ? 'text-white font-bold bg-[#201F1F]'
+            : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
             }`}
         >
           <Settings className="w-4 h-4" />
@@ -132,8 +177,8 @@ export default function Sidebar({
           onClick={() => onViewChange('help')}
           id="nav-help"
           className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${currentView === 'help'
-              ? 'text-white font-bold bg-[#1C1B1B] border border-[#27272A]'
-              : 'text-[#C4C7C8] border border-transparent hover:text-white hover:bg-[#141313]'
+            ? 'text-white font-bold bg-[#201F1F]'
+            : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
             }`}
         >
           <HelpCircle className="w-4 h-4" />

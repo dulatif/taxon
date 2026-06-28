@@ -102,13 +102,13 @@ function calculateStreak(log: ActivityLogEntry[]): number {
  */
 export function updateDailyActivityWithCompletion(
   activity: DailyActivity[],
-  hoursIncrement: number = 0.2
+  hoursIncrement: number = 0
 ): DailyActivity[] {
   return activity.map(act => {
     if (act.isToday) {
       return {
         ...act,
-        hours: Number((act.hours + hoursIncrement).toFixed(1)),
+        hours: Number((act.hours + hoursIncrement).toFixed(3)),
         completions: act.completions + 1,
       };
     }
@@ -129,10 +129,9 @@ export function getCompletionsToday(log: ActivityLogEntry[]): number {
 }
 
 /**
- * Calculate total focused hours from the activity log (estimated).
- * Each completion is estimated at ~25 minutes (0.42 hours) of focus.
+ * Calculate total focused hours from daily activity (recorded via Pomodoro timer).
  */
-export function getFocusedHoursToday(log: ActivityLogEntry[]): number {
-  const completionsToday = getCompletionsToday(log);
-  return Number((completionsToday * 0.42).toFixed(1));
+export function getFocusedHoursToday(activity: DailyActivity[]): number {
+  const todayAct = activity.find(a => a.isToday);
+  return todayAct ? Number(todayAct.hours.toFixed(1)) : 0;
 }

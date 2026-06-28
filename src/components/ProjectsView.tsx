@@ -18,6 +18,7 @@ interface ProjectsViewProps {
   onAddProjectClick: () => void;
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
   onAddTaskToProject: (taskTitle: string, projectId: string) => void;
+  onSelectTask?: (task: Task) => void;
 }
 
 export default function ProjectsView({
@@ -28,6 +29,7 @@ export default function ProjectsView({
   onAddProjectClick,
   onMoveTaskStatus,
   onAddTaskToProject,
+  onSelectTask,
 }: ProjectsViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   
@@ -164,6 +166,7 @@ export default function ProjectsView({
             tasks={tasks}
             onMoveTaskStatus={onMoveTaskStatus}
             onAddTaskToProject={onAddTaskToProject}
+            onSelectTask={onSelectTask}
           />
         </div>
       )}

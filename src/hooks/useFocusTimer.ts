@@ -6,6 +6,7 @@ const DEFAULT_DURATION = 1500; // 25 minutes in seconds
 
 interface UseFocusTimerOptions {
   onTimerComplete: (task: Task | null) => void;
+  onTickFocusTime?: () => void;
   soundEnabled: boolean;
 }
 
@@ -19,7 +20,9 @@ interface UseFocusTimerReturn {
   skipTimer: () => void;
   startFocusSession: (task: Task) => void;
   selectTaskToFocus: (task: Task) => void;
+  unlinkTask: () => void;
   endFocusMode: () => void;
+  minimizeFocusMode: () => void;
   launchFocusMode: () => void;
 }
 
@@ -29,15 +32,18 @@ interface UseFocusTimerReturn {
  * - TAXON-110: On timer completion, fires `onTimerComplete` which auto-marks task as Done.
  * - TAXON-111: Plays an AudioContext sine wave beep on completion (respects soundEnabled).
  */
-export function useFocusTimer({ onTimerComplete, soundEnabled }: UseFocusTimerOptions): UseFocusTimerReturn {
+export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }: UseFocusTimerOptions): UseFocusTimerReturn {
   const [timerSeconds, setTimerSeconds] = useState(DEFAULT_DURATION);
   const [timerIsRunning, setTimerIsRunning] = useState(false);
   const [activeFocusTask, setActiveFocusTask] = useState<Task | null>(null);
   const [isFocusModeActive, setIsFocusModeActive] = useState(false);
 
-  // Use ref to avoid stale closure for the completion callback
+  // Use ref to avoid stale closure for callbacks
   const onTimerCompleteRef = useRef(onTimerComplete);
   onTimerCompleteRef.current = onTimerComplete;
+
+  const onTickFocusTimeRef = useRef(onTickFocusTime);
+  onTickFocusTimeRef.current = onTickFocusTime;
 
   const activeFocusTaskRef = useRef(activeFocusTask);
   activeFocusTaskRef.current = activeFocusTask;
@@ -92,6 +98,7 @@ export function useFocusTimer({ onTimerComplete, soundEnabled }: UseFocusTimerOp
 
     if (timerIsRunning) {
       interval = setInterval(() => {
+        onTickFocusTimeRef.current?.();
         setTimerSeconds((prev) => {
           if (prev <= 1) {
             // Timer elapsed
@@ -153,8 +160,16 @@ export function useFocusTimer({ onTimerComplete, soundEnabled }: UseFocusTimerOp
     setTimerIsRunning(true);
   }, []);
 
+  const unlinkTask = useCallback(() => {
+    setActiveFocusTask(null);
+  }, []);
+
   const endFocusMode = useCallback(() => {
     setTimerIsRunning(false);
+    setIsFocusModeActive(false);
+  }, []);
+
+  const minimizeFocusMode = useCallback(() => {
     setIsFocusModeActive(false);
   }, []);
 
@@ -172,7 +187,9 @@ export function useFocusTimer({ onTimerComplete, soundEnabled }: UseFocusTimerOp
     skipTimer,
     startFocusSession,
     selectTaskToFocus,
+    unlinkTask,
     endFocusMode,
+    minimizeFocusMode,
     launchFocusMode,
   };
 }
