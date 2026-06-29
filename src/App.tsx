@@ -59,6 +59,11 @@ import { motion, AnimatePresence } from 'motion/react';
 // Local storage key constants
 const STORAGE_PREFIX = 'axon_tasking_';
 
+const tryParseJSON = (str: string | null) => {
+  if (!str) return null;
+  try { return JSON.parse(str); } catch (_) { return null; }
+};
+
 export default function App() {
   // --- Persistent States ---
   const [projects, setProjects] = useState<Project[]>([]);
@@ -97,39 +102,44 @@ export default function App() {
         let dbActivity = await getActivity();
         let dbLog = await getActivityLog();
 
-        // Migration from localStorage if DB is empty
-        if (dbProjects.length === 0 && dbTasks.length === 0) {
+        // Migration from localStorage or initialization if DB tables are empty
+        if (dbProjects.length === 0 || dbTasks.length === 0 || dbFiles.length === 0 || dbActivity.length === 0) {
           const lsProjects = localStorage.getItem(`${STORAGE_PREFIX}projects`);
           const lsTasks = localStorage.getItem(`${STORAGE_PREFIX}tasks`);
           const lsFiles = localStorage.getItem(`${STORAGE_PREFIX}files`);
           const lsActivity = localStorage.getItem(`${STORAGE_PREFIX}activity`);
           const lsLog = localStorage.getItem(`${STORAGE_PREFIX}activityLog`);
 
-          if (lsProjects || lsTasks) {
-            dbProjects = lsProjects ? JSON.parse(lsProjects) : INITIAL_PROJECTS;
-            dbTasks = lsTasks ? JSON.parse(lsTasks) : INITIAL_TASKS;
-            dbFiles = lsFiles ? JSON.parse(lsFiles) : INITIAL_FILES;
-            dbActivity = lsActivity ? JSON.parse(lsActivity) : INITIAL_DAILY_ACTIVITY;
-            dbLog = lsLog ? JSON.parse(lsLog) : [];
-
-            // Save to SQLite
+          if (dbProjects.length === 0) {
+            const parsed = lsProjects ? tryParseJSON(lsProjects) : null;
+            dbProjects = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_PROJECTS;
             for (const p of dbProjects) await saveProject(p);
-            for (const t of dbTasks) await saveTask(t);
-            for (const f of dbFiles) await saveFile(f);
-            for (const a of dbActivity) await saveActivity(a);
-            for (const l of dbLog) await saveActivityLogEntry(l);
-          } else {
-            // Just use defaults if both are empty
-            dbProjects = INITIAL_PROJECTS;
-            dbTasks = INITIAL_TASKS;
-            dbFiles = INITIAL_FILES;
-            dbActivity = INITIAL_DAILY_ACTIVITY;
-            dbLog = [];
+          }
 
-            for (const p of dbProjects) await saveProject(p);
+          if (dbTasks.length === 0) {
+            const parsed = lsTasks ? tryParseJSON(lsTasks) : null;
+            dbTasks = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_TASKS;
             for (const t of dbTasks) await saveTask(t);
+          }
+
+          if (dbFiles.length === 0) {
+            const parsed = lsFiles ? tryParseJSON(lsFiles) : null;
+            dbFiles = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_FILES;
             for (const f of dbFiles) await saveFile(f);
+          }
+
+          if (dbActivity.length === 0) {
+            const parsed = lsActivity ? tryParseJSON(lsActivity) : null;
+            dbActivity = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_DAILY_ACTIVITY;
             for (const a of dbActivity) await saveActivity(a);
+          }
+
+          if (dbLog.length === 0 && lsLog) {
+            const parsed = tryParseJSON(lsLog);
+            if (parsed && Array.isArray(parsed) && parsed.length > 0) {
+              dbLog = parsed;
+              for (const l of dbLog) await saveActivityLogEntry(l);
+            }
           }
         }
 
