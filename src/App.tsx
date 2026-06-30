@@ -1092,10 +1092,10 @@ export default function App() {
                         <p className="text-[10px] text-[#8E9192] mt-0.5">Customize sprint durations, rest periods, and break intervals.</p>
                       </div>
                       <div className="grid grid-cols-2 gap-3 pt-1">
-                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                        <div className="bg-[#0A0A0A] border border-[#27272A] p-2.5 rounded-lg">
                           <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Work Duration</label>
                           <select
-                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono cursor-pointer"
                             value={settings.pomodoroWorkDuration || 25}
                             onChange={(e) => updateSetting('pomodoroWorkDuration', Number(e.target.value))}
                           >
@@ -1104,10 +1104,10 @@ export default function App() {
                             ))}
                           </select>
                         </div>
-                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                        <div className="bg-[#0A0A0A] border border-[#27272A] p-2.5 rounded-lg">
                           <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Short Break</label>
                           <select
-                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono cursor-pointer"
                             value={settings.pomodoroShortBreak || 5}
                             onChange={(e) => updateSetting('pomodoroShortBreak', Number(e.target.value))}
                           >
@@ -1116,10 +1116,10 @@ export default function App() {
                             ))}
                           </select>
                         </div>
-                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                        <div className="bg-[#0A0A0A] border border-[#27272A] p-2.5 rounded-lg">
                           <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Long Break</label>
                           <select
-                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono cursor-pointer"
                             value={settings.pomodoroLongBreak || 15}
                             onChange={(e) => updateSetting('pomodoroLongBreak', Number(e.target.value))}
                           >
@@ -1128,10 +1128,10 @@ export default function App() {
                             ))}
                           </select>
                         </div>
-                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                        <div className="bg-[#0A0A0A] border border-[#27272A] p-2.5 rounded-lg">
                           <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Long Break Interval</label>
                           <select
-                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono cursor-pointer"
                             value={settings.pomodoroLongBreakInterval || 4}
                             onChange={(e) => updateSetting('pomodoroLongBreakInterval', Number(e.target.value))}
                           >
