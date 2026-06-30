@@ -559,11 +559,13 @@ export default function App() {
 
   // --- TAXON-109/110/111: Focus Timer Hook ---
   const focusTimer = useFocusTimer({
-    onTimerComplete: (task) => {
-      if (task) {
-        handleCompleteTaskDirectly(task.id);
-      }
+    onTimerComplete: () => {
+      // Per user preference: never auto-complete tasks on pomodoro session finish
     },
+    workDuration: settings.pomodoroWorkDuration,
+    shortBreak: settings.pomodoroShortBreak,
+    longBreak: settings.pomodoroLongBreak,
+    longBreakInterval: settings.pomodoroLongBreakInterval,
     onTickFocusTime: (task) => {
       if (task) {
         focusTickCounterRef.current += 1;
@@ -699,6 +701,14 @@ export default function App() {
           tasks={tasks}
           timerSeconds={focusTimer.timerSeconds}
           timerIsRunning={focusTimer.timerIsRunning}
+          phase={focusTimer.phase}
+          totalDuration={
+            focusTimer.phase === 'work'
+              ? (settings.pomodoroWorkDuration || 25) * 60
+              : focusTimer.phase === 'shortBreak'
+              ? (settings.pomodoroShortBreak || 5) * 60
+              : (settings.pomodoroLongBreak || 15) * 60
+          }
           onToggleTimer={focusTimer.toggleTimer}
           onSkipTimer={focusTimer.skipTimer}
           onEndFocusMode={focusTimer.endFocusMode}
@@ -1073,6 +1083,64 @@ export default function App() {
                             : 'bg-[#8E9192] ml-0'
                           }`}></div>
                       </button>
+                    </div>
+
+                    {/* Pomodoro Timer Configuration */}
+                    <div className="p-4 bg-[#141313] border border-[#27272A]/80 rounded-lg space-y-3">
+                      <div>
+                        <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">Pomodoro Timer Settings</h4>
+                        <p className="text-[10px] text-[#8E9192] mt-0.5">Customize sprint durations, rest periods, and break intervals.</p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 pt-1">
+                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                          <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Work Duration</label>
+                          <select
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            value={settings.pomodoroWorkDuration || 25}
+                            onChange={(e) => updateSetting('pomodoroWorkDuration', Number(e.target.value))}
+                          >
+                            {[15, 20, 25, 30, 45, 60].map((mins) => (
+                              <option key={mins} value={mins}>{mins} mins</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                          <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Short Break</label>
+                          <select
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            value={settings.pomodoroShortBreak || 5}
+                            onChange={(e) => updateSetting('pomodoroShortBreak', Number(e.target.value))}
+                          >
+                            {[3, 5, 10, 15].map((mins) => (
+                              <option key={mins} value={mins}>{mins} mins</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                          <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Long Break</label>
+                          <select
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            value={settings.pomodoroLongBreak || 15}
+                            onChange={(e) => updateSetting('pomodoroLongBreak', Number(e.target.value))}
+                          >
+                            {[10, 15, 20, 30].map((mins) => (
+                              <option key={mins} value={mins}>{mins} mins</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="bg-black/50 border border-[#27272A] p-2.5 rounded-lg">
+                          <label className="text-[10px] text-[#8E9192] uppercase font-mono block mb-1">Long Break Interval</label>
+                          <select
+                            className="w-full bg-black border border-[#27272A] text-xs font-bold text-white rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                            value={settings.pomodoroLongBreakInterval || 4}
+                            onChange={(e) => updateSetting('pomodoroLongBreakInterval', Number(e.target.value))}
+                          >
+                            {[2, 3, 4, 5, 6].map((cnt) => (
+                              <option key={cnt} value={cnt}>{cnt} sessions</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Backup Frequency */}

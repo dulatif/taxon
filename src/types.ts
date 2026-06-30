@@ -59,4 +59,8 @@ export interface SettingsState {
   oledBlackMode: boolean;
   soundAlerts: boolean;
   backupFrequency: 'Daily' | 'Weekly' | 'Never';
+  pomodoroWorkDuration: number; // in minutes
+  pomodoroShortBreak: number; // in minutes
+  pomodoroLongBreak: number; // in minutes
+  pomodoroLongBreakInterval: number; // sessions before long break
 }

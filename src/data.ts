@@ -299,4 +299,8 @@ export const DEFAULT_SETTINGS: SettingsState = {
   oledBlackMode: true,
   soundAlerts: true,
   backupFrequency: 'Never',
+  pomodoroWorkDuration: 25,
+  pomodoroShortBreak: 5,
+  pomodoroLongBreak: 15,
+  pomodoroLongBreakInterval: 4,
 };

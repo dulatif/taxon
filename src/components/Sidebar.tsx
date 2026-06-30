@@ -65,13 +65,13 @@ export default function Sidebar({
   return (
     <aside className="h-full w-64 flex flex-col py-6 px-4 bg-black border-r border-[#27272A] shrink-0 overflow-y-auto scrollbar-thin">
       {/* Brand Header */}
-      <div className="mb-10 px-2 cursor-pointer" onClick={() => onViewChange('dashboard')}>
+      <div className="mb-8 px-2 cursor-pointer shrink-0" onClick={() => onViewChange('dashboard')}>
         <h1 className="text-xl font-black text-white tracking-tighter">Taxon</h1>
         <p className="text-xs tracking-tight text-[#c4c7c8]/60 font-medium">Precision Tasking</p>
       </div>
 
       {/* Main Nav */}
-      <nav className="space-y-1 pb-6 border-b border-[#27272A]/50">
+      <nav className="space-y-1 pb-4 border-b border-[#27272A]/50 shrink-0">
         {navItems.map((item) => (
           <button
             key={item.id}
@@ -88,11 +88,11 @@ export default function Sidebar({
       </nav>
 
       {/* Projects List Sub-Section */}
-      <div className="pt-6 border-b border-[#27272A]/50 pb-6">
+      <div className="pt-4 border-b border-[#27272A]/50 pb-4 shrink-0">
         <h3 className="px-3 mb-2 text-[10px] font-bold text-[#c4c7c8]/50 uppercase tracking-widest">
           projects
         </h3>
-        <div className="space-y-1 max-h-[220px] overflow-y-auto pr-1">
+        <div className="space-y-1 max-h-[130px] overflow-y-auto pr-1 scrollbar-thin">
           {projects
             .filter((p) => p.category !== 'Completed')
             .map((project) => {
@@ -129,7 +129,7 @@ export default function Sidebar({
       {timerIsRunning && currentView !== 'dashboard' && timerSeconds !== undefined && (
         <div
           onClick={onLaunchFocusMode}
-          className="mt-6 bg-[#0E0E0E] hover:bg-[#141313] border border-[#27272A]/50 hover:border-[#27272A]/80 rounded-lg p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
+          className="mt-4 bg-[#0E0E0E] hover:bg-[#141313] border border-[#27272A]/50 hover:border-[#27272A]/80 rounded-lg p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in shrink-0"
           title="Click to open full screen Focus Mode"
         >
           <div className="flex items-center justify-between mb-1">
@@ -158,7 +158,7 @@ export default function Sidebar({
       )}
 
       {/* Footer Nav */}
-      <div className="mt-auto pt-6 space-y-1">
+      <div className="mt-auto pt-4 space-y-1 shrink-0">
         <button
           onClick={() => onViewChange('settings')}
           id="nav-settings"
