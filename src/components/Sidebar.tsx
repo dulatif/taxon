@@ -65,7 +65,7 @@ export default function Sidebar({
   return (
     <aside className="h-full w-64 flex flex-col py-6 px-4 bg-black border-r border-[#27272A] shrink-0 overflow-y-auto scrollbar-thin">
       {/* Brand Header */}
-      <div className="mb-10 px-2 cursor-pointer" onClick={() => { onViewChange('dashboard'); onProjectSelect(''); }}>
+      <div className="mb-10 px-2 cursor-pointer" onClick={() => onViewChange('dashboard')}>
         <h1 className="text-xl font-black text-white tracking-tighter">Taxon</h1>
         <p className="text-xs tracking-tight text-[#c4c7c8]/60 font-medium">Precision Tasking</p>
       </div>
@@ -101,10 +101,7 @@ export default function Sidebar({
                 <button
                   key={project.id}
                   id={`sidebar-project-${project.id}`}
-                  onClick={() => {
-                    onProjectSelect(project.id);
-                    onViewChange('project-details');
-                  }}
+                  onClick={() => onProjectSelect(project.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis ${isSelected
                     ? 'text-white font-semibold bg-[#201F1F]'
                     : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
