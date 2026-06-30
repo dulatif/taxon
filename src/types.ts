@@ -27,6 +27,8 @@ export interface Task {
   reminders?: string[];
   deadline?: string;
   subtasks?: SubTask[];
+  timeEffort?: number; // estimated effort in minutes
+  timeSpent?: number; // time spent in minutes
 }
 
 export interface DocumentFile {

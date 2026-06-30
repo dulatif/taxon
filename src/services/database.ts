@@ -15,6 +15,14 @@ export const initDb = (): Promise<Database> => {
           // Column already exists or table freshly created
         }
       }
+      const numCols = ['timeEffort', 'timeSpent'];
+      for (const col of numCols) {
+        try {
+          await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} INTEGER`);
+        } catch (_) {
+          // Column already exists or table freshly created
+        }
+      }
       return database;
     })();
   }
@@ -50,13 +58,33 @@ export const getTasks = async (): Promise<Task[]> => {
     }
     return undefined;
   };
-  return rawTasks.map(t => ({
-    ...t,
-    completed: !!t.completed,
-    labels: parseJSON(t.labels),
-    reminders: parseJSON(t.reminders),
-    subtasks: parseJSON(t.subtasks),
-  }));
+  const parseDurationToMinutes = (dur: string): number => {
+    if (!dur) return 0;
+    const trimmed = dur.trim().toLowerCase();
+    const matchM = trimmed.match(/^(\d+(?:\.\d+)?)m/);
+    if (matchM) return Math.round(parseFloat(matchM[1]));
+    const matchH = trimmed.match(/^(\d+(?:\.\d+)?)h/);
+    if (matchH) return Math.round(parseFloat(matchH[1]) * 60);
+    const num = parseFloat(trimmed);
+    return !isNaN(num) ? Math.round(num) : 0;
+  };
+  return rawTasks.map(t => {
+    const timeEffortNum = t.timeEffort !== null && t.timeEffort !== undefined && !isNaN(Number(t.timeEffort))
+      ? Number(t.timeEffort)
+      : (t.duration ? parseDurationToMinutes(t.duration) : 0);
+    const timeSpentNum = t.timeSpent !== null && t.timeSpent !== undefined && !isNaN(Number(t.timeSpent))
+      ? Number(t.timeSpent)
+      : 0;
+    return {
+      ...t,
+      completed: !!t.completed,
+      labels: parseJSON(t.labels),
+      reminders: parseJSON(t.reminders),
+      subtasks: parseJSON(t.subtasks),
+      timeEffort: timeEffortNum,
+      timeSpent: timeSpentNum,
+    };
+  });
 };
 
 export const saveTask = async (t: Task) => {
@@ -66,7 +94,7 @@ export const saveTask = async (t: Task) => {
   const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)',
     [
       t.id, 
       t.projectId, 
@@ -80,7 +108,9 @@ export const saveTask = async (t: Task) => {
       labelsStr, 
       remindersStr, 
       t.deadline || null, 
-      subtasksStr
+      subtasksStr,
+      t.timeEffort !== undefined ? t.timeEffort : null,
+      t.timeSpent !== undefined ? t.timeSpent : null
     ]
   );
 };

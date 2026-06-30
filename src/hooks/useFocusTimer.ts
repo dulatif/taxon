@@ -6,7 +6,7 @@ const DEFAULT_DURATION = 1500; // 25 minutes in seconds
 
 interface UseFocusTimerOptions {
   onTimerComplete: (task: Task | null) => void;
-  onTickFocusTime?: () => void;
+  onTickFocusTime?: (task: Task | null) => void;
   soundEnabled: boolean;
 }
 
@@ -98,7 +98,7 @@ export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }
 
     if (timerIsRunning) {
       interval = setInterval(() => {
-        onTickFocusTimeRef.current?.();
+        onTickFocusTimeRef.current?.(activeFocusTaskRef.current);
         setTimerSeconds((prev) => {
           if (prev <= 1) {
             // Timer elapsed
@@ -149,14 +149,14 @@ export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }
 
   const startFocusSession = useCallback((task: Task) => {
     setActiveFocusTask(task);
-    setTimerSeconds(DEFAULT_DURATION);
+    setTimerSeconds((prev) => (prev > 0 && prev < DEFAULT_DURATION ? prev : DEFAULT_DURATION));
     setTimerIsRunning(true);
     setIsFocusModeActive(true);
   }, []);
 
   const selectTaskToFocus = useCallback((task: Task) => {
     setActiveFocusTask(task);
-    setTimerSeconds(DEFAULT_DURATION);
+    setTimerSeconds((prev) => (prev > 0 && prev < DEFAULT_DURATION ? prev : DEFAULT_DURATION));
     setTimerIsRunning(true);
   }, []);
 

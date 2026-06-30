@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   Plus,
   Search,
@@ -73,6 +73,7 @@ export default function App() {
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const focusTickCounterRef = useRef(0);
 
   // Track window maximization to toggle border radius
   useEffect(() => {
@@ -563,7 +564,23 @@ export default function App() {
         handleCompleteTaskDirectly(task.id);
       }
     },
-    onTickFocusTime: () => {
+    onTickFocusTime: (task) => {
+      if (task) {
+        focusTickCounterRef.current += 1;
+        if (focusTickCounterRef.current >= 60) {
+          focusTickCounterRef.current = 0;
+          setTasks(prev => prev.map(t => {
+            if (t.id === task.id) {
+              const updated = { ...t, timeSpent: (t.timeSpent || 0) + 1 };
+              saveTask(updated);
+              return updated;
+            }
+            return t;
+          }));
+        }
+      } else {
+        focusTickCounterRef.current = 0;
+      }
       setDailyActivity(prev => {
         const acts = prev.map(act => {
           if (act.isToday) {

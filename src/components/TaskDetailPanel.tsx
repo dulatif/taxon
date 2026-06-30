@@ -13,9 +13,19 @@ import {
   Trash2,
   Check,
   Square,
-  CheckSquare
+  CheckSquare,
+  Timer
 } from 'lucide-react';
 import { Task, Project, SubTask } from '../types';
+
+const formatMinutes = (mins?: number): string => {
+  if (!mins || mins <= 0) return '0m';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+};
 
 interface TaskDetailPanelProps {
   task: Task | null;
@@ -391,7 +401,127 @@ export default function TaskDetailPanel({
                   </div>
                 </div>
 
+                {/* Time Effort Card */}
+                <div 
+                  onClick={() => setActivePropertyEdit(activePropertyEdit === 'effort' ? null : 'effort')}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                >
+                  <Timer className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Time Effort</div>
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
+                      {formatMinutes(editedTask.timeEffort)}
+                    </div>
+                  </div>
+
+                  {activePropertyEdit === 'effort' && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2"
+                    >
+                      <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold">Quick Presets</div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[15, 30, 45, 60, 120, 240].map(m => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => { handleFieldChange('timeEffort', m); setActivePropertyEdit(null); }}
+                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A]"
+                          >
+                            {formatMinutes(m)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="pt-1 border-t border-[#27272A] flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Mins..."
+                          value={editedTask.timeEffort || ''}
+                          onChange={(e) => handleFieldChange('timeEffort', parseInt(e.target.value) || 0)}
+                          className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-1 focus:outline-none focus:border-white"
+                        />
+                        <span className="text-[10px] text-[#8E9192] shrink-0 font-mono">mins</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Time Spent Card */}
+                <div 
+                  onClick={() => setActivePropertyEdit(activePropertyEdit === 'spent' ? null : 'spent')}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                >
+                  <Clock className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Time Spent</div>
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
+                      {formatMinutes(editedTask.timeSpent)}
+                    </div>
+                  </div>
+
+                  {activePropertyEdit === 'spent' && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2"
+                    >
+                      <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold">Quick Log</div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[15, 30, 60].map(addM => (
+                          <button
+                            key={addM}
+                            type="button"
+                            onClick={() => { handleFieldChange('timeSpent', (editedTask.timeSpent || 0) + addM); }}
+                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A]"
+                          >
+                            +{addM}m
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex justify-between items-center gap-1.5 pt-1 border-t border-[#27272A]">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Mins..."
+                          value={editedTask.timeSpent || ''}
+                          onChange={(e) => handleFieldChange('timeSpent', parseInt(e.target.value) || 0)}
+                          className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-1 focus:outline-none focus:border-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange('timeSpent', 0)}
+                          className="px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/30 rounded text-[10px] font-mono hover:bg-red-500/20"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
               </div>
+
+              {((editedTask.timeEffort && editedTask.timeEffort > 0) || (editedTask.timeSpent && editedTask.timeSpent > 0)) && (
+                <div className="bg-[#141313] border border-[#27272A] rounded-xl p-3.5 space-y-2 mt-3">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-[#8E9192] uppercase font-bold text-[10px]">Time Progress</span>
+                    <span className="text-white font-bold">
+                      {formatMinutes(editedTask.timeSpent)} / {formatMinutes(editedTask.timeEffort || 0)}
+                      {editedTask.timeEffort && editedTask.timeEffort > 0 ? ` (${Math.round(((editedTask.timeSpent || 0) / editedTask.timeEffort) * 100)}%)` : ''}
+                    </span>
+                  </div>
+                  <div className="w-full bg-black h-2 rounded-full overflow-hidden border border-[#27272A]">
+                    <div 
+                      className={`h-full transition-all duration-300 ${
+                        editedTask.timeEffort && (editedTask.timeSpent || 0) > editedTask.timeEffort
+                          ? 'bg-orange-500'
+                          : 'bg-green-400'
+                      }`}
+                      style={{ width: `${Math.min(100, editedTask.timeEffort ? Math.round(((editedTask.timeSpent || 0) / editedTask.timeEffort) * 100) : 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description Section */}

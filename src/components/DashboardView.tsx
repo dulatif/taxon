@@ -34,6 +34,24 @@ interface DashboardViewProps {
   onSelectTask?: (task: Task) => void;
 }
 
+const formatMinutes = (mins?: number): string => {
+  if (!mins || mins <= 0) return '0m';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+};
+
+const getTaskTimeBadge = (task: Task) => {
+  if (task.timeEffort || task.timeSpent) {
+    const spentStr = formatMinutes(task.timeSpent);
+    const effortStr = formatMinutes(task.timeEffort || 0);
+    return `${spentStr} / ${effortStr}`;
+  }
+  return task.duration || '25m';
+};
+
 export default function DashboardView({
   tasks,
   projects,
@@ -165,7 +183,7 @@ export default function DashboardView({
 
                       <div className="flex items-center gap-4 shrink-0">
                         <span className="text-[10px] text-[#8E9192] flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-[#27272A]/50">
-                          <Clock className="w-3 h-3" /> {task.duration || '25m'}
+                          <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                         </span>
                         <button 
                           onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
