@@ -14,7 +14,9 @@ import {
   Trash2,
   Square,
   CheckSquare,
-  ExternalLink
+  ExternalLink,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { Project, Task, DocumentFile } from '../types';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -64,6 +66,9 @@ export default function ProjectDetailView({
   const [isEditingProj, setIsEditingProj] = useState(false);
   const [editName, setEditName] = useState(project.name);
   const [editDesc, setEditDesc] = useState(project.description);
+
+  // Deleting Project confirmation modal
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   // Filters tasks for this project
   const projectTasks = tasks.filter(t => t.projectId === project.id);
@@ -201,11 +206,7 @@ export default function ProjectDetailView({
                 <Edit className="w-3.5 h-3.5" /> Edit
               </button>
               <button 
-                onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete "${project.name}"? All associated tasks and files will be removed.`)) {
-                    onDeleteProject(project.id);
-                  }
-                }}
+                onClick={() => setIsDeleteConfirmOpen(true)}
                 className="bg-black text-[#8E9192] border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#201F1F] hover:text-red-400 hover:border-red-400/30 transition-colors flex items-center gap-1.5"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Delete
@@ -417,6 +418,54 @@ export default function ProjectDetailView({
         </div>
 
       </div>
+
+      {/* Custom Modal Confirmation for Deleting Project */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative shadow-2xl">
+            <button
+              aria-label="Close"
+              onClick={() => setIsDeleteConfirmOpen(false)}
+              className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-md font-bold uppercase tracking-wider font-mono text-white">
+                Delete Project
+              </h3>
+            </div>
+
+            <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
+              Are you sure you want to permanently delete <strong className="text-white font-semibold">"{project.name}"</strong>? All associated tasks, files, and progress metrics will be removed immediately. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="bg-black text-[#C4C7C8] border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#141313] hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  onDeleteProject(project.id);
+                }}
+                className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-red-600/20"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
