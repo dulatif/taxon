@@ -19,7 +19,7 @@ interface DashboardViewProps {
   projects: Project[];
   dailyActivity: DailyActivity[];
   onToggleTask: (id: string) => void;
-  onAddTask: (title: string, projectId?: string) => void;
+  onAddTask: (title: string, projectId?: string, dueDate?: string) => void;
   onStartFocus: (task: Task) => void;
   // Timer attributes synced to parent
   timerSeconds: number;
@@ -54,13 +54,22 @@ export default function DashboardView({
   const [quickAddText, setQuickAddText] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
 
-  const todayTasks = tasks.filter(t => !t.completed).slice(0, 5);
+  const getTodayStr = () => {
+    const d = new Date();
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const todayStr = getTodayStr();
+  const todayTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.startsWith(todayStr));
   const remainingTodayCount = todayTasks.length;
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!quickAddText.trim()) return;
-    onAddTask(quickAddText, selectedProjectId || undefined);
+    onAddTask(quickAddText, selectedProjectId || undefined, todayStr);
     setQuickAddText('');
   };
 

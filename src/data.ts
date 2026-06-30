@@ -73,7 +73,7 @@ export const INITIAL_TASKS: Task[] = [
     duration: '45m',
     priority: 'High',
     status: 'In Progress',
-    dueDate: futureDate(1),
+    dueDate: futureDate(0),
   },
   {
     id: 'today-2',
@@ -83,7 +83,7 @@ export const INITIAL_TASKS: Task[] = [
     duration: '1h',
     priority: 'Medium',
     status: 'To Do',
-    dueDate: futureDate(3),
+    dueDate: futureDate(0),
   },
   {
     id: 'today-3',
@@ -93,7 +93,7 @@ export const INITIAL_TASKS: Task[] = [
     duration: '30m',
     priority: 'Low',
     status: 'To Do',
-    dueDate: futureDate(2),
+    dueDate: futureDate(0),
   },
 
   // Marketing Tasks (Summer Brand Campaign)

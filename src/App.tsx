@@ -345,7 +345,15 @@ export default function App() {
     });
   };
 
-  const handleAddTask = (title: string, projectId?: string) => {
+  const handleAddTask = (title: string, projectId?: string, dueDate?: string) => {
+    const getTodayStr = () => {
+      const d = new Date();
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    };
+
     const newTask: Task = {
       id: `task_${Date.now()}`,
       projectId: projectId || null,
@@ -353,7 +361,8 @@ export default function App() {
       completed: false,
       duration: '45m',
       priority: 'Medium',
-      status: 'To Do'
+      status: 'To Do',
+      dueDate: dueDate || getTodayStr()
     };
     setTasks(prev => [newTask, ...prev]);
     saveTask(newTask);
