@@ -128,6 +128,43 @@ body.light-theme .group:hover .group-hover\:text-white { color: #18181B !importa
 body.light-theme .group:hover .group-hover\:text-\[\#8E9192\] { color: #71717A !important; }
 
 /* ===================================
+   TASK LIST VIEW — Filter Toolbar & Chips
+   New classes added with sort/filter feature
+   =================================== */
+
+/* Toolbar background */
+body.light-theme .bg-\[\#0D0D0D\] { background-color: #F4F4F5 !important; }
+
+/* Task count badge & group count badge */
+body.light-theme .bg-\[\#1a1a1a\] { background-color: #E4E4E7 !important; }
+
+/* Active filter chip / active button highlight */
+body.light-theme .bg-white\/10 { background-color: rgba(24, 24, 27, 0.08) !important; }
+body.light-theme .hover\:bg-white\/10:hover { background-color: rgba(24, 24, 27, 0.08) !important; }
+
+/* Label tag background */
+body.light-theme .bg-black\/30 { background-color: rgba(24, 24, 27, 0.07) !important; }
+
+/* Filter chip / active button borders */
+body.light-theme .border-white\/20 { border-color: rgba(24, 24, 27, 0.2) !important; }
+body.light-theme .hover\:border-white\/40:hover { border-color: rgba(24, 24, 27, 0.4) !important; }
+
+/* Group header hover */
+body.light-theme .hover\:bg-\[\#141313\]\/60:hover { background-color: rgba(228, 228, 231, 0.6) !important; }
+
+/* Status indicator dots in dropdowns (To Do dot swatch) */
+body.light-theme .bg-\[\#27272A\] { background-color: #D4D4D8 !important; }
+body.light-theme .border-\[\#3f3f3f\] { border-color: #A1A1AA !important; }
+
+/* Date picker inputs inside filter popover */
+body.light-theme .focus\:border-white\/40:focus { border-color: rgba(24, 24, 27, 0.4) !important; }
+
+/* Hover text in filter toolbar (inactive → active) */
+body.light-theme .hover\:text-white:hover { color: #18181B !important; }
+
+
+
+/* ===================================
    react-day-picker Calendar Styles
    Matching the Taxon OLED dark theme
    =================================== */

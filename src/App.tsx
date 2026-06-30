@@ -441,6 +441,7 @@ export default function App() {
               <TaskListView
                 title={getHeaderTitle()}
                 tasks={getFilteredViewTasks()}
+                projects={projects}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}

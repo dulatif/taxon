@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  SkipForward, 
-  PlusCircle, 
-  ArrowRight, 
-  ListTodo, 
-  Clock, 
-  Check, 
+import {
+  Play,
+  Pause,
+  RotateCcw,
+  SkipForward,
+  PlusCircle,
+  ArrowRight,
+  ListTodo,
+  Clock,
+  Check,
   Timer,
-  CheckCircle2
+  CheckCircle2,
+  ArrowDownNarrowWide
 } from 'lucide-react';
+import { sortTasks, PRIORITY_COLORS } from '../utils/taskFilters';
 import { Task, Project, DailyActivity } from '../types';
 
 interface DashboardViewProps {
@@ -71,6 +73,7 @@ export default function DashboardView({
 }: DashboardViewProps) {
   const [quickAddText, setQuickAddText] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [sortByPriority, setSortByPriority] = useState(false);
 
   const getTodayStr = () => {
     const d = new Date();
@@ -81,7 +84,8 @@ export default function DashboardView({
   };
 
   const todayStr = getTodayStr();
-  const todayTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.startsWith(todayStr));
+  const rawTodayTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.startsWith(todayStr));
+  const todayTasks = sortByPriority ? sortTasks(rawTodayTasks, 'priority') : rawTodayTasks;
   const remainingTodayCount = todayTasks.length;
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
@@ -103,18 +107,18 @@ export default function DashboardView({
       <div className="grid grid-cols-12 gap-8 items-start">
         {/* Left Column: Tasks & Quick Add */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
-          
+
           {/* Quick task capture with brand styling */}
-          <form 
+          <form
             onSubmit={handleQuickAddSubmit}
             className="bg-[#0A0A0A] border border-[#27272A] rounded-xl flex items-center gap-3 px-4 py-2.5 transition-all focus-within:border-white/40"
           >
             <PlusCircle className="text-white w-5 h-5 shrink-0" />
-            <input 
-              type="text" 
+            <input
+              type="text"
               value={quickAddText}
               onChange={(e) => setQuickAddText(e.target.value)}
-              placeholder="I want to work on..." 
+              placeholder="I want to work on..."
               className="bg-transparent border-none text-white focus:outline-none w-full text-lg placeholder:text-[#8E9192]"
             />
             {quickAddText.trim() && (
@@ -129,7 +133,7 @@ export default function DashboardView({
                 ))}
               </select>
             )}
-            <button 
+            <button
               type="submit"
               disabled={!quickAddText.trim()}
               className="p-1.5 hover:bg-[#201F1F] rounded-full transition-colors text-[#8E9192] hover:text-white disabled:opacity-40"
@@ -145,9 +149,22 @@ export default function DashboardView({
                 <ListTodo className="text-white w-4 h-4" />
                 Today's Tasks
               </h2>
-              <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-widest leading-none bg-[#201F1F] px-2 py-1 rounded-sm border border-[#27272A]">
-                {remainingTodayCount} Remaining
-              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSortByPriority(s => !s)}
+                  title={sortByPriority ? 'Sorted by priority (click to reset)' : 'Sort by priority'}
+                  className={`p-1.5 rounded-lg border transition-all ${
+                    sortByPriority
+                      ? 'bg-white/10 border-white/20 text-white'
+                      : 'bg-transparent border-[#27272A] text-[#8E9192] hover:text-white hover:border-white/30'
+                  }`}
+                >
+                  <ArrowDownNarrowWide className="w-3.5 h-3.5" />
+                </button>
+                <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-widest leading-none bg-[#201F1F] px-2 py-1 rounded-sm border border-[#27272A]">
+                  {remainingTodayCount} Remaining
+                </span>
+              </div>
             </div>
 
             <div className="divide-y divide-[#27272A]/50">
@@ -159,8 +176,8 @@ export default function DashboardView({
                 todayTasks.map((task) => {
                   const proj = projects.find(p => p.id === task.projectId);
                   return (
-                    <div 
-                      key={task.id} 
+                    <div
+                      key={task.id}
                       onClick={() => onSelectTask?.(task)}
                       className="py-3 px-6 flex items-center justify-between hover:bg-[#141313]/70 transition-colors group cursor-pointer"
                     >
@@ -171,6 +188,11 @@ export default function DashboardView({
                         >
                           <Check className="w-2.5 h-2.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
                         </button>
+                        {/* Priority dot */}
+                        <span
+                          title={task.priority}
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority].dot}`}
+                        />
                         <div className="min-w-0">
                           <h3 className="text-white font-medium text-sm truncate group-hover:underline">{task.title}</h3>
                           {proj && (
@@ -185,7 +207,7 @@ export default function DashboardView({
                         <span className="text-[10px] text-[#8E9192] flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-[#27272A]/50">
                           <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                         </span>
-                        <button 
+                        <button
                           onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
                           title="Start Focus Session"
                           className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
@@ -199,7 +221,7 @@ export default function DashboardView({
               )}
             </div>
 
-            <button 
+            <button
               type="button"
               onClick={() => {
                 const el = document.querySelector('input[placeholder="I want to work on..."]');
@@ -214,19 +236,19 @@ export default function DashboardView({
 
         {/* Right Column: Pomodoro & Statistics */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          
+
           {/* Integrated Pomodoro Widget */}
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl flex flex-col items-center text-center relative overflow-hidden px-6 py-8">
             <div className="absolute inset-0 opacity-5 pointer-events-none">
               <div className="absolute inset-0 bg-white rounded-full scale-125 -translate-y-1/4 blur-3xl"></div>
             </div>
-            
+
             <div className="relative z-10 w-full flex flex-col items-center">
               <span className="font-mono text-xs uppercase tracking-widest text-[#8E9192]/80 flex items-center gap-1">
                 <Timer className="w-3.5 h-3.5" />
                 {activeFocusTask ? 'Active Focus Session' : 'Pomodoro Timer'}
               </span>
-              
+
               <div className="text-7xl font-sans font-black tracking-tighter text-white leading-none mt-4 mb-6 font-mono tabular-nums">
                 {formatTime(timerSeconds)}
               </div>
@@ -239,21 +261,21 @@ export default function DashboardView({
 
               {/* Timer Controls */}
               <div className="flex items-center justify-center gap-4">
-                <button 
+                <button
                   onClick={onResetTimer}
                   title="Reset Timer"
                   className="w-10 h-10 rounded-full bg-[#141313] border border-[#27272A] flex items-center justify-center text-[#8E9192] hover:text-white hover:bg-[#201F1F] transition-all"
                 >
                   <RotateCcw className="w-4 h-4" />
                 </button>
-                <button 
+                <button
                   onClick={onToggleTimer}
                   title={timerIsRunning ? 'Pause Session' : 'Start Session'}
                   className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
                 >
                   {timerIsRunning ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
                 </button>
-                <button 
+                <button
                   onClick={onSkipTimer}
                   title="Skip/Interval Session"
                   className="w-10 h-10 rounded-full bg-[#141313] border border-[#27272A] flex items-center justify-center text-[#8E9192] hover:text-white hover:bg-[#201F1F] transition-all"
@@ -290,13 +312,12 @@ export default function DashboardView({
                       {act.hours}h
                     </div>
                     <div className="w-full relative rounded-t-sm h-full flex items-end">
-                      <div 
+                      <div
                         style={{ height: `${percentage}%` }}
-                        className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-150 ${
-                          act.isToday 
-                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]' 
+                        className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-150 ${act.isToday
+                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]'
                             : 'bg-[#201F1F] group-hover:bg-white/50'
-                        }`}
+                          }`}
                       ></div>
                     </div>
                     <span className={`text-[10px] font-medium ${act.isToday ? 'text-white font-bold' : 'text-[#8E9192]/80'}`}>
