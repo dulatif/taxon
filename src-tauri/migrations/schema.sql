@@ -14,9 +14,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed BOOLEAN,
     duration TEXT,
     priority TEXT,
-    status TEXT,
-    timeEffort INTEGER,
-    timeSpent INTEGER
+    status TEXT
 );
 
 CREATE TABLE IF NOT EXISTS files (

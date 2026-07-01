@@ -53,7 +53,10 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         let dbActivity = await getActivity();
         let dbLog = await getActivityLog();
 
-        if (dbProjects.length === 0 || dbTasks.length === 0 || dbFiles.length === 0 || dbActivity.length === 0) {
+        const isInitialized = localStorage.getItem(`${STORAGE_PREFIX}initialized`) === 'true';
+        const isAllEmpty = dbProjects.length === 0 && dbTasks.length === 0 && dbFiles.length === 0 && dbActivity.length === 0;
+
+        if (isAllEmpty || !isInitialized || dbProjects.length === 0 || dbTasks.length === 0) {
           const lsProjects = localStorage.getItem(`${STORAGE_PREFIX}projects`);
           const lsTasks = localStorage.getItem(`${STORAGE_PREFIX}tasks`);
           const lsFiles = localStorage.getItem(`${STORAGE_PREFIX}files`);
@@ -63,34 +66,35 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
           if (dbProjects.length === 0) {
             const parsed = lsProjects ? tryParseJSON(lsProjects) : null;
             dbProjects = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_PROJECTS;
-            for (const p of dbProjects) await saveProject(p);
+            for (const p of dbProjects) await saveProject(p).catch(console.error);
           }
 
           if (dbTasks.length === 0) {
             const parsed = lsTasks ? tryParseJSON(lsTasks) : null;
             dbTasks = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_TASKS;
-            for (const t of dbTasks) await saveTask(t);
+            for (const t of dbTasks) await saveTask(t).catch(console.error);
           }
 
           if (dbFiles.length === 0) {
             const parsed = lsFiles ? tryParseJSON(lsFiles) : null;
             dbFiles = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_FILES;
-            for (const f of dbFiles) await saveFile(f);
+            for (const f of dbFiles) await saveFile(f).catch(console.error);
           }
 
           if (dbActivity.length === 0) {
             const parsed = lsActivity ? tryParseJSON(lsActivity) : null;
             dbActivity = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_DAILY_ACTIVITY;
-            for (const a of dbActivity) await saveActivity(a);
+            for (const a of dbActivity) await saveActivity(a).catch(console.error);
           }
 
           if (dbLog.length === 0 && lsLog) {
             const parsed = tryParseJSON(lsLog);
             if (parsed && Array.isArray(parsed) && parsed.length > 0) {
               dbLog = parsed;
-              for (const l of dbLog) await saveActivityLogEntry(l);
+              for (const l of dbLog) await saveActivityLogEntry(l).catch(console.error);
             }
           }
+          localStorage.setItem(`${STORAGE_PREFIX}initialized`, 'true');
         }
 
         setProjects(dbProjects);

@@ -7,12 +7,67 @@ export const initDb = (): Promise<Database> => {
   if (!dbPromise) {
     dbPromise = (async () => {
       const database = await Database.load('sqlite:taxon.db');
+      
+      // Defensive table creation in case migrations didn't run or dev DB is out of sync
+      await database.execute(`
+        CREATE TABLE IF NOT EXISTS projects (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            description TEXT,
+            category TEXT,
+            progress INTEGER,
+            dueDays INTEGER
+        );
+      `).catch(() => {});
+
+      await database.execute(`
+        CREATE TABLE IF NOT EXISTS tasks (
+            id TEXT PRIMARY KEY,
+            projectId TEXT,
+            title TEXT NOT NULL,
+            completed BOOLEAN,
+            duration TEXT,
+            priority TEXT,
+            status TEXT,
+            timeEffort INTEGER,
+            timeSpent INTEGER
+        );
+      `).catch(() => {});
+
+      await database.execute(`
+        CREATE TABLE IF NOT EXISTS files (
+            id TEXT PRIMARY KEY,
+            projectId TEXT,
+            name TEXT,
+            size TEXT,
+            type TEXT
+        );
+      `).catch(() => {});
+
+      await database.execute(`
+        CREATE TABLE IF NOT EXISTS activity (
+            day TEXT PRIMARY KEY,
+            hours REAL,
+            completions INTEGER,
+            isToday BOOLEAN
+        );
+      `).catch(() => {});
+
+      await database.execute(`
+        CREATE TABLE IF NOT EXISTS activityLog (
+            id TEXT PRIMARY KEY,
+            taskId TEXT,
+            taskTitle TEXT,
+            completedAt TEXT
+        );
+      `).catch(() => {});
+
       const cols = ['dueDate', 'description', 'labels', 'reminders', 'deadline', 'subtasks'];
       for (const col of cols) {
         try {
           await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`);
         } catch (_) {
-          // Column already exists or table freshly created
+          // Column already exists
         }
       }
       const numCols = ['timeEffort', 'timeSpent'];
@@ -20,7 +75,7 @@ export const initDb = (): Promise<Database> => {
         try {
           await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} INTEGER`);
         } catch (_) {
-          // Column already exists or table freshly created
+          // Column already exists
         }
       }
       return database;
@@ -39,7 +94,14 @@ export const saveProject = async (p: Project) => {
   const d = await initDb();
   await d.execute(
     'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays) VALUES ($1, $2, $3, $4, $5, $6)',
-    [p.id, p.name, p.description, p.category, p.progress, p.dueDays]
+    [
+      p.id ?? null,
+      p.name ?? null,
+      p.description ?? null,
+      p.category ?? null,
+      p.progress ?? 0,
+      p.dueDays ?? null
+    ]
   );
 };
 
@@ -96,21 +158,21 @@ export const saveTask = async (t: Task) => {
   await d.execute(
     'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)',
     [
-      t.id, 
-      t.projectId, 
-      t.title, 
+      t.id ?? null, 
+      t.projectId ?? null, 
+      t.title ?? null, 
       t.completed ? 1 : 0, 
-      t.duration, 
-      t.priority, 
-      t.status, 
-      t.dueDate || null, 
-      t.description || null, 
+      t.duration ?? null, 
+      t.priority ?? null, 
+      t.status ?? null, 
+      t.dueDate ?? null, 
+      t.description ?? null, 
       labelsStr, 
       remindersStr, 
-      t.deadline || null, 
+      t.deadline ?? null, 
       subtasksStr,
-      t.timeEffort !== undefined ? t.timeEffort : null,
-      t.timeSpent !== undefined ? t.timeSpent : null
+      t.timeEffort ?? null,
+      t.timeSpent ?? null
     ]
   );
 };
@@ -135,7 +197,13 @@ export const saveFile = async (f: DocumentFile) => {
   const d = await initDb();
   await d.execute(
     'INSERT OR REPLACE INTO files (id, projectId, name, size, type) VALUES ($1, $2, $3, $4, $5)',
-    [f.id, f.projectId, f.name, f.size, f.type]
+    [
+      f.id ?? null,
+      f.projectId ?? null,
+      f.name ?? null,
+      f.size ?? null,
+      f.type ?? null
+    ]
   );
 };
 
@@ -163,7 +231,12 @@ export const saveActivity = async (a: DailyActivity) => {
   const d = await initDb();
   await d.execute(
     'INSERT OR REPLACE INTO activity (day, hours, completions, isToday) VALUES ($1, $2, $3, $4)',
-    [a.day, a.hours, a.completions, a.isToday ? 1 : 0]
+    [
+      a.day ?? null,
+      a.hours ?? 0,
+      a.completions ?? 0,
+      a.isToday ? 1 : 0
+    ]
   );
 };
 
@@ -177,7 +250,12 @@ export const saveActivityLogEntry = async (entry: ActivityLogEntry) => {
   const d = await initDb();
   await d.execute(
     'INSERT OR REPLACE INTO activityLog (id, taskId, taskTitle, completedAt) VALUES ($1, $2, $3, $4)',
-    [entry.id, entry.taskId, entry.taskTitle, entry.completedAt]
+    [
+      entry.id ?? null,
+      entry.taskId ?? null,
+      entry.taskTitle ?? null,
+      entry.completedAt ?? null
+    ]
   );
 };
 
