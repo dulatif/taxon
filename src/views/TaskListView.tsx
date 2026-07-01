@@ -82,9 +82,9 @@ function FilterPopover({ label, icon: Icon, active, children }: {
 function PriorityBadge({ priority }: { priority: Task['priority'] }) {
   const c = PRIORITY_COLORS[priority];
   return (
-    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${c.bg} ${c.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full ${c.dot}`} />
-      {priority}
+    <span className={`inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider leading-tight ${c.bg} ${c.text}`}>
+      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${c.dot}`} />
+      <span className="self-center">{priority}</span>
     </span>
   );
 }
@@ -114,7 +114,7 @@ function DueDateBadge({ dueDate }: { dueDate: string | undefined }) {
 // ---------------------------------------------------------------------------
 // Active filter chip
 // ---------------------------------------------------------------------------
-function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+const FilterChip: React.FC<{ label: string; onRemove: () => void }> = ({ label, onRemove }) => {
   return (
     <motion.span
       layout
@@ -130,20 +130,12 @@ function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }
       </button>
     </motion.span>
   );
-}
+};
 
 // ---------------------------------------------------------------------------
 // Collapsible group section
 // ---------------------------------------------------------------------------
-function TaskGroup({
-  groupName,
-  tasks,
-  collapsed,
-  onToggle,
-  onToggleTask,
-  onDeleteTask,
-  onSelectTask,
-}: {
+const TaskGroup: React.FC<{
   groupName: string;
   tasks: Task[];
   collapsed: boolean;
@@ -151,7 +143,15 @@ function TaskGroup({
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
-}) {
+}> = ({
+  groupName,
+  tasks,
+  collapsed,
+  onToggle,
+  onToggleTask,
+  onDeleteTask,
+  onSelectTask,
+}) => {
   const done = tasks.filter(t => t.completed).length;
 
   return (

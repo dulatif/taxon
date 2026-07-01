@@ -12,9 +12,8 @@ import {
   HelpCircle,
   Pause,
   Play,
-  Timer
 } from 'lucide-react';
-import { Project } from '../types';
+import { Project, getCategoryStyle } from '../types';
 
 interface SidebarProps {
   currentView: string;
@@ -99,6 +98,7 @@ export default function Sidebar({
               .filter((p) => p.category !== 'Completed')
               .map((project) => {
                 const isSelected = selectedProjectId === project.id;
+                const style = getCategoryStyle(project.category);
                 return (
                   <button
                     key={project.id}
@@ -108,9 +108,9 @@ export default function Sidebar({
                       ? 'text-white font-semibold bg-[#201F1F]'
                       : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
                       }`}
-                    title={project.name}
+                    title={`${project.name} (${project.category})`}
                   >
-                    <Circle className={`w-2.5 h-2.5 shrink-0 ${isSelected ? 'fill-white text-white' : 'text-[#8E9192]'}`} />
+                    <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
                     <span className="truncate">{project.name}</span>
                   </button>
                 );

@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   ArrowUpRight, 
   CheckCircle,
   Clock, 
   Grid2X2, 
   Kanban,
-  Plus
+  Plus,
+  Settings
 } from 'lucide-react';
-import { Project, Task } from '../types';
+import { Project, Task, getCategoryStyle } from '../types';
 import KanbanView from './KanbanView';
 
 interface ProjectsViewProps {
@@ -16,6 +17,7 @@ interface ProjectsViewProps {
   onProjectSelect: (id: string) => void;
   onViewChange: (view: string) => void;
   onAddProjectClick: () => void;
+  onManageCategoriesClick?: () => void;
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
   onAddTaskToProject: (taskTitle: string, projectId: string) => void;
   onSelectTask?: (task: Task) => void;
@@ -27,14 +29,27 @@ export default function ProjectsView({
   onProjectSelect,
   onViewChange,
   onAddProjectClick,
+  onManageCategoriesClick,
   onMoveTaskStatus,
   onAddTaskToProject,
   onSelectTask,
 }: ProjectsViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
+  const [selectedCategory, setSelectedCategory] = useState<string>('All');
   
   // Local active count calculator
   const activeProjectsCount = projects.filter(p => p.category !== 'Completed').length;
+
+  // Available category tabs dynamically built from project data
+  const availableCategories = useMemo(() => {
+    const cats = Array.from(new Set(projects.map(p => p.category))).filter(Boolean);
+    return ['All', ...cats];
+  }, [projects]);
+
+  const filteredProjects = useMemo(() => {
+    if (selectedCategory === 'All') return projects;
+    return projects.filter(p => p.category === selectedCategory);
+  }, [projects, selectedCategory]);
 
   const handleProjectCardClick = (id: string) => {
     onProjectSelect(id);
@@ -45,7 +60,7 @@ export default function ProjectsView({
     <div className="p-6 md:p-8 max-w-7xl w-full mx-auto flex flex-col h-full overflow-hidden">
       
       {/* View Mode & Header Row */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Projects</h1>
           <p className="text-[#C4C7C8] text-sm mt-1">
@@ -59,7 +74,7 @@ export default function ProjectsView({
             <button
               onClick={() => setViewMode('grid')}
               id="toggle-projects-grid"
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 viewMode === 'grid'
                   ? 'bg-[#201F1F] text-white border border-[#27272A]'
                   : 'text-[#8E9192] hover:text-white'
@@ -71,7 +86,7 @@ export default function ProjectsView({
             <button
               id="toggle-projects-kanban"
               onClick={() => setViewMode('kanban')}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all ${
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 viewMode === 'kanban'
                   ? 'bg-[#201F1F] text-white border border-[#27272A]'
                   : 'text-[#8E9192] hover:text-white'
@@ -85,7 +100,7 @@ export default function ProjectsView({
           <button
             onClick={onAddProjectClick}
             id="btn-projects-new-project"
-            className="bg-white hover:bg-white/90 text-black text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all"
+            className="bg-white hover:bg-white/90 text-black text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 shrink-0" />
             <span>New Project</span>
@@ -93,16 +108,54 @@ export default function ProjectsView({
         </div>
       </div>
 
+      {/* Category Filter Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar border-b border-[#27272A]/40 shrink-0">
+        {availableCategories.map((cat) => {
+          const isSelected = selectedCategory === cat;
+          const count = cat === 'All' ? projects.length : projects.filter(p => p.category === cat).length;
+          const style = cat === 'All' ? null : getCategoryStyle(cat);
+          
+          return (
+            <button
+              key={cat}
+              onClick={() => setSelectedCategory(cat)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-medium font-mono tracking-tight transition-all inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
+                isSelected
+                  ? 'bg-white text-black font-bold shadow-md'
+                  : 'bg-[#0A0A0A] text-[#8E9192] hover:text-white border border-[#27272A]/80 hover:border-white/20'
+              }`}
+            >
+              {style && <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${isSelected ? 'bg-black' : style.dot}`} />}
+              <span className="self-center leading-tight">{cat}</span>
+              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono self-center leading-tight ${isSelected ? 'bg-black/10 text-black' : 'bg-[#141313] text-[#8E9192]'}`}>
+                {count}
+              </span>
+            </button>
+          );
+        })}
+        {onManageCategoriesClick && (
+          <button
+            onClick={onManageCategoriesClick}
+            className="ml-auto px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#8E9192] hover:text-white bg-[#0A0A0A] border border-[#27272A] hover:border-white/30 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            title="Manage Category Tags"
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Manage Tags</span>
+          </button>
+        )}
+      </div>
+
       {/* Main Content Area */}
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pr-1">
-          {projects.map((project) => {
+          {filteredProjects.map((project) => {
             const isCompleted = project.category === 'Completed';
             const projectTasks = tasks.filter(t => t.projectId === project.id);
             const completedCount = projectTasks.filter(t => t.completed).length;
             const progressValue = projectTasks.length > 0 
               ? Math.round((completedCount / projectTasks.length) * 100)
               : project.progress;
+            const catStyle = getCategoryStyle(project.category);
 
             return (
               <div
@@ -115,12 +168,9 @@ export default function ProjectsView({
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <span className={`text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider leading-none font-mono ${
-                      isCompleted 
-                        ? 'bg-white text-black' 
-                        : 'bg-[#141313] text-[#A1A1AA] border border-[#27272A]'
-                    }`}>
-                      {project.category}
+                    <span className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider leading-tight font-mono border ${catStyle.border} ${catStyle.bg} ${catStyle.text}`}>
+                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${catStyle.dot}`} />
+                      <span className="self-center">{project.category}</span>
                     </span>
                     {isCompleted ? (
                       <CheckCircle className="w-4 h-4 text-white" />
@@ -162,7 +212,7 @@ export default function ProjectsView({
       ) : (
         <div className="flex-1 overflow-hidden">
           <KanbanView 
-            projects={projects}
+            projects={filteredProjects}
             tasks={tasks}
             onMoveTaskStatus={onMoveTaskStatus}
             onAddTaskToProject={onAddTaskToProject}

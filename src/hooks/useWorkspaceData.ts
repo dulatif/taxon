@@ -306,10 +306,32 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }));
   }, [logCompletion]);
 
-  const handleEditProject = useCallback((projectId: string, name: string, description: string) => {
+  const handleEditProject = useCallback((projectId: string, name: string, description: string, category?: string) => {
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
-        const up = { ...p, name, description };
+        const up = { ...p, name, description, ...(category ? { category } : {}) };
+        saveProject(up);
+        return up;
+      }
+      return p;
+    }));
+  }, []);
+
+  const handleRenameCategory = useCallback((oldCategory: string, newCategory: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.category === oldCategory) {
+        const up = { ...p, category: newCategory };
+        saveProject(up);
+        return up;
+      }
+      return p;
+    }));
+  }, []);
+
+  const handleDeleteCategory = useCallback((categoryToDelete: string, fallbackCategory: string = 'Engineering') => {
+    setProjects(prev => prev.map(p => {
+      if (p.category === categoryToDelete) {
+        const up = { ...p, category: fallbackCategory };
         saveProject(up);
         return up;
       }
@@ -459,6 +481,8 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     handleDeleteProject,
     handleCompleteProject,
     handleEditProject,
+    handleRenameCategory,
+    handleDeleteCategory,
     handleAddFile,
     handleDeleteFile,
     handleExportData,

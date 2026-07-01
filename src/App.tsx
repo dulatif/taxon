@@ -29,6 +29,7 @@ import HelpView from './views/HelpView';
 import AddProjectModal from './modals/AddProjectModal';
 import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
+import ManageCategoriesModal from './modals/ManageCategoriesModal';
 import { Project } from './types';
 import { useFocusTimer } from './hooks/useFocusTimer';
 import { useWindowMaximize } from './hooks/useWindowMaximize';
@@ -52,9 +53,10 @@ export default function App() {
 
   // --- Modal Dialog States ---
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
+  const [isManageCategoriesOpen, setIsManageCategoriesOpen] = useState(false);
   const [newProjName, setNewProjName] = useState('');
   const [newProjDesc, setNewProjDesc] = useState('');
-  const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Active');
+  const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Engineering');
 
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
@@ -80,6 +82,8 @@ export default function App() {
     handleDeleteProject,
     handleCompleteProject,
     handleEditProject,
+    handleRenameCategory,
+    handleDeleteCategory,
     handleAddFile,
     handleDeleteFile,
     handleExportData,
@@ -409,6 +413,7 @@ export default function App() {
                 onProjectSelect={(id) => setSelectedProjectId(id)}
                 onViewChange={setCurrentView}
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
+                onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
                 onMoveTaskStatus={handleMoveTaskStatus}
                 onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
@@ -420,6 +425,7 @@ export default function App() {
                 project={projects.find(p => p.id === selectedProjectId)!}
                 tasks={tasks}
                 files={files}
+                availableCategories={Array.from(new Set(projects.map(p => p.category)))}
                 onToggleTask={handleToggleTask}
                 onAddTask={handleAddTask}
                 onDeleteTask={handleDeleteTask}
@@ -483,11 +489,20 @@ export default function App() {
       </div>
 
       {/* Modals */}
+      <ManageCategoriesModal
+        isOpen={isManageCategoriesOpen}
+        onClose={() => setIsManageCategoriesOpen(false)}
+        projects={projects}
+        onRenameCategory={handleRenameCategory}
+        onDeleteCategory={handleDeleteCategory}
+      />
+
       <AddProjectModal
         isOpen={isAddProjectOpen}
         projName={newProjName}
         projDesc={newProjDesc}
         projCategory={newProjCategory}
+        availableCategories={Array.from(new Set(projects.map(p => p.category)))}
         onChangeName={setNewProjName}
         onChangeDesc={setNewProjDesc}
         onChangeCategory={setNewProjCategory}
