@@ -12,8 +12,11 @@ import {
   HelpCircle,
   Pause,
   Play,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { Project, getCategoryStyle } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface SidebarProps {
   currentView: string;
@@ -42,6 +45,8 @@ export default function Sidebar({
   onLaunchFocusMode,
   onToggleTimer,
 }: SidebarProps) {
+  const { settings, updateSetting } = useSettings();
+
   // Main Navigation Items
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -186,6 +191,29 @@ export default function Sidebar({
             <HelpCircle className="w-4 h-4" />
             <span>Help &amp; Support</span>
           </button>
+
+          {/* Theme Toggle */}
+          <div className="flex items-center justify-between px-3 py-2 pt-3 border-t border-[#27272A]/50 mt-2">
+            <div className="flex items-center gap-3 text-sm text-[#C4C7C8] font-sans tracking-tight">
+              {settings.theme === 'light' ? (
+                <Sun className="w-4 h-4 text-white" />
+              ) : (
+                <Moon className="w-4 h-4" />
+              )}
+              <span>{settings.theme === 'light' ? 'Light Mode' : 'Dark Mode'}</span>
+            </div>
+            <button
+              onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
+                settings.theme === 'light' ? 'bg-white' : 'bg-[#27272A]'
+              }`}
+              title="Toggle Theme"
+            >
+              <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                settings.theme === 'light' ? 'bg-black ml-auto' : 'bg-[#8E9192] ml-0'
+              }`} />
+            </button>
+          </div>
         </div>
       </div>
     </aside>
