@@ -1,0 +1,45 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "taxon",
+  "version": "1.0.0-dev",
+  "identifier": "com.taxon.dev",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:3000",
+    "beforeDevCommand": "pnpm dev",
+    "beforeBuildCommand": "pnpm build"
+  },
+  "app": {
+    "enableGTKAppId": true,
+    "windows": [
+      {
+        "title": "Taxon",
+        "width": 1400,
+        "height": 800,
+        "decorations": false,
+        "transparent": true,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/64x64.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "debugApplicationIdSuffix": ".debug"
+    }
+  }
+}

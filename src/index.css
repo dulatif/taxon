@@ -36,7 +36,7 @@ body:not(.oled-black) {
    Overrides the hardcoded dark tailwind classes to create a beautiful light theme
    =================================== */
 body.light-theme {
-  background-color: #F4F4F5 !important; /* Zinc 100 base */
+  background-color: transparent !important; /* Keep body transparent so window rounded corners work */
   color: #18181B !important; /* Zinc 900 text */
 }
 
