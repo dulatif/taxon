@@ -288,7 +288,7 @@ export default function TaskDetailPanel({
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Date</div>
                     <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
-                      {editedTask.dueDate || 'Jun 6, every day'}
+                      {editedTask.dueDate || 'Unscheduled'}
                     </div>
                   </div>
 

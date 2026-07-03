@@ -221,7 +221,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       duration: '45m',
       priority: 'Medium',
       status: 'To Do',
-      dueDate: dueDate || getTodayStr()
+      dueDate: dueDate !== undefined ? dueDate : getTodayStr()
     };
     setTasks(prev => [newTask, ...prev]);
     saveTask(newTask);

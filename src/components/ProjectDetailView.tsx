@@ -29,7 +29,7 @@ interface ProjectDetailViewProps {
   files: DocumentFile[];
   availableCategories?: string[];
   onToggleTask: (id: string) => void;
-  onAddTask: (title: string, projectId: string) => void;
+  onAddTask: (title: string, projectId: string, dueDate?: string) => void;
   onDeleteTask: (id: string) => void;
   onCompleteProject: (projectId: string) => void;
   onEditProject: (projectId: string, name: string, description: string, category?: string) => void;
@@ -87,7 +87,7 @@ export default function ProjectDetailView({
   const handleAddTaskSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    onAddTask(newTaskTitle, project.id);
+    onAddTask(newTaskTitle, project.id, '');
     setNewTaskTitle('');
   };
 
