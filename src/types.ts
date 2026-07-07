@@ -76,6 +76,7 @@ export interface Task {
   subtasks?: SubTask[];
   timeEffort?: number; // estimated effort in minutes
   timeSpent?: number; // time spent in minutes
+  sortOrder?: number;
 }
 
 export interface DocumentFile {

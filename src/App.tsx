@@ -93,7 +93,8 @@ export default function App() {
     setIsImportConfirmOpen,
     setImportPendingJson,
     onTickFocusTime,
-    handleReorderProjects
+    handleReorderProjects,
+    handleReorderTasks
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -445,6 +446,7 @@ export default function App() {
                 onDeleteProject={handleDeleteProject}
                 onAddFile={handleAddFile}
                 onDeleteFile={handleDeleteFile}
+                onReorderTasks={handleReorderTasks}
                 onBackToProjects={() => {
                   setSelectedProjectId(null);
                   setCurrentView('projects');

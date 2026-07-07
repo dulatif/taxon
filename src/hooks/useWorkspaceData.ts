@@ -470,6 +470,17 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     updated.forEach(p => saveProject(p));
   }, []);
 
+  const handleReorderTasks = useCallback((reorderedTasks: Task[]) => {
+    const updated = reorderedTasks.map((t, idx) => ({ ...t, sortOrder: idx }));
+    setTasks(prev => {
+      const updatedMap = new Map(updated.map(t => [t.id, t]));
+      return prev
+        .map(t => updatedMap.get(t.id) || t)
+        .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
+    });
+    updated.forEach(t => saveTask(t));
+  }, []);
+
   return {
     projects,
     tasks,
@@ -498,6 +509,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     setIsImportConfirmOpen,
     setImportPendingJson,
     onTickFocusTime,
-    handleReorderProjects
+    handleReorderProjects,
+    handleReorderTasks
   };
 }

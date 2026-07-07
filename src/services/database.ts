@@ -71,7 +71,7 @@ export const initDb = (): Promise<Database> => {
           // Column already exists
         }
       }
-      const numCols = ['timeEffort', 'timeSpent'];
+      const numCols = ['timeEffort', 'timeSpent', 'sortOrder'];
       for (const col of numCols) {
         try {
           await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} INTEGER`);
@@ -120,7 +120,7 @@ export const deleteProject = async (id: string) => {
 // --- Tasks ---
 export const getTasks = async (): Promise<Task[]> => {
   const d = await initDb();
-  const rawTasks = await d.select<any[]>('SELECT * FROM tasks');
+  const rawTasks = await d.select<any[]>('SELECT * FROM tasks ORDER BY COALESCE(sortOrder, 999999) ASC, id ASC');
   const parseJSON = (val: any) => {
     if (typeof val === 'string' && val.trim().startsWith('[')) {
       try { return JSON.parse(val); } catch (_) { return undefined; }
@@ -163,7 +163,7 @@ export const saveTask = async (t: Task) => {
   const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)',
     [
       t.id ?? null, 
       t.projectId ?? null, 
@@ -179,7 +179,8 @@ export const saveTask = async (t: Task) => {
       t.deadline ?? null, 
       subtasksStr,
       t.timeEffort ?? null,
-      t.timeSpent ?? null
+      t.timeSpent ?? null,
+      t.sortOrder ?? null
     ]
   );
 };
