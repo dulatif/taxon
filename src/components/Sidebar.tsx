@@ -1,23 +1,24 @@
-import React from 'react';
+import { DragDropContext, Draggable, DropResult, Droppable } from '@hello-pangea/dnd';
 import {
-  LayoutDashboard,
-  Inbox,
-  Folder,
-  CheckSquare,
-  CheckCircle,
-  Calendar,
   BarChart3,
-  Circle,
+  Calendar,
+  CheckCircle,
+  CheckSquare,
+  ChevronRight,
+  Folder,
+  HelpCircle,
+  Inbox,
+  LayoutDashboard,
+  Moon,
+  Pause,
   Plus,
   Settings,
-  HelpCircle,
-  Pause,
-  Play,
-  Sun,
-  Moon,
+  Sun
 } from 'lucide-react';
-import { Project, getCategoryStyle } from '../types';
+import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+import { Project, getCategoryStyle } from '../types';
 
 interface SidebarProps {
   currentView: string;
@@ -26,6 +27,8 @@ interface SidebarProps {
   selectedProjectId: string | null;
   onProjectSelect: (id: string) => void;
   onAddProjectClick: () => void;
+  onAddProjectToCategory?: (category: string) => void;
+  onReorderProjects?: (projects: Project[]) => void;
   timerSeconds?: number;
   timerIsRunning?: boolean;
   activeFocusTaskTitle?: string;
@@ -40,6 +43,8 @@ export default function Sidebar({
   selectedProjectId,
   onProjectSelect,
   onAddProjectClick,
+  onAddProjectToCategory,
+  onReorderProjects,
   timerSeconds,
   timerIsRunning,
   activeFocusTaskTitle,
@@ -47,6 +52,70 @@ export default function Sidebar({
   onToggleTimer,
 }: SidebarProps) {
   const { settings, updateSetting } = useSettings();
+
+  const activeProjects = projects.filter((p) => p.category !== 'Completed');
+  const categories = Array.from(new Set(activeProjects.map((p) => p.category))).filter(Boolean);
+
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setExpandedCategories((prev) => {
+      const next = { ...prev };
+      let changed = false;
+      categories.forEach((cat) => {
+        if (next[cat] === undefined) {
+          next[cat] = true;
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [categories.join(',')]);
+
+  const toggleCategory = (cat: string) => {
+    setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
+  };
+
+  const onDragEnd = (result: DropResult) => {
+    const { source, destination, draggableId } = result;
+    if (!destination || !onReorderProjects) return;
+
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
+      return;
+    }
+
+    const sourceCat = source.droppableId.replace(/^cat_/, '');
+    const destCat = destination.droppableId.replace(/^cat_/, '');
+
+    const draggedProject = activeProjects.find((p) => p.id === draggableId);
+    if (!draggedProject) return;
+
+    const projectsByCategory: Record<string, Project[]> = {};
+    categories.forEach((c) => {
+      projectsByCategory[c] = activeProjects.filter((p) => p.category === c);
+    });
+
+    projectsByCategory[sourceCat] = projectsByCategory[sourceCat].filter((p) => p.id !== draggableId);
+
+    const updatedProject = { ...draggedProject, category: destCat };
+
+    if (!projectsByCategory[destCat]) {
+      projectsByCategory[destCat] = [];
+    }
+    projectsByCategory[destCat].splice(destination.index, 0, updatedProject);
+
+    const reorderedActive: Project[] = [];
+    categories.forEach((c) => {
+      if (projectsByCategory[c]) {
+        reorderedActive.push(...projectsByCategory[c]);
+      }
+    });
+
+    const completedProjects = projects.filter((p) => p.category === 'Completed');
+    const finalProjects = [...reorderedActive, ...completedProjects];
+
+    onReorderProjects(finalProjects);
+  };
 
   // Main Navigation Items
   const navItems = [
@@ -100,34 +169,117 @@ export default function Sidebar({
           <h3 className="px-3 mb-2 text-[10px] font-bold text-[#c4c7c8]/50 uppercase tracking-widest">
             projects
           </h3>
-          <div className="space-y-1">
-            {projects
-              .filter((p) => p.category !== 'Completed')
-              .map((project) => {
-                const isSelected = selectedProjectId === project.id;
-                const style = getCategoryStyle(project.category);
+
+          <DragDropContext onDragEnd={onDragEnd}>
+            <div className="space-y-3">
+              {categories.map((cat) => {
+                const catProjects = activeProjects.filter((p) => p.category === cat);
+                if (catProjects.length === 0) return null;
+
+                const isExpanded = expandedCategories[cat] !== false;
+                const catStyle = getCategoryStyle(cat);
+
                 return (
-                  <button
-                    key={project.id}
-                    id={`sidebar-project-${project.id}`}
-                    onClick={() => onProjectSelect(project.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis ${isSelected
-                      ? 'text-white font-semibold bg-[#201F1F]'
-                      : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-                      }`}
-                    title={`${project.name} (${project.category})`}
-                  >
-                    <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
-                    <span className="truncate">{project.name}</span>
-                  </button>
+                  <div key={cat} className="space-y-1">
+                    {/* Accordion Header */}
+                    <div
+                      onClick={() => toggleCategory(cat)}
+                      className="flex items-center justify-between px-3 py-1.5 cursor-pointer group rounded-lg hover:bg-[#141313] transition-colors select-none"
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        <ChevronRight
+                          className={`w-3.5 h-3.5 text-[#8E9192] shrink-0 group-hover:text-white transition-transform duration-200 ${isExpanded ? 'rotate-90 text-white' : ''
+                            }`}
+                        />
+                        <span className="text-xs font-semibold text-[#C4C7C8] group-hover:text-white truncate">
+                          {cat}
+                        </span>
+                        <span className="text-[10px] font-mono bg-[#141313] group-hover:bg-[#201F1F] text-[#8E9192] px-1.5 py-0.5 rounded border border-[#27272A]">
+                          {catProjects.length}
+                        </span>
+                      </div>
+
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onAddProjectToCategory) {
+                            onAddProjectToCategory(cat);
+                          } else {
+                            onAddProjectClick();
+                          }
+                        }}
+                        className="text-[#8E9192] hover:text-white p-1 rounded hover:bg-[#201F1F] opacity-0 group-hover:opacity-100 transition-opacity"
+                        title={`Add project to ${cat}`}
+                      >
+                        <Plus className="w-3 h-3" />
+                      </button>
+                    </div>
+
+                    {/* Accordion Body (Droppable Zone) */}
+                    <AnimatePresence initial={false}>
+                      {isExpanded && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          transition={{ duration: 0.2, ease: 'easeInOut' }}
+                          className="overflow-hidden"
+                        >
+                          <Droppable droppableId={`cat_${cat}`}>
+                            {(provided, snapshot) => (
+                              <div
+                                ref={provided.innerRef}
+                                {...provided.droppableProps}
+                                className={`space-y-1 pl-2 border-l border-[#27272A]/40 ml-4 py-1 rounded transition-colors min-h-[10px] select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border-white/30' : ''
+                                  }`}
+                              >
+                                {catProjects.map((project, index) => {
+                                  const isSelected = selectedProjectId === project.id;
+                                  const style = getCategoryStyle(project.category);
+                                  return (
+                                    // @ts-ignore
+                                    <Draggable key={project.id} draggableId={project.id} index={index}>
+                                      {(provided, snapshot) => (
+                                        <div
+                                          ref={provided.innerRef}
+                                          {...provided.draggableProps}
+                                          {...provided.dragHandleProps}
+                                          id={`sidebar-project-${project.id}`}
+                                          role="button"
+                                          tabIndex={0}
+                                          onClick={() => onProjectSelect(project.id)}
+                                          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis cursor-grab active:cursor-grabbing select-none ${snapshot.isDragging
+                                            ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50'
+                                            : isSelected
+                                              ? 'text-white font-semibold bg-[#201F1F]'
+                                              : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+                                            }`}
+                                          title={`${project.name} (${project.category})`}
+                                        >
+                                          <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+                                          <span className="truncate">{project.name}</span>
+                                        </div>
+                                      )}
+                                    </Draggable>
+                                  );
+                                })}
+                                {provided.placeholder}
+                              </div>
+                            )}
+                          </Droppable>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 );
               })}
-          </div>
+            </div>
+          </DragDropContext>
 
           <button
             onClick={onAddProjectClick}
             id="btn-new-project-sidebar"
-            className="w-full flex items-center gap-3 px-3 py-2 mt-2 text-xs text-[#C4C7C8]/70 hover:text-white hover:bg-[#141313] transition-colors rounded-lg group text-left border border-dashed border-[#27272A] hover:border-white/30"
+            className="w-full flex items-center gap-3 px-3 py-2 mt-4 text-xs text-[#C4C7C8]/70 hover:text-white hover:bg-[#141313] transition-colors rounded-lg group text-left border border-dashed border-[#27272A] hover:border-white/30"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>New Project</span>
@@ -206,14 +358,12 @@ export default function Sidebar({
             </div>
             <button
               onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
-              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
-                settings.theme === 'light' ? 'bg-white' : 'bg-[#27272A]'
-              }`}
+              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${settings.theme === 'light' ? 'bg-white' : 'bg-[#27272A]'
+                }`}
               title="Toggle Theme"
             >
-              <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                settings.theme === 'light' ? 'bg-black ml-auto' : 'bg-[#8E9192] ml-0'
-              }`} />
+              <div className={`w-4 h-4 rounded-full transition-all duration-200 ${settings.theme === 'light' ? 'bg-black ml-auto' : 'bg-[#8E9192] ml-0'
+                }`} />
             </button>
           </div>
         </div>

@@ -92,7 +92,8 @@ export default function App() {
     isImportConfirmOpen,
     setIsImportConfirmOpen,
     setImportPendingJson,
-    onTickFocusTime
+    onTickFocusTime,
+    handleReorderProjects
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -297,6 +298,11 @@ export default function App() {
             setCurrentView('project-details');
           }}
           onAddProjectClick={() => setIsAddProjectOpen(true)}
+          onAddProjectToCategory={(cat) => {
+            setNewProjCategory(cat);
+            setIsAddProjectOpen(true);
+          }}
+          onReorderProjects={handleReorderProjects}
           timerSeconds={focusTimer.timerSeconds}
           timerIsRunning={focusTimer.timerIsRunning}
           activeFocusTaskTitle={focusTimer.activeFocusTask?.title}

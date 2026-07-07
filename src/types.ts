@@ -7,6 +7,7 @@ export interface Project {
   category: ProjectCategory;
   progress: number; // percentage (0 - 100)
   dueDays: number;
+  sortOrder?: number;
 }
 
 export const PROJECT_CATEGORIES = [

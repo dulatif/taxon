@@ -464,6 +464,12 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     });
   }, []);
 
+  const handleReorderProjects = useCallback((reorderedProjects: Project[]) => {
+    const updated = reorderedProjects.map((p, idx) => ({ ...p, sortOrder: idx }));
+    setProjects(updated);
+    updated.forEach(p => saveProject(p));
+  }, []);
+
   return {
     projects,
     tasks,
@@ -491,6 +497,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     isImportConfirmOpen,
     setIsImportConfirmOpen,
     setImportPendingJson,
-    onTickFocusTime
+    onTickFocusTime,
+    handleReorderProjects
   };
 }

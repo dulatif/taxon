@@ -16,7 +16,8 @@ export const initDb = (): Promise<Database> => {
             description TEXT,
             category TEXT,
             progress INTEGER,
-            dueDays INTEGER
+            dueDays INTEGER,
+            sortOrder INTEGER
         );
       `).catch(() => {});
 
@@ -78,6 +79,11 @@ export const initDb = (): Promise<Database> => {
           // Column already exists
         }
       }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN sortOrder INTEGER');
+      } catch (_) {
+        // Column already exists
+      }
       return database;
     })();
   }
@@ -87,20 +93,21 @@ export const initDb = (): Promise<Database> => {
 // --- Projects ---
 export const getProjects = async (): Promise<Project[]> => {
   const d = await initDb();
-  return d.select<Project[]>('SELECT * FROM projects');
+  return d.select<Project[]>('SELECT * FROM projects ORDER BY COALESCE(sortOrder, 999999) ASC, id ASC');
 };
 
 export const saveProject = async (p: Project) => {
   const d = await initDb();
   await d.execute(
-    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays) VALUES ($1, $2, $3, $4, $5, $6)',
+    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7)',
     [
       p.id ?? null,
       p.name ?? null,
       p.description ?? null,
       p.category ?? null,
       p.progress ?? 0,
-      p.dueDays ?? null
+      p.dueDays ?? null,
+      p.sortOrder ?? null
     ]
   );
 };
