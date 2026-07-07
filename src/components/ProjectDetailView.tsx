@@ -146,7 +146,7 @@ export default function ProjectDetailView({
         if (!b.dueDate) return -1;
         return a.dueDate.localeCompare(b.dueDate);
       }
-      return 0; // custom mode: preserve array order (sorted by sortOrder from SQLite/state)
+      return (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999);
     });
   };
 
@@ -411,7 +411,7 @@ export default function ProjectDetailView({
                     <ul
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`divide-y divide-[#27272A]/40 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20' : ''
+                      className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
                         }`}
                     >
                       {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
@@ -431,9 +431,9 @@ export default function ProjectDetailView({
                                 role="button"
                                 tabIndex={0}
                                 onClick={() => onSelectTask?.(task)}
-                                className={`flex items-start justify-between py-3.5 px-2 rounded-lg transition-colors group cursor-pointer select-none ${snapshot.isDragging
-                                  ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50'
-                                  : 'hover:bg-[#141313]/40'
+                                className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
+                                  ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                  : 'hover:bg-[#141313]/40 hover:border-[#27272A]/40'
                                   }`}
                               >
                                 <div className="flex items-start gap-4 flex-1 mr-4">
@@ -478,7 +478,7 @@ export default function ProjectDetailView({
 
               {/* Completed Tasks Accordion */}
               {sortedCompletedTasks.length > 0 && (
-                <div className="border-t border-[#27272A]/60 pt-4">
+                <div className="border-t border-gray-800/30 pt-4">
                   <button
                     type="button"
                     onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
@@ -512,7 +512,7 @@ export default function ProjectDetailView({
                             <ul
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`divide-y divide-[#27272A]/40 min-h-[30px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20' : ''
+                              className={`space-y-1.5 min-h-[30px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
                                 }`}
                             >
                               {sortedCompletedTasks.map((task, index) => (
@@ -527,9 +527,9 @@ export default function ProjectDetailView({
                                       role="button"
                                       tabIndex={0}
                                       onClick={() => onSelectTask?.(task)}
-                                      className={`flex items-start justify-between py-3.5 px-2 rounded-lg transition-colors group cursor-pointer select-none opacity-75 ${snapshot.isDragging
-                                        ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100'
-                                        : 'hover:bg-[#141313]/40'
+                                      className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${snapshot.isDragging
+                                        ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
+                                        : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
                                         }`}
                                     >
                                       <div className="flex items-start gap-4 flex-1 mr-4">

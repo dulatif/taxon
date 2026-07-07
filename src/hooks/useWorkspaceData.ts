@@ -586,12 +586,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
 
   const handleReorderTasks = useCallback((reorderedTasks: Task[]) => {
     const updated = reorderedTasks.map((t, idx) => ({ ...t, sortOrder: idx }));
-    setTasks(prev => {
-      const updatedMap = new Map(updated.map(t => [t.id, t]));
-      return prev
-        .map(t => updatedMap.get(t.id) || t)
-        .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
-    });
+    setTasks(updated);
     updated.forEach(t => saveTask(t));
   }, []);
 

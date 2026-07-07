@@ -11,10 +11,17 @@ import {
   Check,
   Timer,
   CheckCircle2,
-  ArrowDownNarrowWide
+  ArrowDownNarrowWide,
+  SortAsc,
+  Square,
+  CheckSquare,
+  Trash2,
+  ChevronRight,
 } from 'lucide-react';
-import { sortTasks, PRIORITY_COLORS } from '../utils/taskFilters';
+import { PRIORITY_COLORS } from '../utils/taskFilters';
 import { Task, Project, DailyActivity } from '../types';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { motion, AnimatePresence } from 'motion/react';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -22,6 +29,8 @@ interface DashboardViewProps {
   dailyActivity: DailyActivity[];
   onToggleTask: (id: string) => void;
   onAddTask: (title: string, projectId?: string, dueDate?: string) => void;
+  onDeleteTask?: (id: string, onDeleted?: (id: string) => void) => void;
+  onReorderTasks?: (tasks: Task[]) => void;
   onStartFocus: (task: Task) => void;
   // Timer attributes synced to parent
   timerSeconds: number;
@@ -60,6 +69,8 @@ export default function DashboardView({
   dailyActivity,
   onToggleTask,
   onAddTask,
+  onDeleteTask,
+  onReorderTasks,
   onStartFocus,
   timerSeconds,
   timerIsRunning,
@@ -73,7 +84,8 @@ export default function DashboardView({
 }: DashboardViewProps) {
   const [quickAddText, setQuickAddText] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState('');
-  const [sortByPriority, setSortByPriority] = useState(false);
+  const [selectedSort, setSelectedSort] = useState<'custom' | 'priority'>('custom');
+  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
 
   const getTodayStr = () => {
     const d = new Date();
@@ -84,9 +96,66 @@ export default function DashboardView({
   };
 
   const todayStr = getTodayStr();
-  const rawTodayTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.startsWith(todayStr));
-  const todayTasks = sortByPriority ? sortTasks(rawTodayTasks, 'priority') : rawTodayTasks;
-  const remainingTodayCount = todayTasks.length;
+  const allTodayTasks = tasks.filter(t => t.dueDate && t.dueDate.startsWith(todayStr));
+  const activeTodayTasks = allTodayTasks.filter(t => !t.completed);
+  const completedTodayTasks = allTodayTasks.filter(t => t.completed);
+
+  const sortTasksHelper = (taskList: Task[]) => {
+    return [...taskList].sort((a, b) => {
+      if (selectedSort === 'priority') {
+        const weights: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+        return (weights[b.priority || 'Medium'] || 2) - (weights[a.priority || 'Medium'] || 2);
+      }
+      return (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999);
+    });
+  };
+
+  const sortedActiveTasks = sortTasksHelper(activeTodayTasks);
+  const sortedCompletedTasks = sortTasksHelper(completedTodayTasks);
+  const remainingTodayCount = sortedActiveTasks.length;
+
+  const handleDragEnd = (result: any) => {
+    const { source, destination, draggableId } = result;
+    if (!destination || !onReorderTasks) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+
+    const isSourceCompleted = source.droppableId === 'today-completed-tasks';
+    const isDestCompleted = destination.droppableId === 'today-completed-tasks';
+
+    const draggedTask = allTodayTasks.find(t => t.id === draggableId);
+    if (!draggedTask) return;
+
+    const currentActive = [...sortedActiveTasks];
+    const currentCompleted = [...sortedCompletedTasks];
+
+    if (isSourceCompleted) {
+      const idx = currentCompleted.findIndex(t => t.id === draggableId);
+      if (idx !== -1) currentCompleted.splice(idx, 1);
+    } else {
+      const idx = currentActive.findIndex(t => t.id === draggableId);
+      if (idx !== -1) currentActive.splice(idx, 1);
+    }
+
+    const updatedTask = {
+      ...draggedTask,
+      completed: isDestCompleted,
+      status: isDestCompleted ? ('Done' as const) : ('To Do' as const)
+    };
+
+    if (isSourceCompleted !== isDestCompleted) {
+      onToggleTask(draggedTask.id);
+    }
+
+    if (isDestCompleted) {
+      currentCompleted.splice(destination.index, 0, updatedTask);
+    } else {
+      currentActive.splice(destination.index, 0, updatedTask);
+    }
+
+    const reorderedTodayTasks = [...currentActive, ...currentCompleted];
+    const otherTasks = tasks.filter(t => !(t.dueDate && t.dueDate.startsWith(todayStr)));
+    onReorderTasks([...reorderedTodayTasks, ...otherTasks]);
+  };
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -143,23 +212,21 @@ export default function DashboardView({
           </form>
 
           {/* Today's Tasks board layout */}
-          <section className="bg-[#0A0A0A] border border-[#27272A] rounded-xl overflow-hidden">
-            <div className="px-6 py-4 flex justify-between items-center bg-[#141313] border-b border-[#27272A]">
+          <section className="bg-[#0A0A0A] border border-[#27272A] rounded-xl">
+            <div className="px-6 py-4 flex justify-between items-center bg-[#141313] border-b border-[#27272A] rounded-t-xl">
               <h2 className="text-sm font-bold text-white tracking-tight flex items-center gap-2">
                 <ListTodo className="text-white w-4 h-4" />
                 Today's Tasks
               </h2>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-3">
                 <button
-                  onClick={() => setSortByPriority(s => !s)}
-                  title={sortByPriority ? 'Sorted by priority (click to reset)' : 'Sort by priority'}
-                  className={`p-1.5 rounded-lg border transition-all ${
-                    sortByPriority
-                      ? 'bg-white/10 border-white/20 text-white'
-                      : 'bg-transparent border-[#27272A] text-[#8E9192] hover:text-white hover:border-white/30'
-                  }`}
+                  type="button"
+                  onClick={() => setSelectedSort(s => s === 'custom' ? 'priority' : 'custom')}
+                  className="flex items-center gap-1.5 text-[#8E9192] hover:text-white transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-[#201F1F] px-2.5 py-1 rounded border border-[#27272A] hover:border-white/30"
+                  title={selectedSort === 'custom' ? 'Custom ordering enabled (click to sort by priority)' : 'Sorted by priority (click to enable custom drag & drop)'}
                 >
-                  <ArrowDownNarrowWide className="w-3.5 h-3.5" />
+                  <SortAsc className="w-3.5 h-3.5" />
+                  <span>Sort: {selectedSort}</span>
                 </button>
                 <span className="text-[10px] text-[#A1A1AA] font-bold uppercase tracking-widest leading-none bg-[#201F1F] px-2 py-1 rounded-sm border border-[#27272A]">
                   {remainingTodayCount} Remaining
@@ -167,59 +234,207 @@ export default function DashboardView({
               </div>
             </div>
 
-            <div className="divide-y divide-[#27272A]/50">
-              {todayTasks.length === 0 ? (
-                <div className="py-12 text-center text-[#8E9192] text-sm">
-                  All done! Quick add a task to get focused.
-                </div>
-              ) : (
-                todayTasks.map((task) => {
-                  const proj = projects.find(p => p.id === task.projectId);
-                  return (
-                    <div
-                      key={task.id}
-                      onClick={() => onSelectTask?.(task)}
-                      className="py-3 px-6 flex items-center justify-between hover:bg-[#141313]/70 transition-colors group cursor-pointer"
+            <DragDropContext onDragEnd={handleDragEnd}>
+              {/* Active Tasks Container */}
+              <div className="p-4">
+                <Droppable droppableId="today-active-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                  {(provided, snapshot) => (
+                    <ul
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                        }`}
                     >
-                      <div className="flex items-center gap-4 min-w-0 flex-1 mr-4">
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                          className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
-                        >
-                          <Check className="w-2.5 h-2.5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </button>
-                        {/* Priority dot */}
-                        <span
-                          title={task.priority}
-                          className={`w-1.5 h-1.5 rounded-full shrink-0 ${PRIORITY_COLORS[task.priority].dot}`}
-                        />
-                        <div className="min-w-0">
-                          <h3 className="text-white font-medium text-sm truncate group-hover:underline">{task.title}</h3>
-                          {proj && (
-                            <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block mt-0.5 max-w-[150px] truncate">
-                              {proj.name}
-                            </span>
-                          )}
+                      {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
+                        <div className="py-12 text-center text-[#8E9192] text-sm">
+                          All done! Quick add a task above to get focused.
                         </div>
-                      </div>
+                      ) : (
+                        sortedActiveTasks.map((task, index) => {
+                          const proj = projects.find(p => p.id === task.projectId);
+                          return (
+                            // @ts-ignore
+                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                              {(provided, snapshot) => (
+                                <li
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  id={`task-item-${task.id}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => onSelectTask?.(task)}
+                                  className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
+                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                      : 'hover:bg-[#141313]/70 hover:border-[#27272A]/40'
+                                    }`}
+                                >
+                                  <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                                    >
+                                      <Square className="w-4 h-4" />
+                                    </button>
+                                    {/* Priority dot */}
+                                    <span
+                                      title={task.priority}
+                                      className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
+                                    />
+                                    <div className="min-w-0 flex flex-col items-start gap-1">
+                                      <h3 className="text-white font-medium text-sm truncate group-hover:underline leading-tight">{task.title}</h3>
+                                      {proj && (
+                                        <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block max-w-[200px] truncate leading-none">
+                                          {proj.name}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
 
-                      <div className="flex items-center gap-4 shrink-0">
-                        <span className="text-[10px] text-[#8E9192] flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-[#27272A]/50">
-                          <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
-                          title="Start Focus Session"
-                          className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-current" />
-                        </button>
-                      </div>
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    <span className="text-[10px] text-[#8E9192] flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-[#27272A]/50">
+                                      <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
+                                    </span>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
+                                      title="Start Focus Session"
+                                      className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
+                                    >
+                                      <Play className="w-3.5 h-3.5 fill-current" />
+                                    </button>
+                                    {onDeleteTask && (
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                        className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                        title="Delete task item"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </li>
+                              )}
+                            </Draggable>
+                          );
+                        })
+                      )}
+                      {provided.placeholder}
+                    </ul>
+                  )}
+                </Droppable>
+              </div>
+
+              {/* Completed Tasks Accordion */}
+              {sortedCompletedTasks.length > 0 && (
+                <div className="border-t border-gray-800/10 pt-4 px-4 pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
+                    className="w-full flex items-center justify-between py-2 text-[#8E9192] hover:text-white transition-colors cursor-pointer group px-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronRight
+                        className={`w-4 h-4 transition-transform duration-200 ${isCompletedExpanded ? 'rotate-90 text-white' : 'text-[#8E9192] group-hover:text-white'
+                          }`}
+                      />
+                      <span className="text-[11px] font-bold uppercase tracking-wider font-mono">
+                        Completed Tasks
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#141313] text-[#8E9192] border border-[#27272A] font-mono">
+                        {sortedCompletedTasks.length}
+                      </span>
                     </div>
-                  );
-                })
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isCompletedExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        className="overflow-hidden mt-2"
+                      >
+                        <Droppable droppableId="today-completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                          {(provided, snapshot) => (
+                            <ul
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`space-y-1.5 min-h-[30px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                                }`}
+                            >
+                              {sortedCompletedTasks.map((task, index) => {
+                                const proj = projects.find(p => p.id === task.projectId);
+                                return (
+                                  // @ts-ignore
+                                  <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                                    {(provided, snapshot) => (
+                                      <li
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        id={`task-item-${task.id}`}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onSelectTask?.(task)}
+                                        className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${snapshot.isDragging
+                                            ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
+                                            : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
+                                          }`}
+                                      >
+                                        <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                            className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                                          >
+                                            <CheckSquare className="w-4 h-4 text-white" />
+                                          </button>
+                                          {/* Priority dot */}
+                                          <span
+                                            title={task.priority}
+                                            className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
+                                          />
+                                          <div className="min-w-0 flex flex-col items-start gap-1">
+                                            <span className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate leading-tight">
+                                              {task.title}
+                                            </span>
+                                            {proj && (
+                                              <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block max-w-[200px] truncate leading-none opacity-60">
+                                                {proj.name}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          <span className="text-[10px] text-[#8E9192] flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-[#27272A]/50">
+                                            <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
+                                          </span>
+                                          {onDeleteTask && (
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                              title="Delete task item"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </li>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                              {provided.placeholder}
+                            </ul>
+                          )}
+                        </Droppable>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               )}
-            </div>
+            </DragDropContext>
 
             <button
               type="button"
@@ -227,7 +442,7 @@ export default function DashboardView({
                 const el = document.querySelector('input[placeholder="I want to work on..."]');
                 if (el) (el as HTMLInputElement).focus();
               }}
-              className="w-full text-xs font-bold text-[#8E9192] hover:text-white bg-[#141313]/30 hover:bg-[#141313]/50 transition-all py-4 border-t border-[#27272A]"
+              className="w-full text-xs font-bold text-[#8E9192] hover:text-white bg-[#141313]/30 hover:bg-[#141313]/50 transition-all py-4 border-t border-[#27272A] rounded-b-xl"
             >
               + Add New Task to Today
             </button>
@@ -315,8 +530,8 @@ export default function DashboardView({
                       <div
                         style={{ height: `${percentage}%` }}
                         className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-150 ${act.isToday
-                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]'
-                            : 'bg-[#201F1F] group-hover:bg-white/50'
+                          ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]'
+                          : 'bg-[#201F1F] group-hover:bg-white/50'
                           }`}
                       ></div>
                     </div>

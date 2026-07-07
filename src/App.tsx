@@ -405,6 +405,8 @@ export default function App() {
                 dailyActivity={dailyActivity}
                 onToggleTask={handleToggleTask}
                 onAddTask={handleAddTask}
+                onDeleteTask={handleDeleteTask}
+                onReorderTasks={handleReorderTasks}
                 onStartFocus={focusTimer.startFocusSession}
                 timerSeconds={focusTimer.timerSeconds}
                 timerIsRunning={focusTimer.timerIsRunning}
