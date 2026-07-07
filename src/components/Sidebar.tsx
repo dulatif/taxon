@@ -16,9 +16,9 @@ import {
   Repeat
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
-import { Project, getCategoryStyle } from '../types';
+import { Project, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
 
 interface SidebarProps {
   currentView: string;
@@ -54,7 +54,17 @@ export default function Sidebar({
   const { settings, updateSetting } = useSettings();
 
   const activeProjects = projects.filter((p) => p.category !== 'Completed');
-  const categories = Array.from(new Set(activeProjects.map((p) => p.category))).filter(Boolean);
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(activeProjects.map((p) => p.category))).filter(Boolean);
+    return cats.sort((a, b) => {
+      const idxA = (PROJECT_CATEGORIES as readonly string[]).indexOf(a);
+      const idxB = (PROJECT_CATEGORIES as readonly string[]).indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
+  }, [activeProjects]);
 
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
@@ -173,7 +183,7 @@ export default function Sidebar({
           <DragDropContext onDragEnd={onDragEnd}>
             <div className="space-y-3">
               {categories.map((cat) => {
-                const catProjects = activeProjects.filter((p) => p.category === cat);
+                const catProjects = activeProjects.filter((p) => p.category === cat).sort((a, b) => a.name.localeCompare(b.name));
                 if (catProjects.length === 0) return null;
 
                 const isExpanded = expandedCategories[cat] !== false;

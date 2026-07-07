@@ -254,7 +254,7 @@ export default function ProjectDetailView({
                 )}
               </div>
               {(() => {
-                const pooled = Array.from(new Set([...PROJECT_CATEGORIES, ...availableCategories])).filter(Boolean);
+                const pooled = Array.from(new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)).filter(Boolean);
                 if (isCustomCategoryMode) {
                   return (
                     <input

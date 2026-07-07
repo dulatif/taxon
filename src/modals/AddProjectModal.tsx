@@ -30,9 +30,9 @@ export default function AddProjectModal({
 }: AddProjectModalProps) {
   const [isCustomMode, setIsCustomMode] = useState(false);
 
-  // Merge default categories with any existing custom categories pooled from projects
+  // Use availableCategories if provided, otherwise fallback to PROJECT_CATEGORIES
   const allPooledCategories = Array.from(
-    new Set([...PROJECT_CATEGORIES, ...availableCategories])
+    new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)
   ).filter(Boolean);
 
   const handleCategorySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {

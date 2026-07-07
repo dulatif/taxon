@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule } from '../types';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule, PROJECT_CATEGORIES, getSavedCategories, saveCategories, setCategoryColor, removeCategoryColor, renameCategoryColor } from '../types';
 import {
   INITIAL_PROJECTS,
   INITIAL_TASKS,
@@ -94,6 +94,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
   const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
   const focusTickCounterRef = useRef(0);
 
   const [isImportConfirmOpen, setIsImportConfirmOpen] = useState(false);
@@ -151,6 +152,13 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
           }
           localStorage.setItem(`${STORAGE_PREFIX}initialized`, 'true');
         }
+
+        const savedCats = getSavedCategories();
+        const initialCats: string[] = savedCats
+          ? Array.from(new Set([...savedCats, ...dbProjects.map(p => p.category)])).filter((c): c is string => Boolean(c))
+          : Array.from(new Set([...PROJECT_CATEGORIES, ...dbProjects.map(p => p.category)])).filter((c): c is string => Boolean(c));
+        setCategories(initialCats);
+        saveCategories(initialCats);
 
         setProjects(dbProjects);
         setTasks(dbTasks);
@@ -361,6 +369,15 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     setProjects(prev => [...prev, newProj]);
     saveProject(newProj);
 
+    setCategories(prev => {
+      if (!prev.includes(category)) {
+        const updated = [...prev, category];
+        saveCategories(updated);
+        return updated;
+      }
+      return prev;
+    });
+
     if (options?.onProjectCreated) {
       options.onProjectCreated(newId);
     }
@@ -409,9 +426,19 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       }
       return p;
     }));
+    if (category) {
+      setCategories(prev => {
+        if (!prev.includes(category)) {
+          const updated = [...prev, category];
+          saveCategories(updated);
+          return updated;
+        }
+        return prev;
+      });
+    }
   }, []);
 
-  const handleRenameCategory = useCallback((oldCategory: string, newCategory: string) => {
+  const handleRenameCategory = useCallback((oldCategory: string, newCategory: string, newColorId?: string) => {
     setProjects(prev => prev.map(p => {
       if (p.category === oldCategory) {
         const up = { ...p, category: newCategory };
@@ -420,6 +447,22 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       }
       return p;
     }));
+
+    if (newColorId) {
+      if (oldCategory !== newCategory) {
+        removeCategoryColor(oldCategory);
+      }
+      setCategoryColor(newCategory, newColorId);
+    } else if (oldCategory !== newCategory) {
+      renameCategoryColor(oldCategory, newCategory);
+    }
+
+    setCategories(prev => {
+      const updated = prev.map(c => c === oldCategory ? newCategory : c);
+      const unique: string[] = Array.from(new Set(updated));
+      saveCategories(unique);
+      return unique;
+    });
   }, []);
 
   const handleDeleteCategory = useCallback((categoryToDelete: string, fallbackCategory: string = 'Engineering') => {
@@ -431,6 +474,30 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       }
       return p;
     }));
+
+    removeCategoryColor(categoryToDelete);
+
+    setCategories(prev => {
+      const updated = prev.filter(c => c !== categoryToDelete);
+      saveCategories(updated);
+      return updated;
+    });
+  }, []);
+
+  const handleAddCategory = useCallback((newCat: string, colorId?: string) => {
+    if (!newCat.trim()) return;
+    const trimmed = newCat.trim();
+    if (colorId) {
+      setCategoryColor(trimmed, colorId);
+    }
+    setCategories(prev => {
+      if (!prev.includes(trimmed)) {
+        const updated = [...prev, trimmed];
+        saveCategories(updated);
+        return updated;
+      }
+      return prev;
+    });
   }, []);
 
   const handleAddFile = useCallback((projectId: string, name: string, size: string, type: DocumentFile['type']) => {
@@ -594,6 +661,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     projects,
     tasks,
     files,
+    categories,
     dailyActivity,
     activityLog,
     isDataLoaded,
@@ -609,6 +677,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     handleEditProject,
     handleRenameCategory,
     handleDeleteCategory,
+    handleAddCategory,
     handleAddFile,
     handleDeleteFile,
     handleExportData,

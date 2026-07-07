@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { 
   ArrowUpRight, 
   CheckCircle,
@@ -8,12 +8,13 @@ import {
   Plus,
   Settings
 } from 'lucide-react';
-import { Project, Task, getCategoryStyle } from '../types';
+import { Project, Task, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
 import KanbanView from './KanbanView';
 
 interface ProjectsViewProps {
   projects: Project[];
   tasks: Task[];
+  categories?: string[];
   onProjectSelect: (id: string) => void;
   onViewChange: (view: string) => void;
   onAddProjectClick: () => void;
@@ -26,6 +27,7 @@ interface ProjectsViewProps {
 export default function ProjectsView({
   projects,
   tasks,
+  categories,
   onProjectSelect,
   onViewChange,
   onAddProjectClick,
@@ -40,15 +42,45 @@ export default function ProjectsView({
   // Local active count calculator
   const activeProjectsCount = projects.filter(p => p.category !== 'Completed').length;
 
-  // Available category tabs dynamically built from project data
+  // Available category tabs dynamically built strictly from projects that exist (hiding empty tags)
   const availableCategories = useMemo(() => {
     const cats = Array.from(new Set(projects.map(p => p.category))).filter(Boolean);
+    cats.sort((a, b) => {
+      const idxA = (PROJECT_CATEGORIES as readonly string[]).indexOf(a);
+      const idxB = (PROJECT_CATEGORIES as readonly string[]).indexOf(b);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      return a.localeCompare(b);
+    });
     return ['All', ...cats];
   }, [projects]);
 
+  // Reset selected category if its projects are all deleted/moved
+  useEffect(() => {
+    if (!availableCategories.includes(selectedCategory)) {
+      setSelectedCategory('All');
+    }
+  }, [availableCategories, selectedCategory]);
+
   const filteredProjects = useMemo(() => {
-    if (selectedCategory === 'All') return projects;
-    return projects.filter(p => p.category === selectedCategory);
+    let list = projects;
+    if (selectedCategory !== 'All') {
+      list = projects.filter(p => p.category === selectedCategory);
+    }
+    // Sort projects based on assigned project category tag, then project name
+    return [...list].sort((a, b) => {
+      const idxA = (PROJECT_CATEGORIES as readonly string[]).indexOf(a.category);
+      const idxB = (PROJECT_CATEGORIES as readonly string[]).indexOf(b.category);
+      let catComp = 0;
+      if (idxA !== -1 && idxB !== -1) catComp = idxA - idxB;
+      else if (idxA !== -1) catComp = -1;
+      else if (idxB !== -1) catComp = 1;
+      else catComp = a.category.localeCompare(b.category);
+      
+      if (catComp !== 0) return catComp;
+      return a.name.localeCompare(b.name);
+    });
   }, [projects, selectedCategory]);
 
   const handleProjectCardClick = (id: string) => {

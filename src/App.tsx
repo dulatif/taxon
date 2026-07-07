@@ -69,6 +69,7 @@ export default function App() {
     projects,
     tasks,
     files,
+    categories,
     dailyActivity,
     activityLog,
     isDataLoaded,
@@ -84,6 +85,7 @@ export default function App() {
     handleEditProject,
     handleRenameCategory,
     handleDeleteCategory,
+    handleAddCategory,
     handleAddFile,
     handleDeleteFile,
     handleExportData,
@@ -424,6 +426,7 @@ export default function App() {
               <ProjectsView
                 projects={projects}
                 tasks={tasks}
+                categories={categories}
                 onProjectSelect={(id) => setSelectedProjectId(id)}
                 onViewChange={setCurrentView}
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
@@ -439,7 +442,7 @@ export default function App() {
                 project={projects.find(p => p.id === selectedProjectId)!}
                 tasks={tasks}
                 files={files}
-                availableCategories={Array.from(new Set(projects.map(p => p.category)))}
+                availableCategories={categories}
                 onToggleTask={handleToggleTask}
                 onAddTask={handleAddTask}
                 onDeleteTask={handleDeleteTask}
@@ -515,8 +518,10 @@ export default function App() {
         isOpen={isManageCategoriesOpen}
         onClose={() => setIsManageCategoriesOpen(false)}
         projects={projects}
+        categories={categories}
         onRenameCategory={handleRenameCategory}
         onDeleteCategory={handleDeleteCategory}
+        onAddCategory={handleAddCategory}
       />
 
       <AddProjectModal
@@ -524,7 +529,7 @@ export default function App() {
         projName={newProjName}
         projDesc={newProjDesc}
         projCategory={newProjCategory}
-        availableCategories={Array.from(new Set(projects.map(p => p.category)))}
+        availableCategories={categories}
         onChangeName={setNewProjName}
         onChangeDesc={setNewProjDesc}
         onChangeCategory={setNewProjCategory}
