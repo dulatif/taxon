@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Check, Trash2, ChevronDown, ChevronRight, ArrowUpDown, SortAsc, X, Filter, Calendar, Tag, Folder, AlertCircle, ChevronsUpDown } from 'lucide-react';
+import { Check, Trash2, ChevronDown, ChevronRight, ArrowUpDown, SortAsc, X, Filter, Calendar, Tag, Folder, AlertCircle, ChevronsUpDown, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Task, Project } from '../types';
 import {
@@ -17,9 +17,14 @@ import {
 } from '../utils/taskFilters';
 
 interface TaskListViewProps {
+  key?: React.Key;
   title: string;
   tasks: Task[];
   projects: Project[];
+  defaultGrouped?: boolean;
+  isInboxView?: boolean;
+  onAddTask?: (title: string) => void;
+  addTaskPlaceholder?: string;
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
@@ -250,13 +255,25 @@ export default function TaskListView({
   title,
   tasks,
   projects,
+  defaultGrouped = true,
+  isInboxView = false,
+  onAddTask,
+  addTaskPlaceholder = 'Add a new task...',
   onToggleTask,
   onDeleteTask,
   onSelectTask,
 }: TaskListViewProps) {
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [sortBy, setSortBy] = useState<SortKey>('dueDate');
-  const [groupByProject, setGroupByProject] = useState(true);
+  const [groupByProject, setGroupByProject] = useState(defaultGrouped);
+  const [newTaskTitle, setNewTaskTitle] = useState('');
+
+  const handleAddTaskSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskTitle.trim() || !onAddTask) return;
+    onAddTask(newTaskTitle.trim());
+    setNewTaskTitle('');
+  };
 
   // Apply filter → sort
   const filteredTasks = sortTasks(filterTasks(tasks, filters), sortBy);
@@ -393,7 +410,7 @@ export default function TaskListView({
           </h2>
           <div className="flex items-center gap-2">
             {/* Expand / Collapse all — only shown when grouped */}
-            {groupByProject && (
+            {!isInboxView && groupByProject && (
               <button
                 onClick={toggleAllGroups}
                 title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
@@ -408,18 +425,20 @@ export default function TaskListView({
               </button>
             )}
             {/* Group toggle */}
-            <button
-              onClick={() => setGroupByProject(g => !g)}
-              title={groupByProject ? 'Switch to flat list' : 'Group by project'}
-              className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border transition-all ${
-                groupByProject
-                  ? 'bg-white/10 border-white/20 text-white'
-                  : 'bg-transparent border-[#27272A] text-[#8E9192] hover:text-white hover:border-white/30'
-              }`}
-            >
-              <Folder className="w-3 h-3" />
-              {groupByProject ? 'Grouped' : 'Flat'}
-            </button>
+            {!isInboxView && (
+              <button
+                onClick={() => setGroupByProject(g => !g)}
+                title={groupByProject ? 'Switch to flat list' : 'Group by project'}
+                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border transition-all ${
+                  groupByProject
+                    ? 'bg-white/10 border-white/20 text-white'
+                    : 'bg-transparent border-[#27272A] text-[#8E9192] hover:text-white hover:border-white/30'
+                }`}
+              >
+                <Folder className="w-3 h-3" />
+                {groupByProject ? 'Grouped' : 'Flat'}
+              </button>
+            )}
             <span className="text-[10px] font-mono font-bold bg-[#1a1a1a] border border-[#27272A] text-[#8E9192] px-2 py-0.5 rounded">
               {filteredTasks.length} / {tasks.length} Tasks
             </span>
@@ -501,75 +520,79 @@ export default function TaskListView({
             </FilterPopover>
 
             {/* Project filter */}
-            <FilterPopover
-              label="Project"
-              icon={Folder}
-              active={filters.projectIds.length > 0}
-            >
-              <div className="p-1.5 space-y-0.5 max-h-48 overflow-y-auto">
-                {projects.map(proj => {
-                  const on = filters.projectIds.includes(proj.id);
-                  return (
-                    <button
-                      key={proj.id}
-                      onClick={() => toggleProject(proj.id)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
-                        on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
-                      }`}
-                    >
-                      <span className="w-2 h-2 rounded-sm bg-[#27272A] border border-[#3f3f3f]" />
-                      <span className="truncate max-w-[140px]">{proj.name}</span>
-                      {on && <Check className="w-3 h-3 ml-auto shrink-0 text-white" />}
-                    </button>
-                  );
-                })}
-                {projects.length === 0 && (
-                  <div className="px-2.5 py-2 text-[10px] text-[#8E9192]">No projects yet</div>
-                )}
-              </div>
-            </FilterPopover>
+            {!isInboxView && (
+              <FilterPopover
+                label="Project"
+                icon={Folder}
+                active={filters.projectIds.length > 0}
+              >
+                <div className="p-1.5 space-y-0.5 max-h-48 overflow-y-auto">
+                  {projects.map(proj => {
+                    const on = filters.projectIds.includes(proj.id);
+                    return (
+                      <button
+                        key={proj.id}
+                        onClick={() => toggleProject(proj.id)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
+                          on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
+                        }`}
+                      >
+                        <span className="w-2 h-2 rounded-sm bg-[#27272A] border border-[#3f3f3f]" />
+                        <span className="truncate max-w-[140px]">{proj.name}</span>
+                        {on && <Check className="w-3 h-3 ml-auto shrink-0 text-white" />}
+                      </button>
+                    );
+                  })}
+                  {projects.length === 0 && (
+                    <div className="px-2.5 py-2 text-[10px] text-[#8E9192]">No projects yet</div>
+                  )}
+                </div>
+              </FilterPopover>
+            )}
 
             {/* Due date filter */}
-            <FilterPopover
-              label="Due Date"
-              icon={Calendar}
-              active={filters.dueDateRange !== null}
-            >
-              <div className="p-1.5 space-y-0.5">
-                {DUE_DATE_OPTIONS.map(opt => {
-                  const on = filters.dueDateRange === opt.key;
-                  return (
-                    <button
-                      key={opt.key}
-                      onClick={() => setDueDateRange(opt.key)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
-                        on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
-                      }`}
-                    >
-                      {opt.label}
-                      {on && <Check className="w-3 h-3 ml-auto text-white" />}
-                    </button>
-                  );
-                })}
-                {/* Custom range inputs */}
-                {filters.dueDateRange === 'custom' && (
-                  <div className="pt-1 px-1 space-y-1">
-                    <input
-                      type="date"
-                      value={filters.customFrom}
-                      onChange={e => setFilters(f => ({ ...f, customFrom: e.target.value }))}
-                      className="w-full bg-[#141313] border border-[#27272A] text-[10px] text-white rounded px-2 py-1 focus:outline-none focus:border-white/40"
-                    />
-                    <input
-                      type="date"
-                      value={filters.customTo}
-                      onChange={e => setFilters(f => ({ ...f, customTo: e.target.value }))}
-                      className="w-full bg-[#141313] border border-[#27272A] text-[10px] text-white rounded px-2 py-1 focus:outline-none focus:border-white/40"
-                    />
-                  </div>
-                )}
-              </div>
-            </FilterPopover>
+            {!isInboxView && (
+              <FilterPopover
+                label="Due Date"
+                icon={Calendar}
+                active={filters.dueDateRange !== null}
+              >
+                <div className="p-1.5 space-y-0.5">
+                  {DUE_DATE_OPTIONS.map(opt => {
+                    const on = filters.dueDateRange === opt.key;
+                    return (
+                      <button
+                        key={opt.key}
+                        onClick={() => setDueDateRange(opt.key)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
+                          on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
+                        }`}
+                      >
+                        {opt.label}
+                        {on && <Check className="w-3 h-3 ml-auto text-white" />}
+                      </button>
+                    );
+                  })}
+                  {/* Custom range inputs */}
+                  {filters.dueDateRange === 'custom' && (
+                    <div className="pt-1 px-1 space-y-1">
+                      <input
+                        type="date"
+                        value={filters.customFrom}
+                        onChange={e => setFilters(f => ({ ...f, customFrom: e.target.value }))}
+                        className="w-full bg-[#141313] border border-[#27272A] text-[10px] text-white rounded px-2 py-1 focus:outline-none focus:border-white/40"
+                      />
+                      <input
+                        type="date"
+                        value={filters.customTo}
+                        onChange={e => setFilters(f => ({ ...f, customTo: e.target.value }))}
+                        className="w-full bg-[#141313] border border-[#27272A] text-[10px] text-white rounded px-2 py-1 focus:outline-none focus:border-white/40"
+                      />
+                    </div>
+                  )}
+                </div>
+              </FilterPopover>
+            )}
           </div>
 
           {/* Row 2: active chips */}
@@ -679,6 +702,29 @@ export default function TaskListView({
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* Inline Input Field for Adding New Task */}
+          {onAddTask && (
+            <form onSubmit={handleAddTaskSubmit} className="mt-4 px-1">
+              <div className="flex items-center gap-3 px-3 py-2 bg-[#141313] border border-[#27272A]/80 rounded-lg focus-within:border-white/30 transition-all">
+                <Plus className="w-4 h-4 text-[#8E9192] shrink-0" />
+                <input
+                  type="text"
+                  className="bg-transparent border-none focus:outline-none text-xs text-white placeholder:text-[#8E9192]/60 w-full"
+                  placeholder={addTaskPlaceholder}
+                  value={newTaskTitle}
+                  onChange={(e) => setNewTaskTitle(e.target.value)}
+                />
+                <button 
+                  type="submit" 
+                  disabled={!newTaskTitle.trim()}
+                  className="bg-zinc-800 text-white hover:bg-zinc-700 text-[10px] font-bold px-2.5 py-1 rounded disabled:opacity-40 transition-colors shrink-0 cursor-pointer"
+                >
+                  Create
+                </button>
+              </div>
+            </form>
+          )}
         </div>
 
       </div>

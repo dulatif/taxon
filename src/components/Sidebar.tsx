@@ -1,6 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard,
+  Inbox,
   Folder,
   CheckSquare,
   CheckCircle,
@@ -50,6 +51,7 @@ export default function Sidebar({
   // Main Navigation Items
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'inbox', label: 'Inbox', icon: Inbox },
     { id: 'projects', label: 'Projects', icon: Folder },
     { id: 'todo', label: 'Todo List', icon: CheckSquare },
     { id: 'completed', label: 'Completed', icon: CheckCircle },

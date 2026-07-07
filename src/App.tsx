@@ -161,6 +161,8 @@ export default function App() {
     switch (currentView) {
       case 'dashboard':
         return 'Dashboard';
+      case 'inbox':
+        return 'Inbox';
       case 'projects':
         return 'Workspace Projects';
       case 'todo':
@@ -185,6 +187,9 @@ export default function App() {
 
   // Filtered Task views based on navbar selected page
   const getFilteredViewTasks = () => {
+    if (currentView === 'inbox') {
+      return tasks.filter(t => !t.projectId && !t.dueDate && !t.completed);
+    }
     if (currentView === 'todo') {
       return tasks.filter(t => !t.completed);
     }
@@ -443,11 +448,16 @@ export default function App() {
             )}
 
             {/* Simple task lists views templates mapped cleanly */}
-            {(currentView === 'todo' || currentView === 'completed') && (
+            {(currentView === 'inbox' || currentView === 'todo' || currentView === 'completed') && (
               <TaskListView
+                key={currentView}
                 title={getHeaderTitle()}
                 tasks={getFilteredViewTasks()}
                 projects={projects}
+                defaultGrouped={currentView !== 'inbox'}
+                isInboxView={currentView === 'inbox'}
+                onAddTask={currentView === 'inbox' || currentView === 'todo' ? ((title: string) => handleAddTask(title, undefined, '')) : undefined}
+                addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : 'Add a new task...'}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
