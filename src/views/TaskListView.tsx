@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Check, Trash2, ChevronDown, ChevronRight, ArrowUpDown, SortAsc, X, Filter, Calendar, Tag, Folder, AlertCircle, ChevronsUpDown, Plus } from 'lucide-react';
+import { Check, Trash2, ChevronDown, ChevronRight, ArrowUpDown, SortAsc, X, Filter, Calendar, Tag, Folder, AlertCircle, ChevronsUpDown, Plus, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Task, Project } from '../types';
+import { Task, Project, RecurrenceRule } from '../types';
 import {
   TaskFilters,
   DEFAULT_FILTERS,
@@ -117,6 +117,35 @@ function DueDateBadge({ dueDate }: { dueDate: string | undefined }) {
 }
 
 // ---------------------------------------------------------------------------
+// Recurrence badge
+// ---------------------------------------------------------------------------
+function RecurrenceBadge({ recurrence }: { recurrence?: RecurrenceRule }) {
+  if (!recurrence) return null;
+  let label = 'Daily';
+  if (recurrence.frequency === 'daily') label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}d` : 'Daily';
+  else if (recurrence.frequency === 'weekdays') label = 'Weekdays';
+  else if (recurrence.frequency === 'weekly') {
+    if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
+      const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const days = recurrence.daysOfWeek.map(d => names[d]).join(',');
+      label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}w (${days})` : `Weekly (${days})`;
+    } else {
+      label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}w` : 'Weekly';
+    }
+  }
+  else if (recurrence.frequency === 'monthly') label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}m` : 'Monthly';
+  else if (recurrence.frequency === 'yearly') label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}y` : 'Yearly';
+  else if (recurrence.frequency === 'custom') label = `Every ${recurrence.interval || 1}d`;
+
+  return (
+    <span className="inline-flex items-center gap-1 text-[9px] font-bold font-mono px-1.5 py-0.5 rounded border text-blue-400 border-blue-500/40 bg-blue-500/10" title="Recurring Task">
+      <Repeat className="w-2.5 h-2.5" />
+      {label}
+    </span>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Active filter chip
 // ---------------------------------------------------------------------------
 const FilterChip: React.FC<{ label: string; onRemove: () => void }> = ({ label, onRemove }) => {
@@ -215,6 +244,7 @@ const TaskGroup: React.FC<{
                         <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
                           <PriorityBadge priority={task.priority} />
                           <DueDateBadge dueDate={task.dueDate} />
+                          <RecurrenceBadge recurrence={task.recurrence} />
                           {task.labels && task.labels.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[9px] text-[#8E9192] bg-black/30 border border-[#27272A]/50 px-1.5 py-0.5 rounded">
                               <Tag className="w-2.5 h-2.5" />
@@ -681,6 +711,7 @@ export default function TaskListView({
                           <div className="flex items-center gap-1.5 mt-0.5">
                             <PriorityBadge priority={task.priority} />
                             <DueDateBadge dueDate={task.dueDate} />
+                            <RecurrenceBadge recurrence={task.recurrence} />
                           </div>
                         </div>
                       </div>

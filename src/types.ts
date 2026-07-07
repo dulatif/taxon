@@ -60,6 +60,14 @@ export interface SubTask {
   completed: boolean;
 }
 
+export type RecurrenceFrequency = 'daily' | 'weekdays' | 'weekly' | 'monthly' | 'yearly' | 'custom';
+
+export interface RecurrenceRule {
+  frequency: RecurrenceFrequency;
+  interval?: number; // e.g. every 2 weeks
+  daysOfWeek?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
+}
+
 export interface Task {
   id: string;
   projectId: string | null;
@@ -77,6 +85,7 @@ export interface Task {
   timeEffort?: number; // estimated effort in minutes
   timeSpent?: number; // time spent in minutes
   sortOrder?: number;
+  recurrence?: RecurrenceRule;
 }
 
 export interface DocumentFile {

@@ -173,6 +173,8 @@ export default function App() {
         return 'Done / Archived Tasks';
       case 'scheduled':
         return 'Calendar / Scheduled Task List';
+      case 'recurring':
+        return 'Recurring Tasks';
       case 'analytics':
         return 'Productivity Analytics';
       case 'settings':
@@ -197,6 +199,9 @@ export default function App() {
     }
     if (currentView === 'completed') {
       return tasks.filter(t => t.completed);
+    }
+    if (currentView === 'recurring') {
+      return tasks.filter(t => !t.completed && t.recurrence !== undefined);
     }
     if (currentView === 'scheduled') {
       return tasks;
@@ -456,7 +461,7 @@ export default function App() {
             )}
 
             {/* Simple task lists views templates mapped cleanly */}
-            {(currentView === 'inbox' || currentView === 'todo' || currentView === 'completed') && (
+            {(currentView === 'inbox' || currentView === 'todo' || currentView === 'completed' || currentView === 'recurring') && (
               <TaskListView
                 key={currentView}
                 title={getHeaderTitle()}
@@ -464,8 +469,8 @@ export default function App() {
                 projects={projects}
                 defaultGrouped={currentView !== 'inbox'}
                 isInboxView={currentView === 'inbox'}
-                onAddTask={currentView === 'inbox' || currentView === 'todo' ? ((title: string) => handleAddTask(title, undefined, '')) : undefined}
-                addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : 'Add a new task...'}
+                onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
+                addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : currentView === 'recurring' ? 'Add a new recurring task (defaults to daily)...' : 'Add a new task...'}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry } from '../types';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule } from '../types';
 import {
   INITIAL_PROJECTS,
   INITIAL_TASKS,
@@ -25,6 +25,61 @@ const STORAGE_PREFIX = 'axon_tasking_';
 const tryParseJSON = (str: string | null) => {
   if (!str) return null;
   try { return JSON.parse(str); } catch (_) { return null; }
+};
+
+export const calculateNextDueDate = (currentDateStr?: string, rule?: RecurrenceRule): string => {
+  if (!rule) return currentDateStr || '';
+  const baseDate = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : new Date();
+  if (isNaN(baseDate.getTime())) return currentDateStr || '';
+
+  const next = new Date(baseDate);
+  const interval = rule.interval && rule.interval > 0 ? rule.interval : 1;
+
+  switch (rule.frequency) {
+    case 'daily': {
+      next.setDate(next.getDate() + interval);
+      break;
+    }
+    case 'weekdays': {
+      do {
+        next.setDate(next.getDate() + 1);
+      } while (next.getDay() === 0 || next.getDay() === 6);
+      break;
+    }
+    case 'weekly': {
+      if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+        const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+        const currentDay = next.getDay();
+        const nextDayInSameWeek = sortedDays.find(d => d > currentDay);
+        if (nextDayInSameWeek !== undefined) {
+          next.setDate(next.getDate() + (nextDayInSameWeek - currentDay));
+        } else {
+          const daysUntilNextWeek = 7 - currentDay + sortedDays[0] + (interval - 1) * 7;
+          next.setDate(next.getDate() + daysUntilNextWeek);
+        }
+      } else {
+        next.setDate(next.getDate() + interval * 7);
+      }
+      break;
+    }
+    case 'monthly': {
+      next.setMonth(next.getMonth() + interval);
+      break;
+    }
+    case 'yearly': {
+      next.setFullYear(next.getFullYear() + interval);
+      break;
+    }
+    case 'custom': {
+      next.setDate(next.getDate() + interval);
+      break;
+    }
+  }
+
+  const year = next.getFullYear();
+  const month = String(next.getMonth() + 1).padStart(2, '0');
+  const day = String(next.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 };
 
 interface UseWorkspaceDataOptions {
@@ -143,16 +198,36 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
   const handleCompleteTaskDirectly = useCallback((id: string) => {
     let targetProjId: string | null = null;
     let completedTaskTitle = '';
-    setTasks(prev => prev.map(t => {
-      if (t.id === id) {
-        targetProjId = t.projectId;
-        completedTaskTitle = t.title;
-        const updatedTask = { ...t, completed: true, status: 'Done' as const };
-        saveTask(updatedTask);
-        return updatedTask;
+    let spawnedTask: Task | null = null;
+    setTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === id) {
+          targetProjId = t.projectId;
+          completedTaskTitle = t.title;
+          if (!t.completed && t.recurrence) {
+            const nextDate = calculateNextDueDate(t.dueDate, t.recurrence);
+            spawnedTask = {
+              ...t,
+              id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              completed: false,
+              status: 'To Do' as const,
+              dueDate: nextDate,
+              timeSpent: 0,
+              subtasks: t.subtasks ? t.subtasks.map(s => ({ ...s, completed: false })) : undefined
+            };
+          }
+          const updatedTask = { ...t, completed: true, status: 'Done' as const };
+          saveTask(updatedTask);
+          return updatedTask;
+        }
+        return t;
+      });
+      if (spawnedTask) {
+        saveTask(spawnedTask);
+        return [spawnedTask, ...updated];
       }
-      return t;
-    }));
+      return updated;
+    });
 
     if (completedTaskTitle) {
       logCompletion(id, completedTaskTitle);
@@ -171,6 +246,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
 
   const handleToggleTask = useCallback((id: string) => {
     let targetProjId: string | null = null;
+    let spawnedTask: Task | null = null;
     setTasks(prev => {
       const updated = prev.map(t => {
         if (t.id === id) {
@@ -183,6 +259,18 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
               acts.forEach(a => saveActivity(a));
               return acts;
             });
+            if (t.recurrence) {
+              const nextDate = calculateNextDueDate(t.dueDate, t.recurrence);
+              spawnedTask = {
+                ...t,
+                id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                completed: false,
+                status: 'To Do' as const,
+                dueDate: nextDate,
+                timeSpent: 0,
+                subtasks: t.subtasks ? t.subtasks.map(s => ({ ...s, completed: false })) : undefined
+              };
+            }
           }
           const updatedTask = {
             ...t,
@@ -194,6 +282,10 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         }
         return t;
       });
+      if (spawnedTask) {
+        saveTask(spawnedTask);
+        return [spawnedTask, ...updated];
+      }
       return updated;
     });
 
@@ -204,7 +296,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }, 50);
   }, [logCompletion, recalculateProjectProgress]);
 
-  const handleAddTask = useCallback((title: string, projectId?: string, dueDate?: string) => {
+  const handleAddTask = useCallback((title: string, projectId?: string, dueDate?: string, recurrence?: RecurrenceRule) => {
     const getTodayStr = () => {
       const d = new Date();
       const year = d.getFullYear();
@@ -221,7 +313,8 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       duration: '45m',
       priority: 'Medium',
       status: 'To Do',
-      dueDate: dueDate !== undefined ? dueDate : ''
+      dueDate: dueDate !== undefined ? dueDate : '',
+      recurrence
     };
     setTasks(prev => [newTask, ...prev]);
     saveTask(newTask);
@@ -229,6 +322,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     if (projectId) {
       setTimeout(() => recalculateProjectProgress(projectId), 50);
     }
+    return newTask;
   }, [recalculateProjectProgress]);
 
   const handleDeleteTask = useCallback((id: string, onDeleted?: (id: string) => void) => {
@@ -403,28 +497,48 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
 
   const handleMoveTaskStatus = useCallback((taskId: string, newStatus: Task['status']) => {
     let targetProjId: string | null = null;
-    setTasks(prev => prev.map(t => {
-      if (t.id === taskId) {
-        targetProjId = t.projectId;
-        const willComplete = newStatus === 'Done';
-        if (willComplete && !t.completed) {
-          logCompletion(t.id, t.title);
-          setDailyActivity(prevAct => {
-            const acts = updateDailyActivityWithCompletion(prevAct);
-            acts.forEach(a => saveActivity(a));
-            return acts;
-          });
+    let spawnedTask: Task | null = null;
+    setTasks(prev => {
+      const updated = prev.map(t => {
+        if (t.id === taskId) {
+          targetProjId = t.projectId;
+          const willComplete = newStatus === 'Done';
+          if (willComplete && !t.completed) {
+            logCompletion(t.id, t.title);
+            setDailyActivity(prevAct => {
+              const acts = updateDailyActivityWithCompletion(prevAct);
+              acts.forEach(a => saveActivity(a));
+              return acts;
+            });
+            if (t.recurrence) {
+              const nextDate = calculateNextDueDate(t.dueDate, t.recurrence);
+              spawnedTask = {
+                ...t,
+                id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                completed: false,
+                status: 'To Do' as const,
+                dueDate: nextDate,
+                timeSpent: 0,
+                subtasks: t.subtasks ? t.subtasks.map(s => ({ ...s, completed: false })) : undefined
+              };
+            }
+          }
+          const updatedTask = {
+            ...t,
+            status: newStatus,
+            completed: willComplete
+          };
+          saveTask(updatedTask);
+          return updatedTask;
         }
-        const updatedTask = {
-          ...t,
-          status: newStatus,
-          completed: willComplete
-        };
-        saveTask(updatedTask);
-        return updatedTask;
+        return t;
+      });
+      if (spawnedTask) {
+        saveTask(spawnedTask);
+        return [spawnedTask, ...updated];
       }
-      return t;
-    }));
+      return updated;
+    });
 
     if (targetProjId) {
       setTimeout(() => recalculateProjectProgress(targetProjId!), 50);

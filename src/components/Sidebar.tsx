@@ -13,7 +13,8 @@ import {
   Pause,
   Plus,
   Settings,
-  Sun
+  Sun,
+  Repeat
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
@@ -125,6 +126,7 @@ export default function Sidebar({
     { id: 'todo', label: 'Todo List', icon: CheckSquare },
     { id: 'completed', label: 'Completed', icon: CheckCircle },
     { id: 'scheduled', label: 'Scheduled', icon: Calendar },
+    { id: 'recurring', label: 'Recurring', icon: Repeat },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },
   ];
 
