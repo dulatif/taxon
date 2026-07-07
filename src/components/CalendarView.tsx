@@ -1,19 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import { DayPicker } from 'react-day-picker';
-import { format, parseISO, isSameDay } from 'date-fns';
+import {
+  format,
+  parseISO,
+  addMonths,
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  subWeeks,
+  startOfMonth,
+  endOfMonth,
+} from 'date-fns';
 import {
   Calendar,
-  Clock,
-  Check,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
 import { Task, Project } from '../types';
+import TaskListView from '../views/TaskListView';
+
+type DateFilterMode = 'all' | 'single' | 'today' | 'week' | 'next-week' | 'last-week' | 'month' | 'custom';
 
 interface CalendarViewProps {
   tasks: Task[];
   projects: Project[];
   onToggleTask: (id: string) => void;
+  onDeleteTask?: (id: string, onDeleted?: (id: string) => void) => void;
+  onAddTask?: (title: string, projectId?: string, dueDate?: string) => void;
   onSelectTask?: (task: Task) => void;
 }
 
@@ -21,17 +34,22 @@ export default function CalendarView({
   tasks,
   projects,
   onToggleTask,
+  onDeleteTask,
+  onAddTask,
   onSelectTask,
 }: CalendarViewProps) {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date());
   const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+  const [filterMode, setFilterMode] = useState<DateFilterMode>('today');
+  const [customFrom, setCustomFrom] = useState('');
+  const [customTo, setCustomTo] = useState('');
 
   // Build a map of dates that have tasks due
   const tasksByDate = useMemo(() => {
     const map = new Map<string, Task[]>();
     for (const task of tasks) {
       if (task.dueDate) {
-        const dateKey = task.dueDate;
+        const dateKey = task.dueDate.substring(0, 10);
         if (!map.has(dateKey)) {
           map.set(dateKey, []);
         }
@@ -48,46 +66,151 @@ export default function CalendarView({
     return keys.map(d => parseISO(d));
   }, [tasksByDate]);
 
-  // Tasks for the selected date
-  const selectedDateTasks = useMemo(() => {
-    const dateKey = format(selectedDate, 'yyyy-MM-dd');
-    return tasksByDate.get(dateKey) || [];
-  }, [selectedDate, tasksByDate]);
+  // Calculate active date range for highlighting on the calendar
+  const activeRange = useMemo(() => {
+    const now = new Date();
+    if (filterMode === 'week') {
+      return { from: startOfWeek(now, { weekStartsOn: 0 }), to: endOfWeek(now, { weekStartsOn: 0 }) };
+    }
+    if (filterMode === 'next-week') {
+      const nextW = addWeeks(now, 1);
+      return { from: startOfWeek(nextW, { weekStartsOn: 0 }), to: endOfWeek(nextW, { weekStartsOn: 0 }) };
+    }
+    if (filterMode === 'last-week') {
+      const lastW = subWeeks(now, 1);
+      return { from: startOfWeek(lastW, { weekStartsOn: 0 }), to: endOfWeek(lastW, { weekStartsOn: 0 }) };
+    }
+    if (filterMode === 'month') {
+      return { from: startOfMonth(now), to: endOfMonth(now) };
+    }
+    if (filterMode === 'custom' && customFrom && customTo) {
+      return {
+        from: parseISO(customFrom),
+        to: parseISO(customTo),
+      };
+    }
+    return undefined;
+  }, [filterMode, customFrom, customTo]);
 
-  const getProjectName = (projectId: string | null) => {
-    if (!projectId) return 'Personal';
-    const project = projects.find(p => p.id === projectId);
-    return project ? project.name : 'Unknown';
-  };
+  // Filter tasks based on selected filter mode and range
+  const filteredTasks = useMemo(() => {
+    return tasks.filter(t => {
+      if (!t.dueDate || t.dueDate.trim() === '') return false;
+      const dateStr = t.dueDate.substring(0, 10);
+      
+      if (filterMode === 'all') return true;
+      if (filterMode === 'single' || filterMode === 'today') {
+        const targetStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
+        return dateStr.startsWith(targetStr);
+      }
+      if (activeRange?.from && activeRange?.to) {
+        const fromStr = format(activeRange.from, 'yyyy-MM-dd');
+        const toStr = format(activeRange.to, 'yyyy-MM-dd');
+        return dateStr >= fromStr && dateStr <= toStr;
+      }
+      if (filterMode === 'custom') {
+        if (customFrom && dateStr < customFrom) return false;
+        if (customTo && dateStr > customTo) return false;
+        return true;
+      }
+      return true;
+    });
+  }, [tasks, filterMode, selectedDate, activeRange, customFrom, customTo]);
+
+  const listTitle = useMemo(() => {
+    switch (filterMode) {
+      case 'all': return 'All Scheduled Tasks';
+      case 'today': return `Today: ${format(new Date(), 'MMM d, yyyy')}`;
+      case 'week': return 'Scheduled: This Week';
+      case 'next-week': return 'Scheduled: Next Week';
+      case 'last-week': return 'Scheduled: Last Week';
+      case 'month': return 'Scheduled: This Month';
+      case 'custom': return `Scheduled: ${customFrom || 'Start'} to ${customTo || 'End'}`;
+      case 'single': return selectedDate ? `Scheduled: ${format(selectedDate, 'MMM d, yyyy')}` : 'All Scheduled Tasks';
+    }
+  }, [filterMode, selectedDate, customFrom, customTo]);
+
+  const selectedDateStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : null;
 
   return (
-    <div className="max-w-5xl mx-auto py-8 px-6 space-y-6">
-      <div className="grid grid-cols-12 gap-6">
+    <div className="max-w-7xl mx-auto w-full px-4 md:px-8 py-4 space-y-6">
+      <div className="grid grid-cols-12 gap-8 items-start">
+        
+        {/* Left/Middle Column: Task List (col-span-12 lg:col-span-8) */}
+        <div className="col-span-12 lg:col-span-8 space-y-6">
+          <TaskListView
+            title={listTitle}
+            tasks={filteredTasks}
+            projects={projects}
+            defaultGrouped={true}
+            isEmbedded={true}
+            onAddTask={onAddTask ? ((title: string) => onAddTask(title, undefined, selectedDateStr || undefined)) : undefined}
+            addTaskPlaceholder={selectedDateStr ? `Add task for ${selectedDateStr}...` : "Add a scheduled task..."}
+            onToggleTask={onToggleTask}
+            onDeleteTask={onDeleteTask}
+            onSelectTask={onSelectTask}
+          />
+        </div>
 
-        {/* Calendar Widget */}
-        <div className="col-span-12 lg:col-span-7">
-          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
+        {/* Right Column: Calendar Widget & Filter Summary (col-span-12 lg:col-span-4) */}
+        <div className="col-span-12 lg:col-span-4 space-y-6">
+          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 sticky top-24">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
-                Calendar
+                Date Filter
               </h2>
-              <span className="text-[10px] text-[#8E9192] font-mono uppercase tracking-wider">
-                {format(currentMonth, 'MMMM yyyy')}
-              </span>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-[#8E9192] font-mono uppercase tracking-wider">
+                  {format(currentMonth, 'MMMM yyyy')}
+                </span>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentMonth(prev => addMonths(prev, -1))}
+                    className="w-7 h-7 rounded-lg border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all"
+                    title="Previous Month"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
+                    className="w-7 h-7 rounded-lg border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all"
+                    title="Next Month"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
 
             <DayPicker
               mode="single"
               selected={selectedDate}
-              onSelect={(date) => date && setSelectedDate(date)}
+              onSelect={(date) => {
+                if (date) {
+                  setSelectedDate(date);
+                  setFilterMode('single');
+                } else {
+                  setSelectedDate(undefined);
+                  setFilterMode('all');
+                }
+              }}
               month={currentMonth}
               onMonthChange={setCurrentMonth}
+              hideNavigation={true}
               modifiers={{
                 hasTasks: datesWithTasks,
+                rangeStart: activeRange?.from ? [activeRange.from] : [],
+                rangeEnd: activeRange?.to ? [activeRange.to] : [],
+                rangeMiddle: activeRange?.from && activeRange?.to ? [{ from: activeRange.from, to: activeRange.to }] : [],
               }}
               modifiersClassNames={{
                 hasTasks: 'taxon-has-tasks',
+                rangeStart: 'taxon-range-start',
+                rangeEnd: 'taxon-range-end',
+                rangeMiddle: 'taxon-range-middle',
               }}
               classNames={{
                 root: 'taxon-calendar',
@@ -107,73 +230,163 @@ export default function CalendarView({
                 today: 'taxon-day-today',
                 outside: 'taxon-day-outside',
               }}
-              components={{
-                Chevron: ({ orientation }) =>
-                  orientation === 'left' ? (
-                    <ChevronLeft className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  ),
-              }}
             />
-          </div>
-        </div>
 
-        {/* Selected Day Task Panel */}
-        <div className="col-span-12 lg:col-span-5">
-          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 sticky top-24">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[#27272A]/50">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
-                {isSameDay(selectedDate, new Date()) ? "Today" : format(selectedDate, 'MMM d, yyyy')}
-              </h3>
-              <span className="text-[10px] font-mono font-bold bg-[#141313] border border-[#27272A] text-[#8E9192] px-2 py-0.5 rounded">
-                {selectedDateTasks.length} Task{selectedDateTasks.length !== 1 ? 's' : ''}
-              </span>
+            {/* Filter status and quick toggles */}
+            <div className="mt-6 pt-6 border-t border-[#27272A]/50 space-y-3">
+              <div className="flex items-center justify-between text-xs font-mono mb-1">
+                <span className="text-[#8E9192]">Filter State:</span>
+                <span className="text-white font-bold">
+                  {filterMode === 'all' && 'All Scheduled'}
+                  {filterMode === 'today' && 'Today'}
+                  {filterMode === 'week' && 'This Week'}
+                  {filterMode === 'next-week' && 'Next Week'}
+                  {filterMode === 'last-week' && 'Last Week'}
+                  {filterMode === 'month' && 'This Month'}
+                  {filterMode === 'custom' && 'Custom Range'}
+                  {filterMode === 'single' && selectedDate && format(selectedDate, 'MMM d, yyyy')}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setFilterMode('today'); setSelectedDate(new Date()); setCurrentMonth(new Date()); }}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
+                    filterMode === 'today'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = new Date();
+                    setFilterMode('week');
+                    setSelectedDate(undefined);
+                    setCurrentMonth(target);
+                  }}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
+                    filterMode === 'week'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  This Week
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = subWeeks(new Date(), 1);
+                    setFilterMode('last-week');
+                    setSelectedDate(undefined);
+                    setCurrentMonth(target);
+                  }}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
+                    filterMode === 'last-week'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  Last Week
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = addWeeks(new Date(), 1);
+                    setFilterMode('next-week');
+                    setSelectedDate(undefined);
+                    setCurrentMonth(target);
+                  }}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
+                    filterMode === 'next-week'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  Next Week
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterMode('month');
+                    setSelectedDate(undefined);
+                    setCurrentMonth(new Date());
+                  }}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
+                    filterMode === 'month'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  This Month
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setFilterMode('custom'); setSelectedDate(undefined); }}
+                  className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
+                    filterMode === 'custom'
+                      ? 'bg-white text-black border-white'
+                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                  }`}
+                >
+                  Custom Range
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => { setFilterMode('all'); setSelectedDate(undefined); }}
+                className={`w-full py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-2 mt-1 ${
+                  filterMode === 'all'
+                    ? 'bg-white text-black border-white'
+                    : 'bg-[#141313] hover:bg-[#201F1F] text-white border-[#27272A] hover:border-white/30'
+                }`}
+              >
+                All Scheduled Tasks
+              </button>
+
+              {/* Custom Range Inputs */}
+              {filterMode === 'custom' && (
+                <div className="pt-3 space-y-2 border-t border-[#27272A]/40 animate-in fade-in">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[#8E9192] font-mono w-10">From:</span>
+                    <input
+                      type="date"
+                      value={customFrom}
+                      onChange={(e) => setCustomFrom(e.target.value)}
+                      className="bg-[#141313] border border-[#27272A] rounded px-2 py-1 text-xs text-white flex-1 font-mono focus:outline-none focus:border-white/40"
+                    />
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-[#8E9192] font-mono w-10">To:</span>
+                    <input
+                      type="date"
+                      value={customTo}
+                      onChange={(e) => setCustomTo(e.target.value)}
+                      className="bg-[#141313] border border-[#27272A] rounded px-2 py-1 text-xs text-white flex-1 font-mono focus:outline-none focus:border-white/40"
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {selectedDateTasks.length === 0 ? (
-              <div className="py-12 text-center">
-                <Calendar className="w-8 h-8 text-[#27272A] mx-auto mb-3" />
-                <p className="text-xs text-[#8E9192]">No tasks scheduled for this date.</p>
+            {/* Quick stats for current filter */}
+            <div className="grid grid-cols-2 gap-3 mt-4">
+              <div className="p-3 bg-[#141313] border border-[#27272A] rounded-lg">
+                <div className="text-lg font-bold font-mono text-white">{filteredTasks.filter(t => !t.completed).length}</div>
+                <div className="text-[9px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-0.5">To Do</div>
               </div>
-            ) : (
-              <div className="space-y-3 max-h-[400px] overflow-y-auto scrollbar-thin">
-                {selectedDateTasks.map((task) => (
-                  <div
-                    key={task.id}
-                    onClick={() => onSelectTask?.(task)}
-                    className={`p-3.5 bg-[#141313] border border-[#27272A] rounded-lg group hover:border-white/20 transition-all cursor-pointer ${
-                      task.completed ? 'opacity-60' : ''
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                        className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 mt-0.5 hover:border-white transition-colors"
-                      >
-                        <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
-                      </button>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-semibold text-white leading-relaxed ${task.completed ? 'line-through text-[#8E9192]' : ''}`}>
-                          {task.title}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1.5">
-                          <span className="text-[9px] font-mono text-[#8E9192] bg-black px-1.5 py-0.5 rounded border border-[#27272A]/40">
-                            {getProjectName(task.projectId)}
-                          </span>
-                          <span className="text-[9px] font-mono text-[#8E9192] flex items-center gap-0.5">
-                            <Clock className="w-2.5 h-2.5" />
-                            {task.duration || '25m'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="p-3 bg-[#141313] border border-[#27272A] rounded-lg">
+                <div className="text-lg font-bold font-mono text-white">{filteredTasks.filter(t => t.completed).length}</div>
+                <div className="text-[9px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-0.5">Completed</div>
               </div>
-            )}
+            </div>
           </div>
         </div>
+
       </div>
     </div>
   );

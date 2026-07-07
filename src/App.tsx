@@ -169,8 +169,6 @@ export default function App() {
         return 'Workspace Projects';
       case 'todo':
         return 'Active Todo List';
-      case 'completed':
-        return 'Done / Archived Tasks';
       case 'scheduled':
         return 'Calendar / Scheduled Task List';
       case 'recurring':
@@ -196,9 +194,6 @@ export default function App() {
     }
     if (currentView === 'todo') {
       return tasks.filter(t => !t.completed);
-    }
-    if (currentView === 'completed') {
-      return tasks.filter(t => t.completed);
     }
     if (currentView === 'recurring') {
       return tasks.filter(t => !t.completed && t.recurrence !== undefined);
@@ -461,7 +456,7 @@ export default function App() {
             )}
 
             {/* Simple task lists views templates mapped cleanly */}
-            {(currentView === 'inbox' || currentView === 'todo' || currentView === 'completed' || currentView === 'recurring') && (
+            {(currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring') && (
               <TaskListView
                 key={currentView}
                 title={getHeaderTitle()}
@@ -483,6 +478,8 @@ export default function App() {
                 tasks={tasks}
                 projects={projects}
                 onToggleTask={handleToggleTask}
+                onDeleteTask={handleDeleteTask}
+                onAddTask={handleAddTask}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}

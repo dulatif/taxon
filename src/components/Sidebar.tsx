@@ -2,7 +2,6 @@ import { DragDropContext, Draggable, DropResult, Droppable } from '@hello-pangea
 import {
   BarChart3,
   Calendar,
-  CheckCircle,
   CheckSquare,
   ChevronRight,
   Folder,
@@ -124,7 +123,6 @@ export default function Sidebar({
     { id: 'inbox', label: 'Inbox', icon: Inbox },
     { id: 'projects', label: 'Projects', icon: Folder },
     { id: 'todo', label: 'Todo List', icon: CheckSquare },
-    { id: 'completed', label: 'Completed', icon: CheckCircle },
     { id: 'scheduled', label: 'Scheduled', icon: Calendar },
     { id: 'recurring', label: 'Recurring', icon: Repeat },
     { id: 'analytics', label: 'Analytics', icon: BarChart3 },

@@ -190,31 +190,55 @@ body.light-theme .hover\:text-white:hover { color: #18181B !important; }
   display: none; /* We handle caption externally */
 }
 
-.taxon-nav {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  margin-bottom: 0.75rem;
+.taxon-calendar .taxon-nav {
+  position: static !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  margin-bottom: 0.75rem !important;
+  width: 100% !important;
+  height: auto !important;
+  inset: auto !important;
 }
 
-.taxon-nav-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid #27272A;
-  background: #141313;
-  color: #8E9192;
-  cursor: pointer;
-  transition: all 0.2s;
+.taxon-calendar .taxon-nav-button,
+.taxon-calendar .rdp-button_previous,
+.taxon-calendar .rdp-button_next {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  border: 1px solid #27272A !important;
+  background: #141313 !important;
+  color: #8E9192 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  inset: auto !important;
+  margin: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
 }
 
-.taxon-nav-button:hover {
-  color: #fff;
-  border-color: #fff;
-  background: #201F1F;
+.taxon-calendar .taxon-nav-button:hover,
+.taxon-calendar .rdp-button_previous:hover,
+.taxon-calendar .rdp-button_next:hover {
+  color: #fff !important;
+  border-color: #fff !important;
+  background: #201F1F !important;
+}
+
+.taxon-calendar .taxon-month,
+.taxon-calendar .rdp-month {
+  width: 100% !important;
+  margin: 0 !important;
+  position: static !important;
 }
 
 .taxon-table {
@@ -283,6 +307,20 @@ body.light-theme .hover\:text-white:hover { color: #18181B !important; }
   font-weight: 800;
 }
 
+.taxon-range-middle .taxon-day {
+  background: #1C1B1B !important;
+  color: #fff !important;
+  border-color: #2D2C2C !important;
+}
+
+.taxon-range-start .taxon-day,
+.taxon-range-end .taxon-day {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
+  font-weight: 800;
+}
+
 .taxon-day-today .taxon-day {
   border-color: #fff;
   color: #fff;
@@ -314,20 +352,31 @@ body.light-theme .hover\:text-white:hover { color: #18181B !important; }
   background: #8E9192;
 }
 
-.taxon-has-tasks.taxon-day-selected .taxon-day::after {
+.taxon-has-tasks.taxon-day-selected .taxon-day::after,
+.taxon-has-tasks.taxon-range-start .taxon-day::after,
+.taxon-has-tasks.taxon-range-end .taxon-day::after {
   background: #000;
 }
 
 /* Light Theme Calendar Overrides */
 body.light-theme .taxon-calendar { color: #18181B; }
-body.light-theme .taxon-nav-button { background: #FFFFFF; border-color: #E4E4E7; color: #71717A; }
-body.light-theme .taxon-nav-button:hover { background: #F4F4F5; border-color: #D4D4D8; color: #18181B; }
+body.light-theme .taxon-nav-button,
+body.light-theme .rdp-button_previous,
+body.light-theme .rdp-button_next { background: #FFFFFF !important; border-color: #E4E4E7 !important; color: #71717A !important; }
+body.light-theme .taxon-nav-button:hover,
+body.light-theme .rdp-button_previous:hover,
+body.light-theme .rdp-button_next:hover { background: #F4F4F5 !important; border-color: #D4D4D8 !important; color: #18181B !important; }
 body.light-theme .taxon-day { color: #3F3F46; }
 body.light-theme .taxon-day:hover { background: #F4F4F5; border-color: #E4E4E7; color: #18181B; }
 body.light-theme .taxon-day-selected .taxon-day { background: #18181B !important; color: #FFFFFF !important; border-color: #18181B !important; font-weight: 800; }
+body.light-theme .taxon-range-middle .taxon-day { background: #E4E4E7 !important; color: #18181B !important; border-color: #D4D4D8 !important; }
+body.light-theme .taxon-range-start .taxon-day,
+body.light-theme .taxon-range-end .taxon-day { background: #18181B !important; color: #FFFFFF !important; border-color: #18181B !important; font-weight: 800; }
 body.light-theme .taxon-day-today .taxon-day { border-color: #18181B; color: #18181B; }
 body.light-theme .taxon-day-outside .taxon-day { color: #A1A1AA; }
-body.light-theme .taxon-has-tasks.taxon-day-selected .taxon-day::after { background: #FFFFFF; }
+body.light-theme .taxon-has-tasks.taxon-day-selected .taxon-day::after,
+body.light-theme .taxon-has-tasks.taxon-range-start .taxon-day::after,
+body.light-theme .taxon-has-tasks.taxon-range-end .taxon-day::after { background: #FFFFFF; }
 
 /* Scrollbar styling */
 .scrollbar-thin::-webkit-scrollbar {

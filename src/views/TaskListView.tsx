@@ -23,6 +23,7 @@ interface TaskListViewProps {
   projects: Project[];
   defaultGrouped?: boolean;
   isInboxView?: boolean;
+  isEmbedded?: boolean;
   onAddTask?: (title: string) => void;
   addTaskPlaceholder?: string;
   onToggleTask: (id: string) => void;
@@ -287,6 +288,7 @@ export default function TaskListView({
   projects,
   defaultGrouped = true,
   isInboxView = false,
+  isEmbedded = false,
   onAddTask,
   addTaskPlaceholder = 'Add a new task...',
   onToggleTask,
@@ -430,7 +432,7 @@ export default function TaskListView({
   ];
 
   return (
-    <div className="max-w-4xl mx-auto py-6 px-4 md:px-6">
+    <div className={isEmbedded ? "w-full" : "max-w-4xl mx-auto py-6 px-4 md:px-6"}>
       <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl overflow-hidden">
 
         {/* ── Header ── */}
