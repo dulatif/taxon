@@ -13,9 +13,38 @@ import {
   Trash2,
   Check,
   Square,
-  CheckSquare
+  CheckSquare,
+  Timer,
+  Repeat
 } from 'lucide-react';
-import { Task, Project, SubTask } from '../types';
+import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency } from '../types';
+
+const getRecurrenceLabel = (rule?: RecurrenceRule) => {
+  if (!rule) return 'None';
+  if (rule.frequency === 'daily') return rule.interval && rule.interval > 1 ? `Every ${rule.interval} days` : 'Daily';
+  if (rule.frequency === 'weekdays') return 'Weekdays (Mon-Fri)';
+  if (rule.frequency === 'weekly') {
+    if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+      const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const days = rule.daysOfWeek.map(d => names[d]).join(', ');
+      return rule.interval && rule.interval > 1 ? `Every ${rule.interval} wks on ${days}` : `Weekly on ${days}`;
+    }
+    return rule.interval && rule.interval > 1 ? `Every ${rule.interval} weeks` : 'Weekly';
+  }
+  if (rule.frequency === 'monthly') return rule.interval && rule.interval > 1 ? `Every ${rule.interval} months` : 'Monthly';
+  if (rule.frequency === 'yearly') return rule.interval && rule.interval > 1 ? `Every ${rule.interval} years` : 'Yearly';
+  if (rule.frequency === 'custom') return `Every ${rule.interval || 1} days`;
+  return 'None';
+};
+
+const formatMinutes = (mins?: number): string => {
+  if (!mins || mins <= 0) return '0m';
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  if (h > 0 && m > 0) return `${h}h ${m}m`;
+  if (h > 0) return `${h}h`;
+  return `${m}m`;
+};
 
 interface TaskDetailPanelProps {
   task: Task | null;
@@ -37,6 +66,7 @@ export default function TaskDetailPanel({
   const [newLabelText, setNewLabelText] = useState('');
   const [isAddingLabel, setIsAddingLabel] = useState(false);
   const [activePropertyEdit, setActivePropertyEdit] = useState<string | null>(null);
+  const [isCustomRecurrence, setIsCustomRecurrence] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -278,7 +308,7 @@ export default function TaskDetailPanel({
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Date</div>
                     <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
-                      {editedTask.dueDate || 'Jun 6, every day'}
+                      {editedTask.dueDate || 'Unscheduled'}
                     </div>
                   </div>
 
@@ -293,6 +323,149 @@ export default function TaskDetailPanel({
                         onChange={(e) => { handleFieldChange('dueDate', e.target.value); setActivePropertyEdit(null); }}
                         className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-2 focus:outline-none focus:border-white"
                       />
+                    </div>
+                  )}
+                </div>
+
+                {/* Recurrence Card */}
+                <div 
+                  onClick={() => {
+                    setActivePropertyEdit(activePropertyEdit === 'recurrence' ? null : 'recurrence');
+                    setIsCustomRecurrence(false);
+                  }}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                >
+                  <Repeat className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Recurrence</div>
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
+                      {getRecurrenceLabel(editedTask.recurrence)}
+                    </div>
+                  </div>
+
+                  {activePropertyEdit === 'recurrence' && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-1.5 max-h-64 overflow-y-auto"
+                    >
+                      {!isCustomRecurrence ? (
+                        <>
+                          <button
+                            onClick={() => { handleFieldChange('recurrence', undefined); setActivePropertyEdit(null); }}
+                            className={`w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] transition-colors flex items-center justify-between ${!editedTask.recurrence ? 'text-white bg-white/10' : 'text-[#8E9192] hover:text-white'}`}
+                          >
+                            <span>None</span>
+                            {!editedTask.recurrence && <Check className="w-3 h-3 text-white" />}
+                          </button>
+                          {[
+                            { label: 'Daily', rule: { frequency: 'daily' as const, interval: 1 } },
+                            { label: 'Weekdays (Mon-Fri)', rule: { frequency: 'weekdays' as const } },
+                            { label: 'Weekly', rule: { frequency: 'weekly' as const, interval: 1 } },
+                            { label: 'Monthly', rule: { frequency: 'monthly' as const, interval: 1 } },
+                            { label: 'Yearly', rule: { frequency: 'yearly' as const, interval: 1 } },
+                          ].map(preset => {
+                            const isSelected = editedTask.recurrence?.frequency === preset.rule.frequency && (editedTask.recurrence?.interval || 1) === 1 && !editedTask.recurrence?.daysOfWeek;
+                            return (
+                              <button
+                                key={preset.label}
+                                onClick={() => { handleFieldChange('recurrence', preset.rule); setActivePropertyEdit(null); }}
+                                className={`w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] transition-colors flex items-center justify-between ${isSelected ? 'text-white bg-white/10' : 'text-[#8E9192] hover:text-white'}`}
+                              >
+                                <span>{preset.label}</span>
+                                {isSelected && <Check className="w-3 h-3 text-white" />}
+                              </button>
+                            );
+                          })}
+                          <button
+                            onClick={() => setIsCustomRecurrence(true)}
+                            className="w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] text-blue-400 hover:text-blue-300 transition-colors border-t border-[#27272A] mt-1 pt-2 font-semibold"
+                          >
+                            Custom...
+                          </button>
+                        </>
+                      ) : (
+                        <div className="space-y-2 p-1">
+                          <div className="text-[10px] font-mono font-bold text-[#8E9192] uppercase">Custom Recurrence</div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-[#8E9192]">Every</span>
+                            <input
+                              type="number"
+                              min="1"
+                              value={editedTask.recurrence?.interval || 1}
+                              onChange={(e) => {
+                                const val = Math.max(1, parseInt(e.target.value) || 1);
+                                handleFieldChange('recurrence', {
+                                  ...(editedTask.recurrence || { frequency: 'daily' }),
+                                  interval: val
+                                });
+                              }}
+                              className="w-12 bg-[#141313] border border-[#27272A] text-xs text-white rounded px-2 py-1 text-center focus:outline-none focus:border-white"
+                            />
+                            <select
+                              value={editedTask.recurrence?.frequency || 'daily'}
+                              onChange={(e) => {
+                                const freq = e.target.value as RecurrenceFrequency;
+                                handleFieldChange('recurrence', {
+                                  ...(editedTask.recurrence || { interval: 1 }),
+                                  frequency: freq,
+                                  daysOfWeek: freq === 'weekly' ? [1] : undefined
+                                });
+                              }}
+                              className="bg-[#141313] border border-[#27272A] text-xs text-white rounded px-2 py-1 focus:outline-none focus:border-white flex-1"
+                            >
+                              <option value="daily">days</option>
+                              <option value="weekly">weeks</option>
+                              <option value="monthly">months</option>
+                              <option value="yearly">years</option>
+                            </select>
+                          </div>
+
+                          {editedTask.recurrence?.frequency === 'weekly' && (
+                            <div className="space-y-1 pt-1">
+                              <div className="text-[10px] text-[#8E9192]">On days:</div>
+                              <div className="grid grid-cols-7 gap-1">
+                                {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dayChar, dayIdx) => {
+                                  const days = editedTask.recurrence?.daysOfWeek || [];
+                                  const isSelected = days.includes(dayIdx);
+                                  return (
+                                    <button
+                                      key={dayIdx}
+                                      type="button"
+                                      onClick={() => {
+                                        const newDays = isSelected
+                                          ? days.filter(d => d !== dayIdx)
+                                          : [...days, dayIdx];
+                                        handleFieldChange('recurrence', {
+                                          ...editedTask.recurrence,
+                                          frequency: 'weekly',
+                                          daysOfWeek: newDays.length > 0 ? newDays : [dayIdx]
+                                        });
+                                      }}
+                                      className={`py-1 text-[10px] font-mono font-bold rounded border transition-all text-center ${
+                                        isSelected
+                                          ? 'bg-blue-500 text-white border-blue-400'
+                                          : 'bg-[#141313] text-[#8E9192] border-[#27272A] hover:text-white'
+                                      }`}
+                                    >
+                                      {dayChar}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          )}
+
+                          <div className="pt-2 flex justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setActivePropertyEdit(null)}
+                              className="bg-white text-black font-bold text-[10px] px-3 py-1 rounded hover:bg-white/90"
+                            >
+                              Done
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -391,7 +564,127 @@ export default function TaskDetailPanel({
                   </div>
                 </div>
 
+                {/* Time Effort Card */}
+                <div 
+                  onClick={() => setActivePropertyEdit(activePropertyEdit === 'effort' ? null : 'effort')}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                >
+                  <Timer className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Time Effort</div>
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
+                      {formatMinutes(editedTask.timeEffort)}
+                    </div>
+                  </div>
+
+                  {activePropertyEdit === 'effort' && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2"
+                    >
+                      <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold">Quick Presets</div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[15, 30, 45, 60, 120, 240].map(m => (
+                          <button
+                            key={m}
+                            type="button"
+                            onClick={() => { handleFieldChange('timeEffort', m); setActivePropertyEdit(null); }}
+                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A]"
+                          >
+                            {formatMinutes(m)}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="pt-1 border-t border-[#27272A] flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Mins..."
+                          value={editedTask.timeEffort || ''}
+                          onChange={(e) => handleFieldChange('timeEffort', parseInt(e.target.value) || 0)}
+                          className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-1 focus:outline-none focus:border-white"
+                        />
+                        <span className="text-[10px] text-[#8E9192] shrink-0 font-mono">mins</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Time Spent Card */}
+                <div 
+                  onClick={() => setActivePropertyEdit(activePropertyEdit === 'spent' ? null : 'spent')}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                >
+                  <Clock className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Time Spent</div>
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
+                      {formatMinutes(editedTask.timeSpent)}
+                    </div>
+                  </div>
+
+                  {activePropertyEdit === 'spent' && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()}
+                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2"
+                    >
+                      <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold">Quick Log</div>
+                      <div className="grid grid-cols-3 gap-1">
+                        {[15, 30, 60].map(addM => (
+                          <button
+                            key={addM}
+                            type="button"
+                            onClick={() => { handleFieldChange('timeSpent', (editedTask.timeSpent || 0) + addM); }}
+                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A]"
+                          >
+                            +{addM}m
+                          </button>
+                        ))}
+                      </div>
+                      <div className="flex justify-between items-center gap-1.5 pt-1 border-t border-[#27272A]">
+                        <input
+                          type="number"
+                          min="0"
+                          placeholder="Mins..."
+                          value={editedTask.timeSpent || ''}
+                          onChange={(e) => handleFieldChange('timeSpent', parseInt(e.target.value) || 0)}
+                          className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-1 focus:outline-none focus:border-white"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => handleFieldChange('timeSpent', 0)}
+                          className="px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/30 rounded text-[10px] font-mono hover:bg-red-500/20"
+                        >
+                          Reset
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
               </div>
+
+              {((editedTask.timeEffort && editedTask.timeEffort > 0) || (editedTask.timeSpent && editedTask.timeSpent > 0)) && (
+                <div className="bg-[#141313] border border-[#27272A] rounded-xl p-3.5 space-y-2 mt-3">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-[#8E9192] uppercase font-bold text-[10px]">Time Progress</span>
+                    <span className="text-white font-bold">
+                      {formatMinutes(editedTask.timeSpent)} / {formatMinutes(editedTask.timeEffort || 0)}
+                      {editedTask.timeEffort && editedTask.timeEffort > 0 ? ` (${Math.round(((editedTask.timeSpent || 0) / editedTask.timeEffort) * 100)}%)` : ''}
+                    </span>
+                  </div>
+                  <div className="w-full bg-black h-2 rounded-full overflow-hidden border border-[#27272A]">
+                    <div 
+                      className={`h-full transition-all duration-300 ${
+                        editedTask.timeEffort && (editedTask.timeSpent || 0) > editedTask.timeEffort
+                          ? 'bg-orange-500'
+                          : 'bg-green-400'
+                      }`}
+                      style={{ width: `${Math.min(100, editedTask.timeEffort ? Math.round(((editedTask.timeSpent || 0) / editedTask.timeEffort) * 100) : 100)}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description Section */}

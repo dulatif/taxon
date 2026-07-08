@@ -21,6 +21,8 @@ interface FocusModeViewProps {
   tasks: Task[];
   timerSeconds: number;
   timerIsRunning: boolean;
+  phase?: 'work' | 'shortBreak' | 'longBreak';
+  totalDuration?: number;
   onToggleTimer: () => void;
   onSkipTimer: () => void;
   onEndFocusMode: () => void;
@@ -35,6 +37,8 @@ export default function FocusModeView({
   tasks,
   timerSeconds,
   timerIsRunning,
+  phase = 'work',
+  totalDuration = 1500,
   onToggleTimer,
   onSkipTimer,
   onEndFocusMode,
@@ -58,8 +62,6 @@ export default function FocusModeView({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Base timer is 25 minutes (1500 seconds). Let's calculate the percentage corresponding to remaining time.
-  const totalDuration = 1500; // 25m
   const strokeOffset = () => {
     const rawFrac = timerSeconds / totalDuration;
     const fraction = Math.max(0, Math.min(rawFrac, 1));
@@ -90,7 +92,16 @@ export default function FocusModeView({
 
       {/* Top Header details */}
       <div className="text-center w-full max-w-xl animate-fade-in z-10">
-        <span className="font-mono text-[10px] font-semibold text-[#8E9192] uppercase tracking-[0.2em] mb-2 block">
+        <div className="mb-2 flex items-center justify-center gap-2">
+          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${
+            phase === 'work' 
+              ? 'bg-red-500/10 text-red-400 border-red-500/30' 
+              : 'bg-green-500/10 text-green-400 border-green-500/30'
+          }`}>
+            {phase === 'work' ? '🔥 Focus Sprint' : phase === 'shortBreak' ? '☕ Short Break' : '🌴 Long Break'}
+          </span>
+        </div>
+        <span className="font-mono text-[10px] font-semibold text-[#8E9192] uppercase tracking-[0.2em] mb-1 block">
           Working On
         </span>
         <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight px-4 leading-normal truncate">

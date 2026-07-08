@@ -89,9 +89,23 @@ pub fn run() {
                     };
                     
                     if frequency != "Never" {
-                        if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
-                            let db_path = app_data_dir.join("taxon.db");
-                            if db_path.exists() {
+                        let mut db_path_opt = None;
+                        if let Ok(config_dir) = app_handle.path().app_config_dir() {
+                            let p = config_dir.join("taxon.db");
+                            if p.exists() {
+                                db_path_opt = Some(p);
+                            }
+                        }
+                        if db_path_opt.is_none() {
+                            if let Ok(data_dir) = app_handle.path().app_data_dir() {
+                                let p = data_dir.join("taxon.db");
+                                if p.exists() {
+                                    db_path_opt = Some(p);
+                                }
+                            }
+                        }
+                        if let Some(db_path) = db_path_opt {
+                            if let Ok(app_data_dir) = app_handle.path().app_data_dir() {
                                 let backup_dir = app_data_dir.join(".backup");
                                 let _ = std::fs::create_dir_all(&backup_dir);
                                 let timestamp = std::time::SystemTime::now()

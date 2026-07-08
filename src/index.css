@@ -2,6 +2,14 @@
 
 html, body, #root {
   background: transparent !important;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 /* TAXON-120: OLED Black Mode overrides
@@ -29,13 +37,14 @@ body:not(.oled-black) {
    Overrides the hardcoded dark tailwind classes to create a beautiful light theme
    =================================== */
 body.light-theme {
-  background-color: #F4F4F5 !important; /* Zinc 100 base */
+  background-color: transparent !important; /* Keep body transparent so window rounded corners work */
   color: #18181B !important; /* Zinc 900 text */
 }
 
 /* Background mappings */
 body.light-theme .bg-black { background-color: #F4F4F5 !important; }
 body.light-theme .bg-black\/40 { background-color: rgba(244, 244, 245, 0.4) !important; }
+body.light-theme .bg-black\/50 { background-color: rgba(244, 244, 245, 0.5) !important; }
 body.light-theme .bg-white { background-color: #18181B !important; }
 body.light-theme .bg-\[\#000000\] { background-color: #F4F4F5 !important; }
 body.light-theme .bg-\[\#0E0E0E\] { background-color: #FAFAFA !important; }
@@ -53,9 +62,11 @@ body.light-theme .bg-\[\#141313\]\/70 { background-color: rgba(250, 250, 250, 0.
 body.light-theme .bg-\[\#1C1B1B\] { background-color: #F0F0F0 !important; }
 body.light-theme .bg-\[\#201F1F\] { background-color: #E4E4E7 !important; }
 body.light-theme .bg-\[\#050505\]\/40 { background-color: rgba(244, 244, 245, 0.4) !important; }
+body.light-theme .bg-white\/25 { background-color: rgba(24, 24, 27, 0.25) !important; border-color: rgba(24, 24, 27, 0.2) !important; }
 body.light-theme .bg-white\/40 { background-color: rgba(24, 24, 27, 0.4) !important; }
-body.light-theme .bg-white\/50 { background-color: rgba(24, 24, 27, 0.5) !important; }
+body.light-theme .bg-white\/50 { background-color: rgba(24, 24, 27, 0.5) !important; border-color: rgba(24, 24, 27, 0.4) !important; }
 body.light-theme .bg-white\/60 { background-color: rgba(24, 24, 27, 0.6) !important; }
+body.light-theme .bg-white\/75 { background-color: rgba(24, 24, 27, 0.75) !important; border-color: rgba(24, 24, 27, 0.6) !important; }
 body.light-theme .bg-zinc-800 { background-color: #E4E4E7 !important; color: #18181B !important; }
 body.light-theme .hover\:bg-zinc-700:hover { background-color: #D4D4D8 !important; }
 
@@ -120,6 +131,43 @@ body.light-theme .group:hover .group-hover\:text-white { color: #18181B !importa
 body.light-theme .group:hover .group-hover\:text-\[\#8E9192\] { color: #71717A !important; }
 
 /* ===================================
+   TASK LIST VIEW — Filter Toolbar & Chips
+   New classes added with sort/filter feature
+   =================================== */
+
+/* Toolbar background */
+body.light-theme .bg-\[\#0D0D0D\] { background-color: #F4F4F5 !important; }
+
+/* Task count badge & group count badge */
+body.light-theme .bg-\[\#1a1a1a\] { background-color: #E4E4E7 !important; }
+
+/* Active filter chip / active button highlight */
+body.light-theme .bg-white\/10 { background-color: rgba(24, 24, 27, 0.08) !important; }
+body.light-theme .hover\:bg-white\/10:hover { background-color: rgba(24, 24, 27, 0.08) !important; }
+
+/* Label tag background */
+body.light-theme .bg-black\/30 { background-color: rgba(24, 24, 27, 0.07) !important; }
+
+/* Filter chip / active button borders */
+body.light-theme .border-white\/20 { border-color: rgba(24, 24, 27, 0.2) !important; }
+body.light-theme .hover\:border-white\/40:hover { border-color: rgba(24, 24, 27, 0.4) !important; }
+
+/* Group header hover */
+body.light-theme .hover\:bg-\[\#141313\]\/60:hover { background-color: rgba(228, 228, 231, 0.6) !important; }
+
+/* Status indicator dots in dropdowns (To Do dot swatch) */
+body.light-theme .bg-\[\#27272A\] { background-color: #D4D4D8 !important; }
+body.light-theme .border-\[\#3f3f3f\] { border-color: #A1A1AA !important; }
+
+/* Date picker inputs inside filter popover */
+body.light-theme .focus\:border-white\/40:focus { border-color: rgba(24, 24, 27, 0.4) !important; }
+
+/* Hover text in filter toolbar (inactive → active) */
+body.light-theme .hover\:text-white:hover { color: #18181B !important; }
+
+
+
+/* ===================================
    react-day-picker Calendar Styles
    Matching the Taxon OLED dark theme
    =================================== */
@@ -143,31 +191,55 @@ body.light-theme .group:hover .group-hover\:text-\[\#8E9192\] { color: #71717A !
   display: none; /* We handle caption externally */
 }
 
-.taxon-nav {
-  display: flex;
-  gap: 0.5rem;
-  justify-content: flex-end;
-  margin-bottom: 0.75rem;
+.taxon-calendar .taxon-nav {
+  position: static !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  margin-bottom: 0.75rem !important;
+  width: 100% !important;
+  height: auto !important;
+  inset: auto !important;
 }
 
-.taxon-nav-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  border: 1px solid #27272A;
-  background: #141313;
-  color: #8E9192;
-  cursor: pointer;
-  transition: all 0.2s;
+.taxon-calendar .taxon-nav-button,
+.taxon-calendar .rdp-button_previous,
+.taxon-calendar .rdp-button_next {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: 8px !important;
+  border: 1px solid #27272A !important;
+  background: #141313 !important;
+  color: #8E9192 !important;
+  cursor: pointer !important;
+  transition: all 0.2s !important;
+  inset: auto !important;
+  margin: 0 !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
 }
 
-.taxon-nav-button:hover {
-  color: #fff;
-  border-color: #fff;
-  background: #201F1F;
+.taxon-calendar .taxon-nav-button:hover,
+.taxon-calendar .rdp-button_previous:hover,
+.taxon-calendar .rdp-button_next:hover {
+  color: #fff !important;
+  border-color: #fff !important;
+  background: #201F1F !important;
+}
+
+.taxon-calendar .taxon-month,
+.taxon-calendar .rdp-month {
+  width: 100% !important;
+  margin: 0 !important;
+  position: static !important;
 }
 
 .taxon-table {
@@ -236,6 +308,20 @@ body.light-theme .group:hover .group-hover\:text-\[\#8E9192\] { color: #71717A !
   font-weight: 800;
 }
 
+.taxon-range-middle .taxon-day {
+  background: #1C1B1B !important;
+  color: #fff !important;
+  border-color: #2D2C2C !important;
+}
+
+.taxon-range-start .taxon-day,
+.taxon-range-end .taxon-day {
+  background: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
+  font-weight: 800;
+}
+
 .taxon-day-today .taxon-day {
   border-color: #fff;
   color: #fff;
@@ -267,20 +353,31 @@ body.light-theme .group:hover .group-hover\:text-\[\#8E9192\] { color: #71717A !
   background: #8E9192;
 }
 
-.taxon-has-tasks.taxon-day-selected .taxon-day::after {
+.taxon-has-tasks.taxon-day-selected .taxon-day::after,
+.taxon-has-tasks.taxon-range-start .taxon-day::after,
+.taxon-has-tasks.taxon-range-end .taxon-day::after {
   background: #000;
 }
 
 /* Light Theme Calendar Overrides */
 body.light-theme .taxon-calendar { color: #18181B; }
-body.light-theme .taxon-nav-button { background: #FFFFFF; border-color: #E4E4E7; color: #71717A; }
-body.light-theme .taxon-nav-button:hover { background: #F4F4F5; border-color: #D4D4D8; color: #18181B; }
+body.light-theme .taxon-nav-button,
+body.light-theme .rdp-button_previous,
+body.light-theme .rdp-button_next { background: #FFFFFF !important; border-color: #E4E4E7 !important; color: #71717A !important; }
+body.light-theme .taxon-nav-button:hover,
+body.light-theme .rdp-button_previous:hover,
+body.light-theme .rdp-button_next:hover { background: #F4F4F5 !important; border-color: #D4D4D8 !important; color: #18181B !important; }
 body.light-theme .taxon-day { color: #3F3F46; }
 body.light-theme .taxon-day:hover { background: #F4F4F5; border-color: #E4E4E7; color: #18181B; }
 body.light-theme .taxon-day-selected .taxon-day { background: #18181B !important; color: #FFFFFF !important; border-color: #18181B !important; font-weight: 800; }
+body.light-theme .taxon-range-middle .taxon-day { background: #E4E4E7 !important; color: #18181B !important; border-color: #D4D4D8 !important; }
+body.light-theme .taxon-range-start .taxon-day,
+body.light-theme .taxon-range-end .taxon-day { background: #18181B !important; color: #FFFFFF !important; border-color: #18181B !important; font-weight: 800; }
 body.light-theme .taxon-day-today .taxon-day { border-color: #18181B; color: #18181B; }
 body.light-theme .taxon-day-outside .taxon-day { color: #A1A1AA; }
-body.light-theme .taxon-has-tasks.taxon-day-selected .taxon-day::after { background: #FFFFFF; }
+body.light-theme .taxon-has-tasks.taxon-day-selected .taxon-day::after,
+body.light-theme .taxon-has-tasks.taxon-range-start .taxon-day::after,
+body.light-theme .taxon-has-tasks.taxon-range-end .taxon-day::after { background: #FFFFFF; }
 
 /* Scrollbar styling */
 .scrollbar-thin::-webkit-scrollbar {

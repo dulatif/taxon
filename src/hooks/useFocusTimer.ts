@@ -2,12 +2,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Task } from '../types';
 import { sendNotification } from '@tauri-apps/plugin-notification';
 
-const DEFAULT_DURATION = 1500; // 25 minutes in seconds
+export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 
 interface UseFocusTimerOptions {
-  onTimerComplete: (task: Task | null) => void;
-  onTickFocusTime?: () => void;
+  onTimerComplete: (task: Task | null, phase: PomodoroPhase) => void;
+  onTickFocusTime?: (task: Task | null) => void;
   soundEnabled: boolean;
+  workDuration?: number; // in minutes
+  shortBreak?: number; // in minutes
+  longBreak?: number; // in minutes
+  longBreakInterval?: number; // count
 }
 
 interface UseFocusTimerReturn {
@@ -15,6 +19,9 @@ interface UseFocusTimerReturn {
   timerIsRunning: boolean;
   activeFocusTask: Task | null;
   isFocusModeActive: boolean;
+  phase: PomodoroPhase;
+  completedWorkSessions: number;
+  switchPhase: (newPhase: PomodoroPhase) => void;
   toggleTimer: () => void;
   resetTimer: () => void;
   skipTimer: () => void;
@@ -29,16 +36,24 @@ interface UseFocusTimerReturn {
 /**
  * Custom hook encapsulating all Pomodoro / Focus timer logic.
  * Extracted from App.tsx per TAXON-109.
- * - TAXON-110: On timer completion, fires `onTimerComplete` which auto-marks task as Done.
- * - TAXON-111: Plays an AudioContext sine wave beep on completion (respects soundEnabled).
  */
-export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }: UseFocusTimerOptions): UseFocusTimerReturn {
-  const [timerSeconds, setTimerSeconds] = useState(DEFAULT_DURATION);
+export function useFocusTimer({
+  onTimerComplete,
+  onTickFocusTime,
+  soundEnabled,
+  workDuration = 25,
+  shortBreak = 5,
+  longBreak = 15,
+  longBreakInterval = 4,
+}: UseFocusTimerOptions): UseFocusTimerReturn {
+  const [phase, setPhase] = useState<PomodoroPhase>('work');
+  const [completedWorkSessions, setCompletedWorkSessions] = useState(0);
+  const [timerSeconds, setTimerSeconds] = useState(workDuration * 60);
   const [timerIsRunning, setTimerIsRunning] = useState(false);
   const [activeFocusTask, setActiveFocusTask] = useState<Task | null>(null);
   const [isFocusModeActive, setIsFocusModeActive] = useState(false);
 
-  // Use ref to avoid stale closure for callbacks
+  // Use ref to avoid stale closure for callbacks and configs
   const onTimerCompleteRef = useRef(onTimerComplete);
   onTimerCompleteRef.current = onTimerComplete;
 
@@ -50,6 +65,35 @@ export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }
 
   const soundEnabledRef = useRef(soundEnabled);
   soundEnabledRef.current = soundEnabled;
+
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+
+  const completedWorkSessionsRef = useRef(completedWorkSessions);
+  completedWorkSessionsRef.current = completedWorkSessions;
+
+  const workDurationRef = useRef(workDuration);
+  workDurationRef.current = workDuration;
+
+  const shortBreakRef = useRef(shortBreak);
+  shortBreakRef.current = shortBreak;
+
+  const longBreakRef = useRef(longBreak);
+  longBreakRef.current = longBreak;
+
+  const longBreakIntervalRef = useRef(longBreakInterval);
+  longBreakIntervalRef.current = longBreakInterval;
+
+  // Sync initial timerSeconds when duration settings change (if timer not actively running)
+  const prevWorkDurationRef = useRef(workDuration);
+  useEffect(() => {
+    if (prevWorkDurationRef.current !== workDuration) {
+      prevWorkDurationRef.current = workDuration;
+      if (phase === 'work' && !timerIsRunning) {
+        setTimerSeconds(workDuration * 60);
+      }
+    }
+  }, [workDuration, timerIsRunning, phase]);
 
   /**
    * TAXON-111: Play a proper beep using AudioContext Web API.
@@ -98,30 +142,45 @@ export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }
 
     if (timerIsRunning) {
       interval = setInterval(() => {
-        onTickFocusTimeRef.current?.();
+        if (phaseRef.current === 'work') {
+          onTickFocusTimeRef.current?.(activeFocusTaskRef.current);
+        }
         setTimerSeconds((prev) => {
           if (prev <= 1) {
             // Timer elapsed
             setTimerIsRunning(false);
 
-            // TAXON-111: Play completion sound
+            // Play completion sound
             playCompletionBeep();
 
-            // TAXON-210: Native Notification
             const currentTask = activeFocusTaskRef.current;
-            sendNotification({
-              title: 'Focus Complete',
-              body: currentTask ? `You completed focus session for: ${currentTask.title}` : 'Your focus session has ended.',
-            });
+            const currentPhase = phaseRef.current;
 
-            // TAXON-110: Fire completion callback
-            onTimerCompleteRef.current(currentTask);
+            if (currentPhase === 'work') {
+              const nextCount = completedWorkSessionsRef.current + 1;
+              setCompletedWorkSessions(nextCount);
+              sendNotification({
+                title: 'Work Session Complete!',
+                body: currentTask ? `Good job on: ${currentTask.title}. Time for a break!` : 'Time for a break!',
+              });
+              onTimerCompleteRef.current(currentTask, 'work');
 
-            if (currentTask) {
-              setActiveFocusTask(null);
+              if (nextCount % longBreakIntervalRef.current === 0) {
+                setPhase('longBreak');
+                return longBreakRef.current * 60;
+              } else {
+                setPhase('shortBreak');
+                return shortBreakRef.current * 60;
+              }
+            } else {
+              sendNotification({
+                title: 'Break Ended!',
+                body: 'Time to get back to focus.',
+              });
+              onTimerCompleteRef.current(currentTask, currentPhase);
+              setPhase('work');
+              return workDurationRef.current * 60;
             }
-
-            return DEFAULT_DURATION;
           }
           return prev - 1;
         });
@@ -138,25 +197,51 @@ export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }
   }, []);
 
   const resetTimer = useCallback(() => {
-    setTimerSeconds(DEFAULT_DURATION);
+    if (phase === 'work') setTimerSeconds(workDuration * 60);
+    else if (phase === 'shortBreak') setTimerSeconds(shortBreak * 60);
+    else setTimerSeconds(longBreak * 60);
     setTimerIsRunning(false);
+  }, [phase, workDuration, shortBreak, longBreak]);
+
+  const switchPhase = useCallback((newPhase: PomodoroPhase) => {
+    setTimerIsRunning(false);
+    setPhase(newPhase);
+    if (newPhase === 'work') setTimerSeconds(workDurationRef.current * 60);
+    else if (newPhase === 'shortBreak') setTimerSeconds(shortBreakRef.current * 60);
+    else setTimerSeconds(longBreakRef.current * 60);
   }, []);
 
   const skipTimer = useCallback(() => {
-    setTimerSeconds(DEFAULT_DURATION);
     setTimerIsRunning(false);
+    if (phaseRef.current === 'work') {
+      const nextCount = completedWorkSessionsRef.current + 1;
+      setCompletedWorkSessions(nextCount);
+      if (nextCount % longBreakIntervalRef.current === 0) {
+        setPhase('longBreak');
+        setTimerSeconds(longBreakRef.current * 60);
+      } else {
+        setPhase('shortBreak');
+        setTimerSeconds(shortBreakRef.current * 60);
+      }
+    } else {
+      setPhase('work');
+      setTimerSeconds(workDurationRef.current * 60);
+    }
   }, []);
 
   const startFocusSession = useCallback((task: Task) => {
     setActiveFocusTask(task);
-    setTimerSeconds(DEFAULT_DURATION);
+    const workSecs = workDurationRef.current * 60;
+    setTimerSeconds((prev) => (prev > 0 && prev < workSecs ? prev : workSecs));
+    setPhase('work');
     setTimerIsRunning(true);
     setIsFocusModeActive(true);
   }, []);
 
   const selectTaskToFocus = useCallback((task: Task) => {
     setActiveFocusTask(task);
-    setTimerSeconds(DEFAULT_DURATION);
+    const workSecs = workDurationRef.current * 60;
+    setTimerSeconds((prev) => (prev > 0 && prev < workSecs ? prev : workSecs));
     setTimerIsRunning(true);
   }, []);
 
@@ -182,6 +267,9 @@ export function useFocusTimer({ onTimerComplete, onTickFocusTime, soundEnabled }
     timerIsRunning,
     activeFocusTask,
     isFocusModeActive,
+    phase,
+    completedWorkSessions,
+    switchPhase,
     toggleTimer,
     resetTimer,
     skipTimer,

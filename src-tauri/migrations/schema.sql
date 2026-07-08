@@ -14,13 +14,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     completed BOOLEAN,
     duration TEXT,
     priority TEXT,
-    status TEXT,
-    dueDate TEXT,
-    description TEXT,
-    labels TEXT,
-    reminders TEXT,
-    deadline TEXT,
-    subtasks TEXT
+    status TEXT
 );
 
 CREATE TABLE IF NOT EXISTS files (
