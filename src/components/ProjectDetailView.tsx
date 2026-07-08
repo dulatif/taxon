@@ -433,7 +433,7 @@ export default function ProjectDetailView({
                                 onClick={() => onSelectTask?.(task)}
                                 className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
                                   ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                                  : 'hover:bg-[#141313]/40 hover:border-[#27272A]/40'
+                                  : 'hover:bg-[#141313]/10 '
                                   }`}
                               >
                                 <div className="flex items-start gap-4 flex-1 mr-4">
@@ -445,7 +445,7 @@ export default function ProjectDetailView({
                                   </button>
 
                                   <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold leading-relaxed text-white group-hover:underline">
+                                    <p className="text-xs font-semibold leading-relaxed text-white">
                                       {task.title}
                                     </p>
                                   </div>

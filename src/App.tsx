@@ -467,8 +467,9 @@ export default function App() {
                 title={getHeaderTitle()}
                 tasks={getFilteredViewTasks()}
                 projects={projects}
-                defaultGrouped={currentView !== 'inbox'}
+                defaultGrouped={currentView !== 'inbox' && currentView !== 'recurring'}
                 isInboxView={currentView === 'inbox'}
+                isRecurringView={currentView === 'recurring'}
                 onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
                 addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : currentView === 'recurring' ? 'Add a new recurring task (defaults to daily)...' : 'Add a new task...'}
                 onToggleTask={handleToggleTask}

@@ -265,8 +265,8 @@ export default function DashboardView({
                                   tabIndex={0}
                                   onClick={() => onSelectTask?.(task)}
                                   className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
-                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                                      : 'hover:bg-[#141313]/70 hover:border-[#27272A]/40'
+                                    ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                    : 'hover:bg-[#141313]/50'
                                     }`}
                                 >
                                   <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
@@ -282,7 +282,7 @@ export default function DashboardView({
                                       className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                     />
                                     <div className="min-w-0 flex flex-col items-start gap-1">
-                                      <h3 className="text-white font-medium text-sm truncate group-hover:underline leading-tight">{task.title}</h3>
+                                      <h3 className="text-white font-medium text-sm truncate leading-tight">{task.title}</h3>
                                       {proj && (
                                         <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block max-w-[200px] truncate leading-none">
                                           {proj.name}
@@ -378,8 +378,8 @@ export default function DashboardView({
                                         tabIndex={0}
                                         onClick={() => onSelectTask?.(task)}
                                         className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${snapshot.isDragging
-                                            ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
-                                            : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
+                                          ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
+                                          : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
                                           }`}
                                       >
                                         <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">

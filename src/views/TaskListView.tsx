@@ -23,6 +23,7 @@ interface TaskListViewProps {
   projects: Project[];
   defaultGrouped?: boolean;
   isInboxView?: boolean;
+  isRecurringView?: boolean;
   isEmbedded?: boolean;
   onAddTask?: (title: string) => void;
   addTaskPlaceholder?: string;
@@ -288,6 +289,7 @@ export default function TaskListView({
   projects,
   defaultGrouped = true,
   isInboxView = false,
+  isRecurringView = false,
   isEmbedded = false,
   onAddTask,
   addTaskPlaceholder = 'Add a new task...',
@@ -295,6 +297,7 @@ export default function TaskListView({
   onDeleteTask,
   onSelectTask,
 }: TaskListViewProps) {
+  const isSimpleView = isInboxView || isRecurringView;
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
   const [sortBy, setSortBy] = useState<SortKey>('dueDate');
   const [groupByProject, setGroupByProject] = useState(defaultGrouped);
@@ -442,7 +445,7 @@ export default function TaskListView({
           </h2>
           <div className="flex items-center gap-2">
             {/* Expand / Collapse all — only shown when grouped */}
-            {!isInboxView && groupByProject && (
+            {!isSimpleView && groupByProject && (
               <button
                 onClick={toggleAllGroups}
                 title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
@@ -457,7 +460,7 @@ export default function TaskListView({
               </button>
             )}
             {/* Group toggle */}
-            {!isInboxView && (
+            {!isSimpleView && (
               <button
                 onClick={() => setGroupByProject(g => !g)}
                 title={groupByProject ? 'Switch to flat list' : 'Group by project'}
@@ -552,7 +555,7 @@ export default function TaskListView({
             </FilterPopover>
 
             {/* Project filter */}
-            {!isInboxView && (
+            {!isSimpleView && (
               <FilterPopover
                 label="Project"
                 icon={Folder}
@@ -583,7 +586,7 @@ export default function TaskListView({
             )}
 
             {/* Due date filter */}
-            {!isInboxView && (
+            {!isSimpleView && (
               <FilterPopover
                 label="Due Date"
                 icon={Calendar}
