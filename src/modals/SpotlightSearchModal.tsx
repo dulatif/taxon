@@ -175,8 +175,8 @@ export default function SpotlightSearchModal({
     if (!q) {
       return {
         filteredActions: quickActionsList.slice(0, 4),
-        filteredTasks: tasks.filter(t => !t.completed).slice(0, 5),
-        filteredProjects: projects.slice(0, 4)
+        filteredProjects: projects.slice(0, 4),
+        filteredTasks: tasks.filter(t => !t.completed).slice(0, 6)
       };
     }
 
@@ -184,16 +184,16 @@ export default function SpotlightSearchModal({
       a.label.toLowerCase().includes(q) || (a.subLabel && a.subLabel.toLowerCase().includes(q))
     );
 
-    const matchingTasks = tasks.filter(t =>
-      t.title.toLowerCase().includes(q) ||
-      (t.description && t.description.toLowerCase().includes(q))
-    );
-
     const matchingProjects = projects.filter(p =>
       p.name.toLowerCase().includes(q) ||
       p.category.toLowerCase().includes(q) ||
       (p.description && p.description.toLowerCase().includes(q))
     );
+
+    const matchingTasks = tasks.filter(t =>
+      t.title.toLowerCase().includes(q) ||
+      (t.description && t.description.toLowerCase().includes(q))
+    ).slice(0, 6);
 
     return {
       filteredActions: actions,
@@ -209,6 +209,21 @@ export default function SpotlightSearchModal({
     // Actions group
     for (const action of filteredActions) {
       list.push(action);
+    }
+
+    // Projects group
+    for (const proj of filteredProjects) {
+      list.push({
+        id: `project-${proj.id}`,
+        type: 'project',
+        label: proj.name,
+        subLabel: `${proj.category} • ${proj.progress}% Complete`,
+        icon: <Folder className="w-4 h-4 text-[#8E9192]" />,
+        action: () => {
+          onClose();
+          onSelectProject(proj.id);
+        }
+      });
     }
 
     // Tasks group
@@ -240,21 +255,6 @@ export default function SpotlightSearchModal({
           onSelectTask(task.id);
         },
         task
-      });
-    }
-
-    // Projects group
-    for (const proj of filteredProjects) {
-      list.push({
-        id: `project-${proj.id}`,
-        type: 'project',
-        label: proj.name,
-        subLabel: `${proj.category} • ${proj.progress}% Complete`,
-        icon: <Folder className="w-4 h-4 text-[#8E9192]" />,
-        action: () => {
-          onClose();
-          onSelectProject(proj.id);
-        }
       });
     }
 
@@ -303,8 +303,8 @@ export default function SpotlightSearchModal({
   // Helper to get index offset for each group
   const getIndexOffset = (type: 'action' | 'task' | 'project', indexInGroup: number): number => {
     if (type === 'action') return indexInGroup;
-    if (type === 'task') return filteredActions.length + indexInGroup;
-    return filteredActions.length + filteredTasks.length + indexInGroup;
+    if (type === 'project') return filteredActions.length + indexInGroup;
+    return filteredActions.length + filteredProjects.length + indexInGroup;
   };
 
   return (
@@ -403,6 +403,53 @@ export default function SpotlightSearchModal({
                     </div>
                   )}
 
+                  {/* Projects Group */}
+                  {filteredProjects.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] font-mono">
+                        <Folder className="w-3 h-3 text-[#8E9192]" />
+                        <span>Projects ({filteredProjects.length})</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {filteredProjects.map((proj, idx) => {
+                          const globalIdx = getIndexOffset('project', idx);
+                          const isSelected = selectedIndex === globalIdx;
+                          return (
+                            <div
+                              key={proj.id}
+                              data-index={globalIdx}
+                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onClick={() => {
+                                onClose();
+                                onSelectProject(proj.id);
+                              }}
+                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                                isSelected
+                                  ? 'bg-[#1E1E22] border border-[#27272A] text-white shadow-sm'
+                                  : 'border border-transparent hover:bg-[#141313]/50 text-[#8E9192] hover:text-white'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-1.5 rounded-lg bg-[#1E1E22] border border-[#27272A]/60 text-[#8E9192]">
+                                  <Folder className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold truncate text-white">
+                                    {proj.name}
+                                  </div>
+                                  <div className="text-[11px] text-[#8E9192]/80 truncate">
+                                    {proj.category} • {proj.progress}% Complete
+                                  </div>
+                                </div>
+                              </div>
+                              <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`} />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Tasks Group */}
                   {filteredTasks.length > 0 && (
                     <div className="space-y-1">
@@ -473,53 +520,6 @@ export default function SpotlightSearchModal({
                               <span className="text-[10px] font-mono text-[#8E9192]/60 shrink-0 ml-2">
                                 {task.completed ? 'Done' : 'Active'}
                               </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Projects Group */}
-                  {filteredProjects.length > 0 && (
-                    <div className="space-y-1">
-                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] font-mono">
-                        <Folder className="w-3 h-3 text-[#8E9192]" />
-                        <span>Projects ({filteredProjects.length})</span>
-                      </div>
-                      <div className="space-y-0.5">
-                        {filteredProjects.map((proj, idx) => {
-                          const globalIdx = getIndexOffset('project', idx);
-                          const isSelected = selectedIndex === globalIdx;
-                          return (
-                            <div
-                              key={proj.id}
-                              data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
-                              onClick={() => {
-                                onClose();
-                                onSelectProject(proj.id);
-                              }}
-                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                                isSelected
-                                  ? 'bg-[#1E1E22] border border-[#27272A] text-white shadow-sm'
-                                  : 'border border-transparent hover:bg-[#141313]/50 text-[#8E9192] hover:text-white'
-                              }`}
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="p-1.5 rounded-lg bg-[#1E1E22] border border-[#27272A]/60 text-[#8E9192]">
-                                  <Folder className="w-4 h-4" />
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="text-xs font-semibold truncate text-white">
-                                    {proj.name}
-                                  </div>
-                                  <div className="text-[11px] text-[#8E9192]/80 truncate">
-                                    {proj.category} • {proj.progress}% Complete
-                                  </div>
-                                </div>
-                              </div>
-                              <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`} />
                             </div>
                           );
                         })}
