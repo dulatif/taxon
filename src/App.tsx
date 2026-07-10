@@ -31,6 +31,7 @@ import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
 import ManageCategoriesModal from './modals/ManageCategoriesModal';
 import { Project } from './types';
+import { getTodayStr } from './utils/taskFilters';
 import { useFocusTimer } from './hooks/useFocusTimer';
 import { useWindowMaximize } from './hooks/useWindowMaximize';
 import { useSystemTray } from './hooks/useSystemTray';
@@ -470,7 +471,7 @@ export default function App() {
                 defaultGrouped={currentView !== 'inbox' && currentView !== 'recurring'}
                 isInboxView={currentView === 'inbox'}
                 isRecurringView={currentView === 'recurring'}
-                onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
+                onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, currentView === 'recurring' ? getTodayStr() : '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
                 addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : currentView === 'recurring' ? 'Add a new recurring task (defaults to daily)...' : 'Add a new task...'}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}

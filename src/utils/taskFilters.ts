@@ -23,7 +23,7 @@ export const PRIORITY_COLORS: Record<Task['priority'], { bg: string; text: strin
 // Date helpers
 // ---------------------------------------------------------------------------
 
-function getTodayStr(): string {
+export function getTodayStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

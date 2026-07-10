@@ -63,7 +63,7 @@ export const initDb = (): Promise<Database> => {
         );
       `).catch(() => {});
 
-      const cols = ['dueDate', 'description', 'labels', 'reminders', 'deadline', 'subtasks'];
+      const cols = ['dueDate', 'description', 'labels', 'reminders', 'deadline', 'subtasks', 'recurrence'];
       for (const col of cols) {
         try {
           await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`);
@@ -150,6 +150,7 @@ export const getTasks = async (): Promise<Task[]> => {
       labels: parseJSON(t.labels),
       reminders: parseJSON(t.reminders),
       subtasks: parseJSON(t.subtasks),
+      recurrence: parseJSON(t.recurrence),
       timeEffort: timeEffortNum,
       timeSpent: timeSpentNum,
     };
@@ -161,9 +162,10 @@ export const saveTask = async (t: Task) => {
   const labelsStr = t.labels ? JSON.stringify(t.labels) : null;
   const remindersStr = t.reminders ? JSON.stringify(t.reminders) : null;
   const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
+  const recurrenceStr = t.recurrence ? JSON.stringify(t.recurrence) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)',
     [
       t.id ?? null, 
       t.projectId ?? null, 
@@ -180,7 +182,8 @@ export const saveTask = async (t: Task) => {
       subtasksStr,
       t.timeEffort ?? null,
       t.timeSpent ?? null,
-      t.sortOrder ?? null
+      t.sortOrder ?? null,
+      recurrenceStr
     ]
   );
 };

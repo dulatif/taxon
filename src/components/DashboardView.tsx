@@ -96,7 +96,14 @@ export default function DashboardView({
   };
 
   const todayStr = getTodayStr();
-  const allTodayTasks = tasks.filter(t => t.dueDate && t.dueDate.startsWith(todayStr));
+  const allTodayTasks = tasks.filter(t => {
+    if (!t.dueDate || t.dueDate.trim() === '') return false;
+    const datePart = t.dueDate.substring(0, 10);
+    if (t.completed) {
+      return datePart === todayStr;
+    }
+    return datePart <= todayStr;
+  });
   const activeTodayTasks = allTodayTasks.filter(t => !t.completed);
   const completedTodayTasks = allTodayTasks.filter(t => t.completed);
 

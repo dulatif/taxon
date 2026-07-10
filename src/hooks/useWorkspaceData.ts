@@ -29,8 +29,15 @@ const tryParseJSON = (str: string | null) => {
 
 export const calculateNextDueDate = (currentDateStr?: string, rule?: RecurrenceRule): string => {
   if (!rule) return currentDateStr || '';
-  const baseDate = currentDateStr ? new Date(currentDateStr + 'T00:00:00') : new Date();
-  if (isNaN(baseDate.getTime())) return currentDateStr || '';
+  const todayStr = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  })();
+  const todayDate = new Date(todayStr + 'T00:00:00');
+  let baseDate = currentDateStr && currentDateStr.trim() !== '' ? new Date(currentDateStr.substring(0, 10) + 'T00:00:00') : new Date(todayDate);
+  if (isNaN(baseDate.getTime()) || baseDate < todayDate) {
+    baseDate = new Date(todayDate);
+  }
 
   const next = new Date(baseDate);
   const interval = rule.interval && rule.interval > 0 ? rule.interval : 1;
@@ -313,6 +320,8 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       return `${year}-${month}-${day}`;
     };
 
+    const effectiveDueDate = (dueDate !== undefined && dueDate !== '') ? dueDate : (recurrence ? getTodayStr() : '');
+
     const newTask: Task = {
       id: `task_${Date.now()}`,
       projectId: projectId || null,
@@ -321,7 +330,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       duration: '45m',
       priority: 'Medium',
       status: 'To Do',
-      dueDate: dueDate !== undefined ? dueDate : '',
+      dueDate: effectiveDueDate,
       recurrence
     };
     setTasks(prev => [newTask, ...prev]);
