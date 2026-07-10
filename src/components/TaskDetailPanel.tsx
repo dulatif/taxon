@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { DayPicker } from 'react-day-picker';
+import { format, addMonths } from 'date-fns';
 import {
   X,
   CheckCircle2,
@@ -15,7 +17,9 @@ import {
   Square,
   CheckSquare,
   Timer,
-  Repeat
+  Repeat,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency } from '../types';
 
@@ -46,6 +50,57 @@ const formatMinutes = (mins?: number): string => {
   return `${m}m`;
 };
 
+const formatDateStr = (d: Date): string => {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+const getPresetDates = () => {
+  const now = new Date();
+  const today = formatDateStr(now);
+
+  const tomorrowDate = new Date(now);
+  tomorrowDate.setDate(now.getDate() + 1);
+  const tomorrow = formatDateStr(tomorrowDate);
+
+  const satDate = new Date(now);
+  const daysUntilSat = (6 - now.getDay() + 7) % 7 || 7;
+  satDate.setDate(now.getDate() + daysUntilSat);
+  const thisSaturday = formatDateStr(satDate);
+
+  const monDate = new Date(now);
+  const daysUntilMon = (1 - now.getDay() + 7) % 7 || 7;
+  monDate.setDate(now.getDate() + daysUntilMon);
+  const nextMonday = formatDateStr(monDate);
+
+  const weekDate = new Date(now);
+  weekDate.setDate(now.getDate() + 7);
+  const nextWeek = formatDateStr(weekDate);
+
+  return [
+    { label: 'Today', date: today, sub: 'Later today' },
+    { label: 'Tomorrow', date: tomorrow, sub: tomorrowDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) },
+    { label: 'This Weekend', date: thisSaturday, sub: satDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) },
+    { label: 'Next Week', date: nextMonday, sub: monDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) },
+    { label: 'In 1 Week', date: nextWeek, sub: weekDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) },
+  ];
+};
+
+const formatDisplayDate = (dateStr?: string) => {
+  if (!dateStr || dateStr.trim() === '') return 'Unscheduled';
+  const today = formatDateStr(new Date());
+  if (dateStr === today) return 'Today';
+  const tomDate = new Date();
+  tomDate.setDate(tomDate.getDate() + 1);
+  if (dateStr === formatDateStr(tomDate)) return 'Tomorrow';
+  try {
+    const d = new Date(dateStr + 'T00:00:00');
+    if (!isNaN(d.getTime())) {
+      return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    }
+  } catch (_) {}
+  return dateStr;
+};
+
 interface TaskDetailPanelProps {
   task: Task | null;
   projects: Project[];
@@ -67,6 +122,7 @@ export default function TaskDetailPanel({
   const [isAddingLabel, setIsAddingLabel] = useState(false);
   const [activePropertyEdit, setActivePropertyEdit] = useState<string | null>(null);
   const [isCustomRecurrence, setIsCustomRecurrence] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState<Date>(new Date());
 
   useEffect(() => {
     if (task) {
@@ -76,6 +132,12 @@ export default function TaskDetailPanel({
         reminders: task.reminders || ['Add Reminders'],
         subtasks: task.subtasks || []
       });
+      if (task.dueDate) {
+        const parsed = new Date(task.dueDate + 'T00:00:00');
+        if (!isNaN(parsed.getTime())) setPickerMonth(parsed);
+      } else {
+        setPickerMonth(new Date());
+      }
     } else {
       setEditedTask(null);
     }
@@ -228,8 +290,19 @@ export default function TaskDetailPanel({
                 
                 {/* Status Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Status: ${editedTask.status}. Click or press Enter to change.`}
+                  aria-expanded={activePropertyEdit === 'status'}
+                  aria-haspopup="menu"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'status' ? null : 'status');
+                    }
+                  }}
                   onClick={() => setActivePropertyEdit(activePropertyEdit === 'status' ? null : 'status')}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <CheckCircle2 className={`w-5 h-5 mt-0.5 shrink-0 transition-colors ${
                     editedTask.completed ? 'text-green-400' : 'text-[#8E9192] group-hover:text-white'
@@ -241,21 +314,32 @@ export default function TaskDetailPanel({
 
                   {activePropertyEdit === 'status' && (
                     <div 
+                      role="menu"
+                      aria-label="Select Status"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.stopPropagation();
+                          setActivePropertyEdit(null);
+                        }
+                      }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1 animate-in fade-in zoom-in-95 duration-150"
                     >
                       {(['To Do', 'In Progress', 'Done'] as Task['status'][]).map(s => (
                         <button
                           key={s}
+                          role="menuitem"
                           onClick={() => { 
                             handleFieldChange('status', s); 
                             handleFieldChange('completed', s === 'Done'); 
                             setActivePropertyEdit(null); 
                           }}
-                          className="w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] text-white transition-colors flex items-center justify-between"
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                            editedTask.status === s ? 'bg-white/10 text-white font-semibold' : 'hover:bg-[#141313] text-[#C4C7C8] hover:text-white'
+                          }`}
                         >
                           <span>{s}</span>
-                          {s === 'Done' && <Check className="w-3 h-3 text-green-400" />}
+                          {s === 'Done' && <Check className="w-3.5 h-3.5 text-green-400" />}
                         </button>
                       ))}
                     </div>
@@ -264,8 +348,19 @@ export default function TaskDetailPanel({
 
                 {/* Project Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Project: ${currentProject ? currentProject.name : 'No Project'}. Click or press Enter to change.`}
+                  aria-expanded={activePropertyEdit === 'project'}
+                  aria-haspopup="menu"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'project' ? null : 'project');
+                    }
+                  }}
                   onClick={() => setActivePropertyEdit(activePropertyEdit === 'project' ? null : 'project')}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <FolderOpen className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -277,20 +372,34 @@ export default function TaskDetailPanel({
 
                   {activePropertyEdit === 'project' && (
                     <div 
+                      role="menu"
+                      aria-label="Select Project"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1 max-h-48 overflow-y-auto"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.stopPropagation();
+                          setActivePropertyEdit(null);
+                        }
+                      }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1 max-h-48 overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
                     >
                       <button
+                        role="menuitem"
                         onClick={() => { handleFieldChange('projectId', null); setActivePropertyEdit(null); }}
-                        className="w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] text-[#8E9192] hover:text-white transition-colors"
+                        className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                          !editedTask.projectId ? 'bg-white/10 text-white font-semibold' : 'hover:bg-[#141313] text-[#8E9192] hover:text-white'
+                        }`}
                       >
                         No Project
                       </button>
                       {projects.filter(p => p.category !== 'Completed').map(p => (
                         <button
                           key={p.id}
+                          role="menuitem"
                           onClick={() => { handleFieldChange('projectId', p.id); setActivePropertyEdit(null); }}
-                          className="w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] text-white transition-colors truncate"
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors truncate cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                            editedTask.projectId === p.id ? 'bg-white/10 text-white font-semibold' : 'hover:bg-[#141313] text-[#C4C7C8] hover:text-white'
+                          }`}
                         >
                           {p.name}
                         </button>
@@ -301,39 +410,199 @@ export default function TaskDetailPanel({
 
                 {/* Date / Due Date Card */}
                 <div 
-                  onClick={() => setActivePropertyEdit(activePropertyEdit === 'date' ? null : 'date')}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Due Date: ${formatDisplayDate(editedTask.dueDate)}. Click or press Enter to edit.`}
+                  aria-expanded={activePropertyEdit === 'date'}
+                  aria-haspopup="dialog"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      if (activePropertyEdit === 'date') {
+                        setActivePropertyEdit(null);
+                      } else {
+                        setActivePropertyEdit('date');
+                        if (editedTask.dueDate) {
+                          const parsed = new Date(editedTask.dueDate + 'T00:00:00');
+                          if (!isNaN(parsed.getTime())) setPickerMonth(parsed);
+                        } else {
+                          setPickerMonth(new Date());
+                        }
+                      }
+                    }
+                  }}
+                  onClick={() => {
+                    if (activePropertyEdit === 'date') {
+                      setActivePropertyEdit(null);
+                    } else {
+                      setActivePropertyEdit('date');
+                      if (editedTask.dueDate) {
+                        const parsed = new Date(editedTask.dueDate + 'T00:00:00');
+                        if (!isNaN(parsed.getTime())) setPickerMonth(parsed);
+                      } else {
+                        setPickerMonth(new Date());
+                      }
+                    }
+                  }}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <CalendarIcon className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
                     <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Date</div>
-                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
-                      {editedTask.dueDate || 'Unscheduled'}
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5 flex items-center gap-1.5">
+                      <span className={editedTask.dueDate && editedTask.dueDate < formatDateStr(new Date()) && !editedTask.completed ? 'text-red-400 font-semibold' : 'text-white'}>
+                        {formatDisplayDate(editedTask.dueDate)}
+                      </span>
+                      {editedTask.dueDate && (
+                        <span className="text-[10px] text-[#8E9192]/60 font-mono">({editedTask.dueDate})</span>
+                      )}
                     </div>
                   </div>
 
                   {activePropertyEdit === 'date' && (
                     <div 
+                      role="dialog"
+                      aria-label="Select Due Date"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3 z-50 shadow-2xl"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.stopPropagation();
+                          setActivePropertyEdit(null);
+                        }
+                      }}
+                      className="absolute left-0 top-full mt-1.5 w-[340px] min-w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-50 shadow-2xl space-y-3 font-sans max-h-[80vh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in-95 duration-150"
                     >
-                      <input
-                        type="date"
-                        value={editedTask.dueDate || ''}
-                        onChange={(e) => { handleFieldChange('dueDate', e.target.value); setActivePropertyEdit(null); }}
-                        className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-2 focus:outline-none focus:border-white"
-                      />
+                      {/* Quick Presets */}
+                      <div className="space-y-1">
+                        <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold tracking-wider mb-1.5">Quick Schedule</div>
+                        {getPresetDates().map((preset) => {
+                          const isSelected = editedTask.dueDate === preset.date;
+                          return (
+                            <button
+                              key={preset.label}
+                              type="button"
+                              onClick={() => {
+                                handleFieldChange('dueDate', preset.date);
+                                setActivePropertyEdit(null);
+                              }}
+                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                                isSelected ? 'bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30' : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+                              }`}
+                            >
+                              <span className="font-medium">{preset.label}</span>
+                              <span className="text-[10px] font-mono text-[#8E9192]">{preset.sub}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {/* Interactive Calendar DatePicker */}
+                      <div className="pt-2 border-t border-[#27272A]">
+                        <div className="flex items-center justify-between mb-2 px-1">
+                          <span className="text-xs font-bold text-white tracking-wide">
+                            {format(pickerMonth, 'MMMM yyyy')}
+                          </span>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                              className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              title="Previous Month"
+                            >
+                              <ChevronLeft className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                              className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              title="Next Month"
+                            >
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        <DayPicker
+                          mode="single"
+                          selected={editedTask.dueDate ? new Date(editedTask.dueDate + 'T00:00:00') : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              handleFieldChange('dueDate', formatDateStr(date));
+                              setActivePropertyEdit(null);
+                            }
+                          }}
+                          month={pickerMonth}
+                          onMonthChange={setPickerMonth}
+                          hideNavigation={true}
+                          classNames={{
+                            root: 'taxon-calendar',
+                            months: 'taxon-months',
+                            month: 'taxon-month',
+                            month_caption: 'taxon-caption',
+                            nav: 'taxon-nav',
+                            button_previous: 'taxon-nav-button',
+                            button_next: 'taxon-nav-button',
+                            month_grid: 'taxon-table',
+                            weekdays: 'taxon-head-row',
+                            weekday: 'taxon-head-cell',
+                            week: 'taxon-row',
+                            day: 'taxon-cell',
+                            day_button: 'taxon-day',
+                            selected: 'taxon-day-selected',
+                            today: 'taxon-day-today',
+                            outside: 'taxon-day-outside',
+                          }}
+                        />
+                      </div>
+
+                      {/* Footer Actions */}
+                      <div className="pt-2 border-t border-[#27272A] flex items-center justify-between gap-2">
+                        {editedTask.dueDate ? (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              handleFieldChange('dueDate', '');
+                              setActivePropertyEdit(null);
+                            }}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 focus:outline-none focus:ring-1 focus:ring-red-400 cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Clear Date</span>
+                          </button>
+                        ) : (
+                          <div />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setActivePropertyEdit(null)}
+                          className="bg-white hover:bg-white/90 text-black font-bold text-[11px] px-3 py-1 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-white ml-auto cursor-pointer"
+                        >
+                          Done
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
 
                 {/* Recurrence Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Recurrence: ${getRecurrenceLabel(editedTask.recurrence)}. Click or press Enter to change.`}
+                  aria-expanded={activePropertyEdit === 'recurrence'}
+                  aria-haspopup="dialog"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'recurrence' ? null : 'recurrence');
+                      setIsCustomRecurrence(false);
+                    }
+                  }}
                   onClick={() => {
                     setActivePropertyEdit(activePropertyEdit === 'recurrence' ? null : 'recurrence');
                     setIsCustomRecurrence(false);
                   }}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <Repeat className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -345,8 +614,16 @@ export default function TaskDetailPanel({
 
                   {activePropertyEdit === 'recurrence' && (
                     <div 
+                      role="dialog"
+                      aria-label="Recurrence Picker"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-1.5 max-h-64 overflow-y-auto"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.stopPropagation();
+                          setActivePropertyEdit(null);
+                        }
+                      }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-1.5 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
                     >
                       {!isCustomRecurrence ? (
                         <>
@@ -472,8 +749,19 @@ export default function TaskDetailPanel({
 
                 {/* Priority Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Priority: ${editedTask.priority}. Click or press Enter to change.`}
+                  aria-expanded={activePropertyEdit === 'priority'}
+                  aria-haspopup="menu"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'priority' ? null : 'priority');
+                    }
+                  }}
                   onClick={() => setActivePropertyEdit(activePropertyEdit === 'priority' ? null : 'priority')}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <Flag className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -487,14 +775,25 @@ export default function TaskDetailPanel({
 
                   {activePropertyEdit === 'priority' && (
                     <div 
+                      role="menu"
+                      aria-label="Select Priority"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.stopPropagation();
+                          setActivePropertyEdit(null);
+                        }
+                      }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1 animate-in fade-in zoom-in-95 duration-150"
                     >
                       {(['Critical', 'High', 'Medium', 'Low'] as Task['priority'][]).map(p => (
                         <button
                           key={p}
+                          role="menuitem"
                           onClick={() => { handleFieldChange('priority', p); setActivePropertyEdit(null); }}
-                          className="w-full text-left px-3 py-1.5 rounded text-xs hover:bg-[#141313] text-white flex items-center justify-between"
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center justify-between cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                            editedTask.priority === p ? 'bg-white/10 text-white font-semibold' : 'hover:bg-[#141313] text-[#C4C7C8] hover:text-white'
+                          }`}
                         >
                           <span>{p}</span>
                           <span className={`px-1.5 py-0.2 rounded text-[8px] font-mono border ${getPriorityColor(p)}`}>{p}</span>
@@ -506,8 +805,18 @@ export default function TaskDetailPanel({
 
                 {/* Labels Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Manage Labels. Click or press Enter to add or remove labels."
+                  aria-expanded={isAddingLabel}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setIsAddingLabel(!isAddingLabel);
+                    }
+                  }}
                   onClick={() => setIsAddingLabel(!isAddingLabel)}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <Tag className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -516,9 +825,13 @@ export default function TaskDetailPanel({
                       {(editedTask.labels && editedTask.labels.length > 0 ? editedTask.labels : ['Work']).map((lbl, idx) => (
                         <span 
                           key={idx}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Remove label ${lbl}`}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); handleRemoveLabel(lbl); } }}
                           onClick={(e) => { e.stopPropagation(); handleRemoveLabel(lbl); }}
                           title="Click to remove"
-                          className="text-[10px] bg-black px-1.5 py-0.5 rounded border border-[#27272A] text-[#8E9192] hover:text-red-400 hover:border-red-400/40 transition-colors"
+                          className="text-[10px] bg-black px-1.5 py-0.5 rounded border border-[#27272A] text-[#8E9192] hover:text-red-400 hover:border-red-400/40 transition-colors cursor-pointer"
                         >
                           {lbl} ×
                         </span>
@@ -528,19 +841,23 @@ export default function TaskDetailPanel({
 
                   {isAddingLabel && (
                     <form 
+                      role="dialog"
+                      aria-label="Add Label"
                       onSubmit={handleAddLabel}
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl flex gap-1"
+                      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setIsAddingLabel(false); } }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl flex gap-1 animate-in fade-in zoom-in-95 duration-150"
                     >
                       <input
                         type="text"
                         placeholder="New label..."
                         value={newLabelText}
                         onChange={(e) => setNewLabelText(e.target.value)}
+                        aria-label="New label name"
                         className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-1.5 focus:outline-none focus:border-white"
                         autoFocus
                       />
-                      <button type="submit" className="bg-white text-black font-bold text-[10px] px-2 rounded">
+                      <button type="submit" className="bg-white text-black font-bold text-[10px] px-2 rounded hover:bg-white/90 focus:outline-none focus:ring-1 focus:ring-white">
                         Add
                       </button>
                     </form>
@@ -549,11 +866,21 @@ export default function TaskDetailPanel({
 
                 {/* Reminders Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label="Toggle Reminder"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      const current = editedTask.reminders?.[0] === '10m before' ? 'Add Reminders' : '10m before';
+                      handleFieldChange('reminders', [current]);
+                    }
+                  }}
                   onClick={() => {
                     const current = editedTask.reminders?.[0] === '10m before' ? 'Add Reminders' : '10m before';
                     handleFieldChange('reminders', [current]);
                   }}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <Clock className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0">
@@ -566,8 +893,19 @@ export default function TaskDetailPanel({
 
                 {/* Time Effort Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Time Effort: ${formatMinutes(editedTask.timeEffort)}. Click or press Enter to edit.`}
+                  aria-expanded={activePropertyEdit === 'effort'}
+                  aria-haspopup="dialog"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'effort' ? null : 'effort');
+                    }
+                  }}
                   onClick={() => setActivePropertyEdit(activePropertyEdit === 'effort' ? null : 'effort')}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <Timer className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -579,8 +917,11 @@ export default function TaskDetailPanel({
 
                   {activePropertyEdit === 'effort' && (
                     <div 
+                      role="dialog"
+                      aria-label="Set Time Effort"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2"
+                      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setActivePropertyEdit(null); } }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2 animate-in fade-in zoom-in-95 duration-150"
                     >
                       <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold">Quick Presets</div>
                       <div className="grid grid-cols-3 gap-1">
@@ -589,7 +930,7 @@ export default function TaskDetailPanel({
                             key={m}
                             type="button"
                             onClick={() => { handleFieldChange('timeEffort', m); setActivePropertyEdit(null); }}
-                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A]"
+                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A] cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             {formatMinutes(m)}
                           </button>
@@ -602,6 +943,7 @@ export default function TaskDetailPanel({
                           placeholder="Mins..."
                           value={editedTask.timeEffort || ''}
                           onChange={(e) => handleFieldChange('timeEffort', parseInt(e.target.value) || 0)}
+                          aria-label="Custom effort in minutes"
                           className="w-full bg-[#141313] border border-[#27272A] text-xs text-white rounded p-1 focus:outline-none focus:border-white"
                         />
                         <span className="text-[10px] text-[#8E9192] shrink-0 font-mono">mins</span>
@@ -612,8 +954,19 @@ export default function TaskDetailPanel({
 
                 {/* Time Spent Card */}
                 <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Time Spent: ${formatMinutes(editedTask.timeSpent)}. Click or press Enter to edit.`}
+                  aria-expanded={activePropertyEdit === 'spent'}
+                  aria-haspopup="dialog"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'spent' ? null : 'spent');
+                    }
+                  }}
                   onClick={() => setActivePropertyEdit(activePropertyEdit === 'spent' ? null : 'spent')}
-                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group"
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
                 >
                   <Clock className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
                   <div className="min-w-0 flex-1">
@@ -625,8 +978,11 @@ export default function TaskDetailPanel({
 
                   {activePropertyEdit === 'spent' && (
                     <div 
+                      role="dialog"
+                      aria-label="Log Time Spent"
                       onClick={(e) => e.stopPropagation()}
-                      className="absolute left-0 top-full mt-1 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2"
+                      onKeyDown={(e) => { if (e.key === 'Escape') { e.stopPropagation(); setActivePropertyEdit(null); } }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2.5 z-50 shadow-2xl space-y-2 animate-in fade-in zoom-in-95 duration-150"
                     >
                       <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold">Quick Log</div>
                       <div className="grid grid-cols-3 gap-1">
@@ -635,7 +991,7 @@ export default function TaskDetailPanel({
                             key={addM}
                             type="button"
                             onClick={() => { handleFieldChange('timeSpent', (editedTask.timeSpent || 0) + addM); }}
-                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A]"
+                            className="px-2 py-1 bg-[#141313] hover:bg-white hover:text-black rounded text-[11px] font-mono transition-colors text-white text-center border border-[#27272A] cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             +{addM}m
                           </button>
