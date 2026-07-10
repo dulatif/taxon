@@ -4,9 +4,21 @@ import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
 interface UseGlobalShortcutsOptions {
   onQuickAddTask: () => void;
   onLaunchFocusMode: () => void;
+  onOpenSpotlight: () => void;
 }
 
-export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode }: UseGlobalShortcutsOptions) {
+export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode, onOpenSpotlight }: UseGlobalShortcutsOptions) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        onOpenSpotlight();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onOpenSpotlight]);
+
   useEffect(() => {
     const setupShortcuts = async () => {
       try {
@@ -14,10 +26,7 @@ export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode }: UseGlo
         
         await register('CommandOrControl+K', (e) => {
           if (e.state === 'Pressed') {
-            const searchInput = document.getElementById('global-search-input');
-            if (searchInput) {
-              (searchInput as HTMLInputElement).focus();
-            }
+            onOpenSpotlight();
           }
         });
 
@@ -42,5 +51,5 @@ export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode }: UseGlo
     return () => {
       unregisterAll().catch(console.error);
     };
-  }, [onQuickAddTask, onLaunchFocusMode]);
+  }, [onQuickAddTask, onLaunchFocusMode, onOpenSpotlight]);
 }

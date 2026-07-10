@@ -30,6 +30,7 @@ import AddProjectModal from './modals/AddProjectModal';
 import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
 import ManageCategoriesModal from './modals/ManageCategoriesModal';
+import SpotlightSearchModal from './modals/SpotlightSearchModal';
 import { Project } from './types';
 import { getTodayStr } from './utils/taskFilters';
 import { useFocusTimer } from './hooks/useFocusTimer';
@@ -49,8 +50,7 @@ export default function App() {
   // --- UI Navigation/Layout States ---
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
 
   // --- Modal Dialog States ---
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -123,7 +123,8 @@ export default function App() {
     onQuickAddTask: () => setIsQuickAddTaskOpen(true),
     onLaunchFocusMode: () => {
       document.getElementById('header-focus-mode')?.click();
-    }
+    },
+    onOpenSpotlight: () => setIsSpotlightOpen(true),
   });
 
   const { settings } = useSettings();
@@ -206,11 +207,6 @@ export default function App() {
     }
     return tasks;
   };
-
-  // Global search
-  const filteredSearchTasks = searchQuery.trim() === ''
-    ? []
-    : tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (!isDataLoaded) {
     return <div className="flex items-center justify-center h-screen bg-black text-white">Loading database...</div>;
@@ -328,62 +324,18 @@ export default function App() {
             {/* Quick global utility actions */}
             <div className="flex items-center gap-6">
 
-              {/* Global Search Interface */}
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] w-3.5 h-3.5" />
-                <input
-                  id="global-search-input"
-                  type="text"
-                  placeholder="Search tasks... (⌘K)"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                  className="bg-[#141313] border border-[#27272A] rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-[#8E9192]/60 focus:outline-none focus:border-white w-64 transition-all"
-                />
-
-                {/* Dynamic search results overlay dashboard */}
-                {isSearchFocused && searchQuery.trim() !== '' && (
-                  <div className="absolute right-0 top-10 bg-[#0A0A0A] border border-[#27272A] w-80 rounded-xl p-3 z-50 shadow-2xl max-h-[300px] overflow-y-auto">
-                    <h4 className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] mb-2 font-mono">
-                      Search Results ({filteredSearchTasks.length})
-                    </h4>
-                    {filteredSearchTasks.length === 0 ? (
-                      <div className="text-xs text-[#8E9192] py-4 text-center">No tasks match queries</div>
-                    ) : (
-                      <div className="divide-y divide-[#27272A]/50">
-                        {filteredSearchTasks.map(t => (
-                          <div
-                            key={t.id}
-                            className="py-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#141313] px-1 rounded transition-colors"
-                            onClick={() => {
-                              if (t.projectId) {
-                                setSelectedProjectId(t.projectId);
-                                setCurrentView('project-details');
-                              } else {
-                                setCurrentView('dashboard');
-                              }
-                            }}
-                          >
-                            <span className={`${t.completed ? 'line-through text-[#8E9192]' : 'text-white'} truncate max-w-[200px]`}>
-                              {t.title}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleTask(t.id);
-                              }}
-                              className="p-1 hover:bg-[#201F1F] rounded"
-                            >
-                              <Check className={`w-3 h-3 ${t.completed ? 'text-green-400' : 'text-[#8E9192]'}`} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+              {/* Global Search Trigger Button */}
+              <button
+                id="global-search-input"
+                onClick={() => setIsSpotlightOpen(true)}
+                className="relative group bg-[#141313] border border-[#27272A] hover:border-[#8E9192]/60 rounded-lg pl-9 pr-2.5 py-1.5 text-xs text-[#8E9192]/80 hover:text-white flex items-center justify-between w-64 transition-all cursor-pointer select-none"
+              >
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] group-hover:text-white w-3.5 h-3.5 transition-colors" />
+                <span>Search tasks & projects...</span>
+                <span className="px-1.5 py-0.5 rounded bg-[#1E1E22] border border-[#27272A] text-[10px] font-mono text-[#8E9192] group-hover:text-white transition-colors">
+                  ⌘K
+                </span>
+              </button>
 
               {/* Immersive Focus Mode launcher button */}
               <button
@@ -560,6 +512,27 @@ export default function App() {
           setImportPendingJson(null);
         }}
         onConfirm={confirmImport}
+      />
+
+      <SpotlightSearchModal
+        isOpen={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
+        tasks={tasks}
+        projects={projects}
+        onToggleTask={handleToggleTask}
+        onSelectProject={(id) => {
+          setSelectedProjectId(id);
+          setCurrentView('project-details');
+        }}
+        onSelectTask={(id) => setSelectedDetailTaskId(id)}
+        onNavigate={(view) => {
+          setSelectedProjectId(null);
+          setCurrentView(view);
+        }}
+        onQuickAddTask={() => setIsQuickAddTaskOpen(true)}
+        onLaunchFocusMode={() => {
+          document.getElementById('header-focus-mode')?.click();
+        }}
       />
 
     </div>
