@@ -141,9 +141,22 @@ export interface RecurrenceRule {
   daysOfWeek?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
 }
 
+export interface Sprint {
+  id: string;
+  projectId: string;
+  name: string;              // e.g. "Sprint 1", "Sprint 2"
+  status: 'Active' | 'Planned' | 'Completed';
+  startDate: string;         // ISO date (YYYY-MM-DD)
+  endDate: string;           // ISO date (YYYY-MM-DD)
+  goal?: string;             // Optional sprint goal description
+  sortOrder?: number;
+  completedAt?: string;      // ISO datetime when sprint was completed
+}
+
 export interface Task {
   id: string;
   projectId: string | null;
+  sprintId?: string | null;
   title: string;
   completed: boolean;
   duration: string; // e.g. "45m", "2h", "1.5h"

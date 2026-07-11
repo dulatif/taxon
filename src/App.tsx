@@ -101,7 +101,14 @@ export default function App() {
     handleSetVaultPath,
     handleArchiveTask,
     handleUnarchiveTask,
-    handleArchiveAllCompleted
+    handleArchiveAllCompleted,
+    sprints,
+    handleCreateSprint,
+    handleEditSprint,
+    handleCompleteSprint,
+    handleDeleteSprint,
+    handleAssignTaskToSprint,
+    handleSprintRollover
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -281,6 +288,7 @@ export default function App() {
       <TaskDetailPanel
         task={selectedDetailTask}
         projects={projects}
+        sprints={sprints}
         onClose={() => setSelectedDetailTaskId(null)}
         onUpdateTask={handleUpdateTaskDetail}
         onDeleteTask={handleDeleteTask}
@@ -384,6 +392,8 @@ export default function App() {
                 projects={projects}
                 tasks={tasks}
                 categories={categories}
+                sprints={sprints}
+                onAssignTaskToSprint={handleAssignTaskToSprint}
                 onProjectSelect={(id) => setSelectedProjectId(id)}
                 onViewChange={setCurrentView}
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
@@ -400,6 +410,13 @@ export default function App() {
                 tasks={tasks}
                 files={files}
                 availableCategories={categories}
+                sprints={sprints}
+                onCreateSprint={handleCreateSprint}
+                onEditSprint={handleEditSprint}
+                onCompleteSprint={handleCompleteSprint}
+                onDeleteSprint={handleDeleteSprint}
+                onAssignTaskToSprint={handleAssignTaskToSprint}
+                onSprintRollover={handleSprintRollover}
                 onToggleTask={handleToggleTask}
                 onAddTask={handleAddTask}
                 onDeleteTask={handleDeleteTask}

@@ -1,4 +1,4 @@
-import { Project, Task, DocumentFile, DailyActivity, SettingsState } from './types';
+import { Project, Task, DocumentFile, DailyActivity, SettingsState, Sprint } from './types';
 
 export const INITIAL_PROJECTS: Project[] = [
   {
@@ -63,11 +63,46 @@ function futureDate(daysFromNow: number): string {
   return formatDate(d);
 }
 
+export const INITIAL_SPRINTS: Sprint[] = [
+  {
+    id: 'sprint-1',
+    projectId: 'obsidian-core',
+    name: 'Sprint 1',
+    status: 'Completed',
+    startDate: futureDate(-14),
+    endDate: futureDate(0),
+    goal: 'Complete core architecture & theme setup.',
+    sortOrder: 0,
+    completedAt: futureDate(0),
+  },
+  {
+    id: 'sprint-2',
+    projectId: 'obsidian-core',
+    name: 'Sprint 2',
+    status: 'Active',
+    startDate: futureDate(0),
+    endDate: futureDate(14),
+    goal: 'Deliver OLED metrics ingestion & Precision API v2.',
+    sortOrder: 1,
+  },
+  {
+    id: 'sprint-web-1',
+    projectId: 'web-redesign',
+    name: 'Sprint 1',
+    status: 'Active',
+    startDate: futureDate(-3),
+    endDate: futureDate(11),
+    goal: 'Revamp typography system and fix alignment issues.',
+    sortOrder: 0,
+  }
+];
+
 export const INITIAL_TASKS: Task[] = [
   // Today's dashboard tasks
   {
     id: 'today-1',
     projectId: 'web-redesign',
+    sprintId: 'sprint-web-1',
     title: 'Refactor State Management Providers',
     completed: false,
     duration: '45m',
@@ -150,6 +185,7 @@ export const INITIAL_TASKS: Task[] = [
   {
     id: 'k-1',
     projectId: 'obsidian-core',
+    sprintId: 'sprint-2',
     title: 'Refactor data ingestion pipeline for OLED metrics',
     completed: false,
     duration: '45m',
@@ -160,6 +196,7 @@ export const INITIAL_TASKS: Task[] = [
   {
     id: 'k-2',
     projectId: 'obsidian-core',
+    sprintId: 'sprint-2',
     title: 'Update documentation for Precision API v2',
     completed: false,
     duration: '2h',
@@ -180,6 +217,7 @@ export const INITIAL_TASKS: Task[] = [
   {
     id: 'k-4',
     projectId: 'obsidian-core',
+    sprintId: 'sprint-2',
     title: 'Implement Obsidian Onyx theme tokens',
     completed: false,
     duration: '4h',
@@ -190,6 +228,7 @@ export const INITIAL_TASKS: Task[] = [
   {
     id: 'k-5',
     projectId: 'web-redesign',
+    sprintId: 'sprint-web-1',
     title: 'Review pull request #1104: Grid alignment',
     completed: false,
     duration: '30m',

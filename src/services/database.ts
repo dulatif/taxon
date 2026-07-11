@@ -1,5 +1,5 @@
 import Database from '@tauri-apps/plugin-sql';
-import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry } from '../types';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, Sprint } from '../types';
 
 let dbPromise: Promise<Database> | null = null;
 
@@ -63,6 +63,26 @@ export const initDb = (): Promise<Database> => {
             completedAt TEXT
         );
       `).catch(() => {});
+
+      await database.execute(`
+        CREATE TABLE IF NOT EXISTS sprints (
+            id TEXT PRIMARY KEY,
+            projectId TEXT,
+            name TEXT NOT NULL,
+            status TEXT NOT NULL,
+            startDate TEXT NOT NULL,
+            endDate TEXT NOT NULL,
+            goal TEXT,
+            sortOrder INTEGER,
+            completedAt TEXT
+        );
+      `).catch(() => {});
+
+      try {
+        await database.execute('ALTER TABLE tasks ADD COLUMN sprintId TEXT');
+      } catch (_) {
+        // Column already exists
+      }
 
       const cols = ['dueDate', 'description', 'labels', 'reminders', 'deadline', 'subtasks', 'recurrence'];
       for (const col of cols) {
@@ -163,6 +183,7 @@ export const getTasks = async (): Promise<Task[]> => {
       : 0;
     return {
       ...t,
+      sprintId: t.sprintId ?? null,
       completed: !!t.completed,
       labels: parseJSON(t.labels),
       reminders: parseJSON(t.reminders),
@@ -184,10 +205,11 @@ export const saveTask = async (t: Task) => {
   const recurrenceStr = t.recurrence ? JSON.stringify(t.recurrence) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)',
     [
       t.id ?? null, 
       t.projectId ?? null, 
+      t.sprintId ?? null,
       t.title ?? null, 
       t.completed ? 1 : 0, 
       t.duration ?? null, 
@@ -217,6 +239,43 @@ export const deleteTask = async (id: string) => {
 export const deleteTasksByProject = async (projectId: string) => {
   const d = await initDb();
   await d.execute('DELETE FROM tasks WHERE projectId = $1', [projectId]);
+};
+
+// --- Sprints ---
+export const getSprints = async (projectId?: string): Promise<Sprint[]> => {
+  const d = await initDb();
+  if (projectId) {
+    return d.select<Sprint[]>('SELECT * FROM sprints WHERE projectId = $1 ORDER BY COALESCE(sortOrder, 999999) ASC, startDate ASC, id ASC', [projectId]);
+  }
+  return d.select<Sprint[]>('SELECT * FROM sprints ORDER BY COALESCE(sortOrder, 999999) ASC, startDate ASC, id ASC');
+};
+
+export const saveSprint = async (s: Sprint) => {
+  const d = await initDb();
+  await d.execute(
+    'INSERT OR REPLACE INTO sprints (id, projectId, name, status, startDate, endDate, goal, sortOrder, completedAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    [
+      s.id ?? null,
+      s.projectId ?? null,
+      s.name ?? null,
+      s.status ?? null,
+      s.startDate ?? null,
+      s.endDate ?? null,
+      s.goal ?? null,
+      s.sortOrder ?? null,
+      s.completedAt ?? null
+    ]
+  );
+};
+
+export const deleteSprint = async (id: string) => {
+  const d = await initDb();
+  await d.execute('DELETE FROM sprints WHERE id = $1', [id]);
+};
+
+export const deleteSprintsByProject = async (projectId: string) => {
+  const d = await initDb();
+  await d.execute('DELETE FROM sprints WHERE projectId = $1', [projectId]);
 };
 
 // --- Files ---
@@ -294,6 +353,7 @@ export const saveActivityLogEntry = async (entry: ActivityLogEntry) => {
 // --- TAXON-405 & 407: Data Export / Import ---
 export const exportWorkspaceData = async (): Promise<string> => {
   const projects = await getProjects();
+  const sprints = await getSprints();
   const tasks = await getTasks();
   const files = await getFiles();
   const activity = await getActivity();
@@ -301,6 +361,7 @@ export const exportWorkspaceData = async (): Promise<string> => {
   
   const data = {
     projects,
+    sprints,
     tasks,
     files,
     activity,
@@ -316,6 +377,7 @@ export const importWorkspaceData = async (jsonString: string) => {
   
   // Clear existing tables
   await d.execute('DELETE FROM projects');
+  await d.execute('DELETE FROM sprints');
   await d.execute('DELETE FROM tasks');
   await d.execute('DELETE FROM files');
   await d.execute('DELETE FROM activity');
@@ -324,6 +386,9 @@ export const importWorkspaceData = async (jsonString: string) => {
   // Re-insert data
   if (data.projects) {
     for (const p of data.projects) await saveProject(p);
+  }
+  if (data.sprints) {
+    for (const s of data.sprints) await saveSprint(s);
   }
   if (data.tasks) {
     for (const t of data.tasks) await saveTask(t);

@@ -10,28 +10,33 @@ import {
   MoveLeft
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Task, Project } from '../types';
+import { Task, Project, Sprint } from '../types';
 
 interface KanbanViewProps {
   projects: Project[];
   tasks: Task[];
+  sprints?: Sprint[];
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
   onAddTaskToProject: (taskTitle: string, projectId: string) => void;
   onSelectTask?: (task: Task) => void;
+  onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
 }
 
 export default function KanbanView({
   projects,
   tasks,
+  sprints,
   onMoveTaskStatus,
   onAddTaskToProject,
   onSelectTask,
+  onAssignTaskToSprint,
 }: KanbanViewProps) {
   // Columns state
   const [columns, setColumns] = useState<string[]>(['To Do', 'In Progress', 'Done']);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>('all');
   const [isAddingTask, setIsAddingTask] = useState<string | null>(null); // column name
   const [newTaskTitle, setNewTaskTitle] = useState('');
 
@@ -51,7 +56,12 @@ export default function KanbanView({
 
   // Filter tasks belonging strictly to active projects
   const activeProjectIds = projects.filter(p => p.category !== 'Completed').map(p => p.id);
-  const activeTasks = tasks.filter(t => t.projectId === selectedProjectId || (!t.projectId && selectedProjectId === 'all'));
+  const activeTasksAll = tasks.filter(t => t.projectId === selectedProjectId || (!t.projectId && selectedProjectId === 'all'));
+  const activeTasks = activeTasksAll.filter(t => {
+    if (selectedSprintId === 'all') return true;
+    if (selectedSprintId === 'backlog') return !t.sprintId;
+    return t.sprintId === selectedSprintId;
+  });
 
   const handleAddTaskSubmit = (columnName: string) => {
     if (!newTaskTitle.trim()) return;
@@ -98,18 +108,42 @@ export default function KanbanView({
       
       {/* Scope Board Filter Row */}
       <div className="flex items-center justify-between px-6 py-4 bg-[#0A0A0A] border border-[#27272A] rounded-t-xl gap-4">
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-semibold text-[#8E9192] uppercase tracking-wider font-mono">scope:</span>
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="bg-[#141313] border border-[#27272A] text-xs text-white rounded-lg px-3 py-1.5 focus:border-white focus:outline-none focus:ring-0 max-w-[220px]"
-          >
-            {projects.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-            <option value="all">All Standalone Tasks</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-semibold text-[#8E9192] uppercase tracking-wider font-mono">scope:</span>
+            <select
+              value={selectedProjectId}
+              onChange={(e) => {
+                setSelectedProjectId(e.target.value);
+                setSelectedSprintId('all');
+              }}
+              className="bg-[#141313] border border-[#27272A] text-xs text-white rounded-lg px-3 py-1.5 focus:border-white focus:outline-none focus:ring-0 max-w-[220px]"
+            >
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+              <option value="all">All Standalone Tasks</option>
+            </select>
+          </div>
+
+          {sprints && selectedProjectId && selectedProjectId !== 'all' && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-[#8E9192] uppercase tracking-wider font-mono">sprint:</span>
+              <select
+                value={selectedSprintId}
+                onChange={(e) => setSelectedSprintId(e.target.value as any)}
+                className="bg-[#141313] border border-[#27272A] text-xs text-white rounded-lg px-3 py-1.5 focus:border-white focus:outline-none focus:ring-0 max-w-[200px]"
+              >
+                <option value="all">All Sprints</option>
+                <option value="backlog">Backlog (Unassigned)</option>
+                {sprints.filter(s => s.projectId === selectedProjectId).map(s => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} ({s.status})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
 
         <span className="text-[10px] text-[#A1A1AA] font-mono uppercase bg-[#141313] px-2 py-1 rounded border border-[#27272A]/80">
@@ -173,9 +207,19 @@ export default function KanbanView({
                                 >
                                   {/* Priority Tag and Duration stats */}
                                   <div className="flex justify-between items-start mb-3">
-                                    <span className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}>
-                                      {task.priority || 'Medium'}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}>
+                                        {task.priority || 'Medium'}
+                                      </span>
+                                      {sprints && task.sprintId && (
+                                        <span 
+                                          onClick={(e) => e.stopPropagation()}
+                                          className="text-[9px] font-mono bg-[#3B82F6]/15 text-[#60A5FA] border border-[#3B82F6]/30 px-1.5 py-0.5 rounded"
+                                        >
+                                          {sprints.find(s => s.id === task.sprintId)?.name || 'Sprint'}
+                                        </span>
+                                      )}
+                                    </div>
                                     <span className="text-[#8E9192] text-[10px] font-mono leading-none bg-black/40 px-1.5 py-0.5 rounded border border-[#27272A]/40">
                                       {task.duration || '25m'}
                                     </span>

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule, PROJECT_CATEGORIES, getSavedCategories, saveCategories, setCategoryColor, removeCategoryColor, renameCategoryColor } from '../types';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule, Sprint, PROJECT_CATEGORIES, getSavedCategories, saveCategories, setCategoryColor, removeCategoryColor, renameCategoryColor } from '../types';
 import {
   INITIAL_PROJECTS,
   INITIAL_TASKS,
   INITIAL_FILES,
-  INITIAL_DAILY_ACTIVITY
+  INITIAL_DAILY_ACTIVITY,
+  INITIAL_SPRINTS
 } from '../data';
 import {
   createLogEntry,
@@ -15,6 +16,7 @@ import {
   getTasks, saveTask, deleteTask, deleteTasksByProject,
   getFiles, saveFile, deleteFile, deleteFilesByProject,
   getActivity, saveActivity, getActivityLog, saveActivityLogEntry,
+  getSprints, saveSprint, deleteSprint, deleteSprintsByProject,
   exportWorkspaceData, importWorkspaceData
 } from '../services/database';
 import { save as dialogSave, open as dialogOpen } from '@tauri-apps/plugin-dialog';
@@ -98,6 +100,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [files, setFiles] = useState<DocumentFile[]>([]);
+  const [sprints, setSprints] = useState<Sprint[]>([]);
   const [dailyActivity, setDailyActivity] = useState<DailyActivity[]>([]);
   const [activityLog, setActivityLog] = useState<ActivityLogEntry[]>([]);
   const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -113,6 +116,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         let dbProjects = await getProjects();
         let dbTasks = await getTasks();
         let dbFiles = await getFiles();
+        let dbSprints = await getSprints();
         let dbActivity = await getActivity();
         let dbLog = await getActivityLog();
 
@@ -144,6 +148,13 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
             for (const f of dbFiles) await saveFile(f).catch(console.error);
           }
 
+          if (dbSprints.length === 0) {
+            const lsSprints = localStorage.getItem(`${STORAGE_PREFIX}sprints`);
+            const parsed = lsSprints ? tryParseJSON(lsSprints) : null;
+            dbSprints = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_SPRINTS;
+            for (const s of dbSprints) await saveSprint(s).catch(console.error);
+          }
+
           if (dbActivity.length === 0) {
             const parsed = lsActivity ? tryParseJSON(lsActivity) : null;
             dbActivity = (parsed && Array.isArray(parsed) && parsed.length > 0) ? parsed : INITIAL_DAILY_ACTIVITY;
@@ -170,6 +181,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         setProjects(dbProjects);
         setTasks(dbTasks);
         setFiles(dbFiles);
+        setSprints(dbSprints);
         setDailyActivity(dbActivity);
         setActivityLog(dbLog);
       } catch (e) {
@@ -456,10 +468,12 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     setProjects(prev => prev.filter(p => p.id !== projectId));
     setTasks(prev => prev.filter(t => t.projectId !== projectId));
     setFiles(prev => prev.filter(f => f.projectId !== projectId));
+    setSprints(prev => prev.filter(s => s.projectId !== projectId));
 
     deleteProject(projectId);
     deleteTasksByProject(projectId);
     deleteFilesByProject(projectId);
+    deleteSprintsByProject(projectId);
 
     if (options?.onProjectDeleted) {
       options.onProjectDeleted();
@@ -725,6 +739,115 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     });
   }, []);
 
+  const handleCreateSprint = useCallback((projectId: string, name: string, startDate: string, endDate: string, goal?: string) => {
+    if (!name.trim()) return;
+    let validEnd = endDate;
+    if (new Date(validEnd) < new Date(startDate)) {
+      validEnd = startDate;
+    }
+    const hasActive = sprints.some(s => s.projectId === projectId && s.status === 'Active');
+    const newSprint: Sprint = {
+      id: `sprint_${Date.now()}`,
+      projectId,
+      name: name.trim(),
+      status: hasActive ? 'Planned' : 'Active',
+      startDate,
+      endDate: validEnd,
+      goal: goal?.trim() || undefined,
+      sortOrder: sprints.filter(s => s.projectId === projectId).length
+    };
+    setSprints(prev => [...prev, newSprint]);
+    saveSprint(newSprint);
+  }, [sprints]);
+
+  const handleEditSprint = useCallback((sprintId: string, updates: Partial<Sprint>) => {
+    setSprints(prev => {
+      const target = prev.find(s => s.id === sprintId);
+      if (!target) return prev;
+      let newSprints = [...prev];
+      if (updates.status === 'Active') {
+        newSprints = newSprints.map(s => {
+          if (s.projectId === target.projectId && s.id !== sprintId && s.status === 'Active') {
+            const updated = { ...s, status: 'Planned' as const };
+            saveSprint(updated);
+            return updated;
+          }
+          return s;
+        });
+      }
+      const updated = newSprints.map(s => {
+        if (s.id === sprintId) {
+          let validEnd = updates.endDate || s.endDate;
+          const validStart = updates.startDate || s.startDate;
+          if (new Date(validEnd) < new Date(validStart)) {
+            validEnd = validStart;
+          }
+          const u = { ...s, ...updates, endDate: validEnd };
+          saveSprint(u);
+          return u;
+        }
+        return s;
+      });
+      return updated;
+    });
+  }, []);
+
+  const handleCompleteSprint = useCallback((sprintId: string) => {
+    const now = new Date().toISOString();
+    setSprints(prev => prev.map(s => {
+      if (s.id === sprintId) {
+        const u = { ...s, status: 'Completed' as const, completedAt: now };
+        saveSprint(u);
+        return u;
+      }
+      return s;
+    }));
+  }, []);
+
+  const handleDeleteSprint = useCallback((sprintId: string) => {
+    setSprints(prev => prev.filter(s => s.id !== sprintId));
+    deleteSprint(sprintId);
+    setTasks(prev => prev.map(t => {
+      if (t.sprintId === sprintId) {
+        const u = { ...t, sprintId: null };
+        saveTask(u);
+        return u;
+      }
+      return t;
+    }));
+  }, []);
+
+  const handleAssignTaskToSprint = useCallback((taskId: string, sprintId: string | null) => {
+    setTasks(prev => prev.map(t => {
+      if (t.id === taskId) {
+        const u = { ...t, sprintId };
+        saveTask(u);
+        return u;
+      }
+      return t;
+    }));
+  }, []);
+
+  const handleSprintRollover = useCallback((sprintId: string, targetSprintId: string | null) => {
+    const now = new Date().toISOString();
+    setSprints(prev => prev.map(s => {
+      if (s.id === sprintId) {
+        const u = { ...s, status: 'Completed' as const, completedAt: now };
+        saveSprint(u);
+        return u;
+      }
+      return s;
+    }));
+    setTasks(prev => prev.map(t => {
+      if (t.sprintId === sprintId && !t.completed) {
+        const u = { ...t, sprintId: targetSprintId };
+        saveTask(u);
+        return u;
+      }
+      return t;
+    }));
+  }, []);
+
   const handleReorderProjects = useCallback((reorderedProjects: Project[]) => {
     const updated = reorderedProjects.map((p, idx) => ({ ...p, sortOrder: idx }));
     setProjects(updated);
@@ -741,6 +864,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     projects,
     tasks,
     files,
+    sprints,
     categories,
     dailyActivity,
     activityLog,
@@ -755,6 +879,12 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     handleDeleteProject,
     handleCompleteProject,
     handleEditProject,
+    handleCreateSprint,
+    handleEditSprint,
+    handleCompleteSprint,
+    handleDeleteSprint,
+    handleAssignTaskToSprint,
+    handleSprintRollover,
     handleRenameCategory,
     handleDeleteCategory,
     handleAddCategory,

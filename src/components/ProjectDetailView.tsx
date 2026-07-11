@@ -21,7 +21,7 @@ import {
   Archive,
   RotateCcw
 } from 'lucide-react';
-import { Project, Task, DocumentFile, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
+import { Project, Task, DocumentFile, Sprint, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
@@ -29,6 +29,8 @@ import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { motion, AnimatePresence } from 'motion/react';
 import VaultFileTree from './VaultFileTree';
 import DocumentPanel from './DocumentPanel';
+import SprintPanel from './SprintPanel';
+import SprintCompleteModal from '../modals/SprintCompleteModal';
 import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
 import { VaultEntry } from '../types';
 
@@ -37,6 +39,13 @@ interface ProjectDetailViewProps {
   tasks: Task[];
   files: DocumentFile[];
   availableCategories?: string[];
+  sprints?: Sprint[];
+  onCreateSprint?: (projectId: string, name: string, startDate: string, endDate: string, goal?: string) => void;
+  onEditSprint?: (sprintId: string, updates: Partial<Sprint>) => void;
+  onCompleteSprint?: (sprintId: string) => void;
+  onDeleteSprint?: (sprintId: string) => void;
+  onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
+  onSprintRollover?: (sprintId: string, targetSprintId: string | null) => void;
   onToggleTask: (id: string) => void;
   onAddTask: (title: string, projectId: string, dueDate?: string) => void;
   onDeleteTask: (id: string) => void;
@@ -73,11 +82,20 @@ export default function ProjectDetailView({
   onSetVaultPath,
   onArchiveTask,
   onUnarchiveTask,
-  onArchiveAllCompleted
+  onArchiveAllCompleted,
+  sprints,
+  onCreateSprint,
+  onEditSprint,
+  onCompleteSprint,
+  onDeleteSprint,
+  onAssignTaskToSprint,
+  onSprintRollover
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
   const [taskTab, setTaskTab] = useState<'todo' | 'completed' | 'archived'>('todo');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>('all');
+  const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
 
   // File addition triggers
   const [fileName, setFileName] = useState('');
@@ -170,7 +188,12 @@ export default function ProjectDetailView({
   };
 
   // Filters tasks for this project
-  const projectTasks = tasks.filter(t => t.projectId === project.id);
+  const projectTasksAll = tasks.filter(t => t.projectId === project.id);
+  const projectTasks = projectTasksAll.filter(t => {
+    if (selectedSprintId === 'all') return true;
+    if (selectedSprintId === 'backlog') return !t.sprintId;
+    return t.sprintId === selectedSprintId;
+  });
   const unarchivedProjectTasks = projectTasks.filter(t => !t.archived);
   const projectFiles = files.filter(f => f.projectId === project.id);
 
@@ -475,7 +498,50 @@ export default function ProjectDetailView({
 
         {/* Task List Section */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
+          {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (
+            <SprintPanel
+              projectId={project.id}
+              sprints={sprints}
+              tasks={tasks}
+              onCreateSprint={onCreateSprint}
+              onEditSprint={onEditSprint}
+              onCompleteSprintTrigger={(s) => setSprintToComplete(s)}
+              onDeleteSprint={onDeleteSprint}
+              selectedSprintId={selectedSprintId}
+              onSelectSprint={setSelectedSprintId}
+            />
+          )}
+
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
+            {sprints && (
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#27272A]/40 text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8E9192]">Filter by Sprint:</span>
+                  <select
+                    value={selectedSprintId}
+                    onChange={(e) => setSelectedSprintId(e.target.value as any)}
+                    className="bg-[#141313] border border-[#27272A] rounded px-2.5 py-1 text-white text-xs focus:outline-none focus:border-[#3B82F6] cursor-pointer"
+                  >
+                    <option value="all">All Tasks</option>
+                    <option value="backlog">Backlog (Unassigned)</option>
+                    {sprints.filter(s => s.projectId === project.id).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedSprintId !== 'all' && (
+                  <button
+                    onClick={() => setSelectedSprintId('all')}
+                    className="text-[#3B82F6] hover:underline text-[11px] cursor-pointer"
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </div>
+            )}
+
             {/* Header and Segmented Control Tabs */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#27272A]/60">
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
@@ -604,6 +670,23 @@ export default function ProjectDetailView({
                                   </div>
 
                                   <div className="flex items-center gap-3 shrink-0">
+                                    {sprints && (
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <select
+                                          value={task.sprintId || ''}
+                                          onChange={(e) => onAssignTaskToSprint?.(task.id, e.target.value || null)}
+                                          className="text-[9px] font-mono bg-[#141313] hover:bg-[#201F1F] text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 cursor-pointer focus:outline-none transition-colors"
+                                          title="Assign or change sprint"
+                                        >
+                                          <option value="">Backlog</option>
+                                          {sprints.filter(s => s.projectId === project.id).map(s => (
+                                            <option key={s.id} value={s.id}>
+                                              {s.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
                                     {task.duration && (
                                       <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
                                         {task.duration}
@@ -708,6 +791,23 @@ export default function ProjectDetailView({
                                   </div>
 
                                   <div className="flex items-center gap-3 shrink-0">
+                                    {sprints && (
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <select
+                                          value={task.sprintId || ''}
+                                          onChange={(e) => onAssignTaskToSprint?.(task.id, e.target.value || null)}
+                                          className="text-[9px] font-mono bg-[#141313] hover:bg-[#201F1F] text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 cursor-pointer focus:outline-none transition-colors"
+                                          title="Assign or change sprint"
+                                        >
+                                          <option value="">Backlog</option>
+                                          {sprints.filter(s => s.projectId === project.id).map(s => (
+                                            <option key={s.id} value={s.id}>
+                                              {s.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
                                     {task.duration && (
                                       <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
                                         {task.duration}
@@ -1097,6 +1197,27 @@ export default function ProjectDetailView({
           await refreshVault();
         }}
       />
+
+      {/* Sprint Complete & Rollover Modal */}
+      {sprints && (
+        <SprintCompleteModal
+          isOpen={!!sprintToComplete}
+          sprint={sprintToComplete}
+          tasks={tasks}
+          plannedSprints={sprints.filter(s => s.projectId === project.id && s.status === 'Planned' && s.id !== sprintToComplete?.id)}
+          onCancel={() => setSprintToComplete(null)}
+          onConfirm={(rolloverAction, targetSprintId) => {
+            if (sprintToComplete) {
+              if (rolloverAction === 'keep') {
+                onCompleteSprint?.(sprintToComplete.id);
+              } else {
+                onSprintRollover?.(sprintToComplete.id, targetSprintId || null);
+              }
+              setSprintToComplete(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

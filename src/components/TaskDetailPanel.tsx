@@ -20,9 +20,10 @@ import {
   Repeat,
   ChevronLeft,
   ChevronRight,
-  AlertTriangle
+  AlertTriangle,
+  Rocket
 } from 'lucide-react';
-import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency } from '../types';
+import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency, Sprint } from '../types';
 
 const getRecurrenceLabel = (rule?: RecurrenceRule) => {
   if (!rule) return 'None';
@@ -105,6 +106,7 @@ const formatDisplayDate = (dateStr?: string) => {
 interface TaskDetailPanelProps {
   task: Task | null;
   projects: Project[];
+  sprints?: Sprint[];
   onClose: () => void;
   onUpdateTask: (updatedTask: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -113,6 +115,7 @@ interface TaskDetailPanelProps {
 export default function TaskDetailPanel({
   task,
   projects,
+  sprints,
   onClose,
   onUpdateTask,
   onDeleteTask
@@ -195,6 +198,8 @@ export default function TaskDetailPanel({
   };
 
   const currentProject = projects.find(p => p.id === editedTask.projectId);
+  const projectSprints = sprints ? sprints.filter(s => s.projectId === editedTask.projectId) : [];
+  const currentSprint = projectSprints.find(s => s.id === editedTask.sprintId);
   const subtasksList = editedTask.subtasks || [];
   const completedSubtasksCount = subtasksList.filter(s => s.completed).length;
 
@@ -794,6 +799,69 @@ export default function TaskDetailPanel({
                         >
                           <span>{p}</span>
                           <span className={`px-1.5 py-0.2 rounded text-[8px] font-mono border ${getPriorityColor(p)}`}>{p}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Sprint Card */}
+                <div 
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Sprint: ${currentSprint ? currentSprint.name : 'Backlog (Unassigned)'}. Click or press Enter to change.`}
+                  aria-expanded={activePropertyEdit === 'sprint'}
+                  aria-haspopup="menu"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setActivePropertyEdit(activePropertyEdit === 'sprint' ? null : 'sprint');
+                    }
+                  }}
+                  onClick={() => setActivePropertyEdit(activePropertyEdit === 'sprint' ? null : 'sprint')}
+                  className="bg-[#141313] hover:bg-[#1A1919] border border-[#27272A] hover:border-white/20 rounded-xl p-3.5 flex items-start gap-3 cursor-pointer transition-all relative group focus:outline-none focus:ring-2 focus:ring-blue-500/60"
+                >
+                  <Rocket className="w-5 h-5 mt-0.5 shrink-0 text-[#8E9192] group-hover:text-white transition-colors" />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[11px] font-bold text-white uppercase tracking-wide font-mono">Sprint</div>
+                    <div className="text-xs text-[#8E9192] font-medium truncate mt-0.5">
+                      {currentSprint ? `${currentSprint.name} (${currentSprint.status})` : 'Backlog (Unassigned)'}
+                    </div>
+                  </div>
+
+                  {activePropertyEdit === 'sprint' && (
+                    <div 
+                      role="menu"
+                      aria-label="Select Sprint"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Escape') {
+                          e.stopPropagation();
+                          setActivePropertyEdit(null);
+                        }
+                      }}
+                      className="absolute left-0 top-full mt-1.5 w-full bg-[#0A0A0A] border border-[#27272A] rounded-xl p-2 z-50 shadow-2xl space-y-1 max-h-48 overflow-y-auto animate-in fade-in zoom-in-95 duration-150"
+                    >
+                      <button
+                        role="menuitem"
+                        onClick={() => { handleFieldChange('sprintId', null); setActivePropertyEdit(null); }}
+                        className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                          !editedTask.sprintId ? 'bg-white/10 text-white font-semibold' : 'hover:bg-[#141313] text-[#8E9192] hover:text-white'
+                        }`}
+                      >
+                        Backlog (Unassigned)
+                      </button>
+                      {projectSprints.map(s => (
+                        <button
+                          key={s.id}
+                          role="menuitem"
+                          onClick={() => { handleFieldChange('sprintId', s.id); setActivePropertyEdit(null); }}
+                          className={`w-full text-left px-3 py-1.5 rounded-lg text-xs transition-colors truncate cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 flex items-center justify-between ${
+                            editedTask.sprintId === s.id ? 'bg-white/10 text-white font-semibold' : 'hover:bg-[#141313] text-[#C4C7C8] hover:text-white'
+                          }`}
+                        >
+                          <span className="truncate">{s.name}</span>
+                          <span className="text-[9px] font-mono opacity-70 ml-1">{s.status}</span>
                         </button>
                       ))}
                     </div>

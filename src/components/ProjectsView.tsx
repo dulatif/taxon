@@ -8,13 +8,15 @@ import {
   Plus,
   Settings
 } from 'lucide-react';
-import { Project, Task, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
+import { Project, Task, Sprint, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
 import KanbanView from './KanbanView';
 
 interface ProjectsViewProps {
   projects: Project[];
   tasks: Task[];
   categories?: string[];
+  sprints?: Sprint[];
+  onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
   onProjectSelect: (id: string) => void;
   onViewChange: (view: string) => void;
   onAddProjectClick: () => void;
@@ -35,6 +37,8 @@ export default function ProjectsView({
   onMoveTaskStatus,
   onAddTaskToProject,
   onSelectTask,
+  sprints,
+  onAssignTaskToSprint,
 }: ProjectsViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -246,9 +250,11 @@ export default function ProjectsView({
           <KanbanView 
             projects={filteredProjects}
             tasks={tasks}
+            sprints={sprints}
             onMoveTaskStatus={onMoveTaskStatus}
             onAddTaskToProject={onAddTaskToProject}
             onSelectTask={onSelectTask}
+            onAssignTaskToSprint={onAssignTaskToSprint}
           />
         </div>
       )}
