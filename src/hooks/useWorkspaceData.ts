@@ -447,6 +447,17 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }
   }, []);
 
+  const handleSetVaultPath = useCallback((projectId: string, vaultPath: string) => {
+    setProjects(prev => prev.map(p => {
+      if (p.id === projectId) {
+        const up = { ...p, vaultPath };
+        saveProject(up);
+        return up;
+      }
+      return p;
+    }));
+  }, []);
+
   const handleRenameCategory = useCallback((oldCategory: string, newCategory: string, newColorId?: string) => {
     setProjects(prev => prev.map(p => {
       if (p.category === oldCategory) {
@@ -697,6 +708,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     setImportPendingJson,
     onTickFocusTime,
     handleReorderProjects,
-    handleReorderTasks
+    handleReorderTasks,
+    handleSetVaultPath
   };
 }

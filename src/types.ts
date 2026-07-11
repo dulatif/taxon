@@ -8,6 +8,7 @@ export interface Project {
   progress: number; // percentage (0 - 100)
   dueDays: number;
   sortOrder?: number;
+  vaultPath?: string;
 }
 
 export const PROJECT_CATEGORIES = [
@@ -166,6 +167,13 @@ export interface DocumentFile {
   name: string;
   size: string;
   type: 'image' | 'code' | 'pdf' | 'spreadsheet';
+}
+
+export interface VaultEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: VaultEntry[];
 }
 
 export interface DailyActivity {

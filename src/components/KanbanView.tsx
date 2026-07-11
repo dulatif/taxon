@@ -126,143 +126,145 @@ export default function KanbanView({
             const countVal = colTasks.length;
 
             return (
-              <Droppable key={colName} droppableId={colName}>
-                {(provided, snapshot) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    className={`w-80 shrink-0 flex flex-col h-full bg-[#050505]/40 rounded-xl transition-colors ${
-                      snapshot.isDraggingOver ? 'bg-[#0A0A0A]/80 ring-1 ring-white/10' : ''
-                    }`}
-                  >
-                    {/* Header Title segment */}
-                    <div className="flex items-center justify-between px-2 py-3 border-b border-[#27272A]/40 mb-3">
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold uppercase tracking-widest ${colName === 'Done' ? 'text-[#8E9192]' : 'text-white'}`}>
-                          {colName}
-                        </span>
-                        <span className="px-1.5 py-0.5 bg-[#141313] border border-[#27272A] text-[#8E9192] text-[10px] rounded-sm font-mono font-bold">
-                          {countVal}
-                        </span>
-                      </div>
-                      <button aria-label="Column Options" className="text-[#8E9192] hover:text-white transition-colors">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Scrollable Tasks Body Container */}
-                    <div className="flex-1 overflow-y-auto space-y-3 pb-4 max-h-[420px] scrollbar-thin">
-                      {colTasks.length === 0 && !snapshot.isDraggingOver ? (
-                        <div className="py-12 text-center text-xs text-[#8E9192]/60 border border-dashed border-[#27272A]/50 rounded-lg">
-                          No active tasks
+              <React.Fragment key={colName}>
+                <Droppable droppableId={colName}>
+                  {(provided, snapshot) => (
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
+                      className={`w-80 shrink-0 flex flex-col h-full bg-[#050505]/40 rounded-xl transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-[#0A0A0A]/80 ring-1 ring-white/10' : ''
+                      }`}
+                    >
+                      {/* Header Title segment */}
+                      <div className="flex items-center justify-between px-2 py-3 border-b border-[#27272A]/40 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-bold uppercase tracking-widest ${colName === 'Done' ? 'text-[#8E9192]' : 'text-white'}`}>
+                            {colName}
+                          </span>
+                          <span className="px-1.5 py-0.5 bg-[#141313] border border-[#27272A] text-[#8E9192] text-[10px] rounded-sm font-mono font-bold">
+                            {countVal}
+                          </span>
                         </div>
-                      ) : (
-                        colTasks.map((task, index) => (
-                          // @ts-ignore
-                          <Draggable key={task.id} draggableId={task.id} index={index}>
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                onClick={() => onSelectTask?.(task)}
-                                className={`task-card bg-[#0A0A0A] border p-4 transition-all group rounded-lg relative cursor-grab select-none ${
-                                  snapshot.isDragging ? 'border-white ring-2 ring-white/20 z-50' : 'border-[#27272A] hover:border-white/30'
-                                } ${colName === 'Done' && !snapshot.isDragging ? 'opacity-65' : ''}`}
-                              >
-                                {/* Priority Tag and Duration stats */}
-                                <div className="flex justify-between items-start mb-3">
-                                  <span className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}>
-                                    {task.priority || 'Medium'}
-                                  </span>
-                                  <span className="text-[#8E9192] text-[10px] font-mono leading-none bg-black/40 px-1.5 py-0.5 rounded border border-[#27272A]/40">
-                                    {task.duration || '25m'}
-                                  </span>
-                                </div>
+                        <button aria-label="Column Options" className="text-[#8E9192] hover:text-white transition-colors">
+                          <MoreHorizontal className="w-4 h-4" />
+                        </button>
+                      </div>
 
-                                {/* Task text body */}
-                                <h3 className={`text-xs font-medium leading-relaxed mb-4 text-white ${colName === 'Done' ? 'line-through text-[#8E9192]' : ''}`}>
-                                  {task.title}
-                                </h3>
-
-                                {/* Touch Action helpers and status shift arrows */}
-                                <div className="flex items-center justify-between border-t border-[#27272A]/50 pt-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <div className="flex gap-2">
-                                    {colName !== 'To Do' && (
-                                      <button 
-                                        onClick={() => shiftTaskState(task.id, task.status, 'left')}
-                                        className="p-1 rounded bg-[#141313] border border-[#27272A] text-[#8E9192] hover:text-white"
-                                        title="Move Left"
-                                        aria-label="Move Left"
-                                      >
-                                        <MoveLeft className="w-3 h-3" />
-                                      </button>
-                                    )}
-                                    {colName !== 'Done' && (
-                                      <button 
-                                        onClick={() => shiftTaskState(task.id, task.status, 'right')}
-                                        className="p-1 rounded bg-[#141313] border border-[#27272A] text-[#8E9192] hover:text-white"
-                                        title="Move Right"
-                                        aria-label="Move Right"
-                                      >
-                                        <MoveRight className="w-3 h-3" />
-                                      </button>
-                                    )}
+                      {/* Scrollable Tasks Body Container */}
+                      <div className="flex-1 overflow-y-auto space-y-3 pb-4 max-h-[420px] scrollbar-thin">
+                        {colTasks.length === 0 && !snapshot.isDraggingOver ? (
+                          <div className="py-12 text-center text-xs text-[#8E9192]/60 border border-dashed border-[#27272A]/50 rounded-lg">
+                            No active tasks
+                          </div>
+                        ) : (
+                          colTasks.map((task, index) => (
+                            // @ts-ignore
+                            <Draggable key={task.id} draggableId={task.id} index={index}>
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  onClick={() => onSelectTask?.(task)}
+                                  className={`task-card bg-[#0A0A0A] border p-4 transition-all group rounded-lg relative cursor-grab select-none ${
+                                    snapshot.isDragging ? 'border-white ring-2 ring-white/20 z-50' : 'border-[#27272A] hover:border-white/30'
+                                  } ${colName === 'Done' && !snapshot.isDragging ? 'opacity-65' : ''}`}
+                                >
+                                  {/* Priority Tag and Duration stats */}
+                                  <div className="flex justify-between items-start mb-3">
+                                    <span className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}>
+                                      {task.priority || 'Medium'}
+                                    </span>
+                                    <span className="text-[#8E9192] text-[10px] font-mono leading-none bg-black/40 px-1.5 py-0.5 rounded border border-[#27272A]/40">
+                                      {task.duration || '25m'}
+                                    </span>
                                   </div>
 
-                                  {colName === 'Done' && (
-                                    <CheckCircle className="w-3.5 h-3.5 text-white" />
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))
-                      )}
-                      {provided.placeholder}
+                                  {/* Task text body */}
+                                  <h3 className={`text-xs font-medium leading-relaxed mb-4 text-white ${colName === 'Done' ? 'line-through text-[#8E9192]' : ''}`}>
+                                    {task.title}
+                                  </h3>
 
-                      {/* Inline project add task trigger */}
-                      {isAddingTask === colName ? (
-                        <div className="p-3 bg-[#0A0A0A] border border-white/20 rounded-lg space-y-2 mt-2">
-                          <input
-                            type="text"
-                            className="bg-black text-[#C4C7C8] border border-[#27272A] text-xs rounded p-2 w-full focus:outline-none focus:border-white"
-                            placeholder="Add task details..."
-                            value={newTaskTitle}
-                            onChange={(e) => setNewTaskTitle(e.target.value)}
-                            onKeyDown={(e) => { if (e.key === 'Enter') handleAddTaskSubmit(colName); }}
-                            autoFocus
-                          />
-                          <div className="flex gap-2 justify-end">
-                            <button 
-                              onClick={() => setIsAddingTask(null)}
-                              className="text-[10px] text-[#8E9192] hover:text-white"
-                            >
-                              Cancel
-                            </button>
-                            <button 
-                              onClick={() => handleAddTaskSubmit(colName)}
-                              className="text-[10px] bg-white text-black font-bold px-2.5 py-1 rounded"
-                            >
-                              Add Task
-                            </button>
+                                  {/* Touch Action helpers and status shift arrows */}
+                                  <div className="flex items-center justify-between border-t border-[#27272A]/50 pt-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className="flex gap-2">
+                                      {colName !== 'To Do' && (
+                                        <button 
+                                          onClick={() => shiftTaskState(task.id, task.status, 'left')}
+                                          className="p-1 rounded bg-[#141313] border border-[#27272A] text-[#8E9192] hover:text-white"
+                                          title="Move Left"
+                                          aria-label="Move Left"
+                                        >
+                                          <MoveLeft className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                      {colName !== 'Done' && (
+                                        <button 
+                                          onClick={() => shiftTaskState(task.id, task.status, 'right')}
+                                          className="p-1 rounded bg-[#141313] border border-[#27272A] text-[#8E9192] hover:text-white"
+                                          title="Move Right"
+                                          aria-label="Move Right"
+                                        >
+                                          <MoveRight className="w-3 h-3" />
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    {colName === 'Done' && (
+                                      <CheckCircle className="w-3.5 h-3.5 text-white" />
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+
+                        {/* Inline project add task trigger */}
+                        {isAddingTask === colName ? (
+                          <div className="p-3 bg-[#0A0A0A] border border-white/20 rounded-lg space-y-2 mt-2">
+                            <input
+                              type="text"
+                              className="bg-black text-[#C4C7C8] border border-[#27272A] text-xs rounded p-2 w-full focus:outline-none focus:border-white"
+                              placeholder="Add task details..."
+                              value={newTaskTitle}
+                              onChange={(e) => setNewTaskTitle(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter') handleAddTaskSubmit(colName); }}
+                              autoFocus
+                            />
+                            <div className="flex gap-2 justify-end">
+                              <button 
+                                onClick={() => setIsAddingTask(null)}
+                                className="text-[10px] text-[#8E9192] hover:text-white"
+                              >
+                                Cancel
+                              </button>
+                              <button 
+                                onClick={() => handleAddTaskSubmit(colName)}
+                                className="text-[10px] bg-white text-black font-bold px-2.5 py-1 rounded"
+                              >
+                                Add Task
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                      ) : (
-                        selectedProjectId !== 'all' && (
-                          <button
-                            onClick={() => setIsAddingTask(colName)}
-                            className="w-full py-2 mt-2 border border-dashed border-[#27272A]/50 hover:border-[#27272A] hover:bg-[#0A0A0A]/20 transition-all rounded-lg flex items-center justify-center gap-1.5 text-xs text-[#8E9192]"
-                          >
-                            <Plus className="w-3.5 h-3.5" />
-                            <span>Add Task</span>
-                          </button>
-                        )
-                      )}
+                        ) : (
+                          selectedProjectId !== 'all' && (
+                            <button
+                              onClick={() => setIsAddingTask(colName)}
+                              className="w-full py-2 mt-2 border border-dashed border-[#27272A]/50 hover:border-[#27272A] hover:bg-[#0A0A0A]/20 transition-all rounded-lg flex items-center justify-center gap-1.5 text-xs text-[#8E9192]"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                              <span>Add Task</span>
+                            </button>
+                          )
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
-              </Droppable>
+                  )}
+                </Droppable>
+              </React.Fragment>
             );
           })}
 

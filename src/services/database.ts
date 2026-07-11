@@ -17,7 +17,8 @@ export const initDb = (): Promise<Database> => {
             category TEXT,
             progress INTEGER,
             dueDays INTEGER,
-            sortOrder INTEGER
+            sortOrder INTEGER,
+            vaultPath TEXT
         );
       `).catch(() => {});
 
@@ -84,6 +85,11 @@ export const initDb = (): Promise<Database> => {
       } catch (_) {
         // Column already exists
       }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN vaultPath TEXT');
+      } catch (_) {
+        // Column already exists
+      }
       return database;
     })();
   }
@@ -99,7 +105,7 @@ export const getProjects = async (): Promise<Project[]> => {
 export const saveProject = async (p: Project) => {
   const d = await initDb();
   await d.execute(
-    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7)',
+    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)',
     [
       p.id ?? null,
       p.name ?? null,
@@ -107,7 +113,8 @@ export const saveProject = async (p: Project) => {
       p.category ?? null,
       p.progress ?? 0,
       p.dueDays ?? null,
-      p.sortOrder ?? null
+      p.sortOrder ?? null,
+      p.vaultPath ?? null
     ]
   );
 };

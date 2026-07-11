@@ -97,7 +97,8 @@ export default function App() {
     setImportPendingJson,
     onTickFocusTime,
     handleReorderProjects,
-    handleReorderTasks
+    handleReorderTasks,
+    handleSetVaultPath
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -410,6 +411,7 @@ export default function App() {
                   setCurrentView('projects');
                 }}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+                onSetVaultPath={handleSetVaultPath}
               />
             )}
 

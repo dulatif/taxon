@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CheckCircle,
   Clock,
@@ -25,6 +25,10 @@ import { stat } from '@tauri-apps/plugin-fs';
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { motion, AnimatePresence } from 'motion/react';
+import VaultFileTree from './VaultFileTree';
+import DocumentPanel from './DocumentPanel';
+import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
+import { VaultEntry } from '../types';
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -42,6 +46,7 @@ interface ProjectDetailViewProps {
   onReorderTasks?: (tasks: Task[]) => void;
   onBackToProjects: () => void;
   onSelectTask?: (task: Task) => void;
+  onSetVaultPath?: (projectId: string, vaultPath: string) => void;
 }
 
 export default function ProjectDetailView({
@@ -60,6 +65,7 @@ export default function ProjectDetailView({
   onReorderTasks,
   onBackToProjects,
   onSelectTask,
+  onSetVaultPath,
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
@@ -79,6 +85,72 @@ export default function ProjectDetailView({
 
   // Deleting Project confirmation modal
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+
+  // Vault state
+  const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<VaultEntry | null>(null);
+  const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
+
+  const refreshVault = async () => {
+    if (project.vaultPath) {
+      try {
+        const entries = await scanVault(project.vaultPath);
+        setVaultEntries(entries);
+      } catch (err) {
+        console.error('Failed to scan vault:', err);
+      }
+    } else {
+      setVaultEntries([]);
+    }
+  };
+
+  useEffect(() => {
+    refreshVault();
+  }, [project.vaultPath]);
+
+  const handleSetVaultDirectory = async () => {
+    try {
+      const selected = await openDialog({
+        directory: true,
+        multiple: false
+      });
+      if (selected && typeof selected === 'string' && onSetVaultPath) {
+        onSetVaultPath(project.id, selected);
+      }
+    } catch (e) {
+      console.error('Failed to select vault directory:', e);
+    }
+  };
+
+  const handleCreateVaultDoc = async (filename: string) => {
+    if (!project.vaultPath) return;
+    const newPath = await createDocument(project.vaultPath, filename);
+    await refreshVault();
+    const cleanName = filename.trim().toLowerCase().endsWith('.md') || filename.trim().toLowerCase().endsWith('.txt')
+      ? filename.trim()
+      : `${filename.trim()}.md`;
+    setSelectedDocument({
+      name: cleanName,
+      path: newPath,
+      isDirectory: false
+    });
+    setIsDocumentPanelOpen(true);
+  };
+
+  const handleDeleteVaultDoc = async (entry: VaultEntry) => {
+    if (window.confirm(`Are you sure you want to delete "${entry.name}" from disk?`)) {
+      try {
+        await deleteDocument(entry.path);
+        if (selectedDocument?.path === entry.path) {
+          setIsDocumentPanelOpen(false);
+          setSelectedDocument(null);
+        }
+        await refreshVault();
+      } catch (e) {
+        console.error('Failed to delete vault document:', e);
+      }
+    }
+  };
 
   // Filters tasks for this project
   const projectTasks = tasks.filter(t => t.projectId === project.id);
@@ -605,28 +677,70 @@ export default function ProjectDetailView({
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#27272A]/50">
               <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-white" />
-                Documents
+                Project Vault & Documents
               </h3>
-              <button
-                onClick={handleNativeAddFile}
-                className="text-[10px] text-white hover:underline uppercase tracking-wider font-mono"
-              >
-                + Add file
-              </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#8E9192]/80 bg-black/40 p-2 rounded-md border border-[#27272A]/40 mb-1">
-                <FolderOpen className="w-4 h-4" />
-                <span className="text-xs font-semibold font-mono tracking-tight text-white">Source Files</span>
+            {project.vaultPath ? (
+              <div className="space-y-6">
+                <VaultFileTree
+                  entries={vaultEntries}
+                  selectedPath={selectedDocument?.path}
+                  vaultPath={project.vaultPath}
+                  onSelectFile={(entry) => {
+                    setSelectedDocument(entry);
+                    setIsDocumentPanelOpen(true);
+                  }}
+                  onDeleteFile={handleDeleteVaultDoc}
+                  onCreateDocument={handleCreateVaultDoc}
+                  onRefresh={refreshVault}
+                  onChangeVaultPath={handleSetVaultDirectory}
+                />
+              </div>
+            ) : (
+              <div className="bg-[#141313] border border-dashed border-[#27272A] hover:border-white/40 rounded-xl p-5 text-center space-y-3 transition-colors mb-6">
+                <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <FolderOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                    No Project Vault Set
+                  </h4>
+                  <p className="text-[11px] text-[#8E9192] mt-1 leading-relaxed max-w-xs mx-auto">
+                    Connect a local directory to scan for .md / .txt documents with live preview & editing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSetVaultDirectory}
+                  className="bg-white text-black hover:bg-white/90 font-bold text-xs px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Set Vault Directory</span>
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-4 pt-4 border-t border-[#27272A]/50 mt-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2 text-[#8E9192]/80">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold font-mono tracking-tight text-white">Manual Attachments</span>
+                </div>
+                <button
+                  onClick={handleNativeAddFile}
+                  className="text-[10px] text-white hover:underline uppercase tracking-wider font-mono cursor-pointer"
+                >
+                  + Attach file
+                </button>
               </div>
 
               {projectFiles.length === 0 ? (
-                <div className="py-8 text-center text-[11px] text-[#8E9192] font-mono italic">
-                  No documents listed
+                <div className="py-6 text-center text-[11px] text-[#8E9192] font-mono italic">
+                  No manual attachments listed
                 </div>
               ) : (
-                <div className="ml-4 pl-4 border-l border-[#27272A]/50 space-y-2">
+                <div className="ml-2 pl-3 border-l border-[#27272A]/50 space-y-2">
                   {projectFiles.map((file) => (
                     <div
                       key={file.id}
@@ -721,6 +835,17 @@ export default function ProjectDetailView({
           </div>
         </div>
       )}
+
+      <DocumentPanel
+        isOpen={isDocumentPanelOpen}
+        entry={selectedDocument}
+        onClose={() => setIsDocumentPanelOpen(false)}
+        onReadContent={readDocument}
+        onSaveContent={async (path, content) => {
+          await writeDocument(path, content);
+          await refreshVault();
+        }}
+      />
     </div>
   );
 }
