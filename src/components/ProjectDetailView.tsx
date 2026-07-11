@@ -17,7 +17,8 @@ import {
   ExternalLink,
   AlertTriangle,
   X,
-  ChevronRight
+  ChevronRight,
+  Archive
 } from 'lucide-react';
 import { Project, Task, DocumentFile, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -29,6 +30,12 @@ import VaultFileTree from './VaultFileTree';
 import DocumentPanel from './DocumentPanel';
 import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
 import { VaultEntry } from '../types';
+
+const DUMMY_ARCHIVED_TASKS = [
+  { id: 'archived-1', title: 'Legacy data model refactoring & cleanup', duration: '2.5h', archivedDate: 'Jun 12, 2026', priority: 'Medium' },
+  { id: 'archived-2', title: 'Prototype initial UI mockups for dark mode', duration: '4h', archivedDate: 'Jun 05, 2026', priority: 'High' },
+  { id: 'archived-3', title: 'User authentication OAuth integration (v1)', duration: '6h', archivedDate: 'May 28, 2026', priority: 'Low' },
+];
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -69,7 +76,7 @@ export default function ProjectDetailView({
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
-  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [taskTab, setTaskTab] = useState<'todo' | 'completed' | 'archived'>('todo');
 
   // File addition triggers
   const [fileName, setFileName] = useState('');
@@ -174,6 +181,7 @@ export default function ProjectDetailView({
     if (!newTaskTitle.trim()) return;
     onAddTask(newTaskTitle, project.id, '');
     setNewTaskTitle('');
+    setTaskTab('todo');
   };
 
   const handleNativeAddFile = async () => {
@@ -462,219 +470,300 @@ export default function ProjectDetailView({
         {/* Task List Section */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                Tasks
-              </h2>
-              <button
-                onClick={() => {
-                  const seq: ('custom' | 'priority' | 'dueDate')[] = ['custom', 'priority', 'dueDate'];
-                  const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
-                  setSelectedSort(seq[nextIdx]);
-                }}
-                className="flex items-center gap-1.5 text-[#8E9192] hover:text-white transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer"
-              >
-                <SortAsc className="w-3.5 h-3.5" />
-                <span>Sort: {selectedSort}</span>
-              </button>
+            {/* Header and Segmented Control Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#27272A]/60">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                  Tasks
+                </h2>
+                <div className="flex items-center bg-[#141313] p-1 rounded-lg border border-[#27272A]/80">
+                  <button
+                    type="button"
+                    onClick={() => setTaskTab('todo')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                      taskTab === 'todo'
+                        ? 'bg-[#28282A] text-white shadow'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                    }`}
+                  >
+                    <span>To Do</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      taskTab === 'todo' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                    }`}>
+                      {sortedActiveTasks.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTaskTab('completed')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                      taskTab === 'completed'
+                        ? 'bg-[#28282A] text-white shadow'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                    }`}
+                  >
+                    <span>Completed</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      taskTab === 'completed' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                    }`}>
+                      {sortedCompletedTasks.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTaskTab('archived')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                      taskTab === 'archived'
+                        ? 'bg-[#28282A] text-white shadow'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                    }`}
+                  >
+                    <Archive className="w-3 h-3" />
+                    <span>Archived</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      taskTab === 'archived' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                    }`}>
+                      {DUMMY_ARCHIVED_TASKS.length}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {taskTab !== 'archived' && (
+                <button
+                  onClick={() => {
+                    const seq: ('custom' | 'priority' | 'dueDate')[] = ['custom', 'priority', 'dueDate'];
+                    const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
+                    setSelectedSort(seq[nextIdx]);
+                  }}
+                  className="flex items-center gap-1.5 text-[#8E9192] hover:text-white transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-[#141313] hover:bg-[#201F1F] px-2.5 py-1.5 rounded-lg border border-[#27272A]/80 self-start sm:self-auto"
+                >
+                  <SortAsc className="w-3.5 h-3.5" />
+                  <span>Sort: {selectedSort}</span>
+                </button>
+              )}
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-              {/* Active Tasks Container */}
-              <div className="mb-6">
-                <h3 className="text-[11px] font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-3">
-                  Active Tasks ({sortedActiveTasks.length})
-                </h3>
-                <Droppable droppableId="active-tasks" isDropDisabled={selectedSort !== 'custom'}>
-                  {(provided, snapshot) => (
-                    <ul
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+              {/* To Do Tab */}
+              {taskTab === 'todo' && (
+                <div>
+                  <Droppable droppableId="active-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                    {(provided, snapshot) => (
+                      <ul
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
+                          snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
                         }`}
-                    >
-                      {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
-                        <div className="py-8 text-center text-xs text-[#8E9192]">
-                          No active tasks. Use the field below to add one!
-                        </div>
-                      ) : (
-                        sortedActiveTasks.map((task, index) => (
-                          // @ts-ignore
-                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
-                            {(provided, snapshot) => (
-                              <li
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                id={`task-item-${task.id}`}
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onSelectTask?.(task)}
-                                className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
-                                  ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                                  : 'hover:bg-[#141313]/10 '
-                                  }`}
-                              >
-                                <div className="flex items-start gap-4 flex-1 mr-4">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                                    className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
-                                  >
-                                    <Square className="w-4 h-4" />
-                                  </button>
-
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold leading-relaxed text-white">
-                                      {task.title}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 shrink-0">
-                                  {task.duration && (
-                                    <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
-                                      {task.duration}
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
-                                    className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                    title="Delete task item"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </li>
-                            )}
-                          </Draggable>
-                        ))
-                      )}
-                      {provided.placeholder}
-                    </ul>
-                  )}
-                </Droppable>
-              </div>
-
-              {/* Completed Tasks Accordion */}
-              {sortedCompletedTasks.length > 0 && (
-                <div className="border-t border-gray-800/30 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
-                    className="w-full flex items-center justify-between py-2 text-[#8E9192] hover:text-white transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ChevronRight
-                        className={`w-4 h-4 transition-transform duration-200 ${isCompletedExpanded ? 'rotate-90 text-white' : 'text-[#8E9192] group-hover:text-white'
-                          }`}
-                      />
-                      <span className="text-[11px] font-bold uppercase tracking-wider font-mono">
-                        Completed Tasks
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#141313] text-[#8E9192] border border-[#27272A] font-mono">
-                        {sortedCompletedTasks.length}
-                      </span>
-                    </div>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {isCompletedExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        className="overflow-hidden mt-2"
                       >
-                        <Droppable droppableId="completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
-                          {(provided, snapshot) => (
-                            <ul
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              className={`space-y-1.5 min-h-[30px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
-                                }`}
-                            >
-                              {sortedCompletedTasks.map((task, index) => (
-                                // @ts-ignore
-                                <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
-                                  {(provided, snapshot) => (
-                                    <li
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      id={`task-item-${task.id}`}
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={() => onSelectTask?.(task)}
-                                      className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${snapshot.isDragging
-                                        ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
-                                        : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
-                                        }`}
+                        {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
+                          <div className="py-8 text-center text-xs text-[#8E9192]">
+                            No active tasks. Use the field below to add one!
+                          </div>
+                        ) : (
+                          sortedActiveTasks.map((task, index) => (
+                            // @ts-ignore
+                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                              {(provided, snapshot) => (
+                                <li
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  id={`task-item-${task.id}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => onSelectTask?.(task)}
+                                  className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${
+                                    snapshot.isDragging
+                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                      : 'hover:bg-[#141313]/10 '
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-4 flex-1 mr-4">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                                     >
-                                      <div className="flex items-start gap-4 flex-1 mr-4">
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                                          className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
-                                        >
-                                          <CheckSquare className="w-4 h-4 text-white" />
-                                        </button>
+                                      <Square className="w-4 h-4" />
+                                    </button>
 
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-semibold leading-relaxed text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A]">
-                                            {task.title}
-                                          </p>
-                                        </div>
-                                      </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-semibold leading-relaxed text-white">
+                                        {task.title}
+                                      </p>
+                                    </div>
+                                  </div>
 
-                                      <div className="flex items-center gap-3 shrink-0">
-                                        {task.duration && (
-                                          <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
-                                            {task.duration}
-                                          </span>
-                                        )}
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
-                                          className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                          title="Delete task item"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    </li>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                            </ul>
-                          )}
-                        </Droppable>
-                      </motion.div>
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    {task.duration && (
+                                      <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                                        {task.duration}
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Delete task item"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </li>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </ul>
                     )}
-                  </AnimatePresence>
+                  </Droppable>
+
+                  {/* inline input field for adding project specific tasks */}
+                  <form onSubmit={handleAddTaskSubmit} className="mt-4">
+                    <div className="flex items-center gap-3 px-3 py-2 bg-[#141313] border border-[#27272A]/80 rounded-lg focus-within:border-white/30 transition-all">
+                      <Plus className="w-4 h-4 text-[#8E9192]" />
+                      <input
+                        type="text"
+                        className="bg-transparent border-none focus:outline-none text-xs text-white placeholder:text-[#8E9192]/60 w-full"
+                        placeholder="Add a new task..."
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newTaskTitle.trim()}
+                        className="bg-zinc-800 text-white hover:bg-zinc-700 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Completed Tab */}
+              {taskTab === 'completed' && (
+                <div>
+                  <Droppable droppableId="completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                    {(provided, snapshot) => (
+                      <ul
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
+                          snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                        }`}
+                      >
+                        {sortedCompletedTasks.length === 0 && !snapshot.isDraggingOver ? (
+                          <div className="py-8 text-center text-xs text-[#8E9192]">
+                            No completed tasks yet. Finish a task in the To Do tab!
+                          </div>
+                        ) : (
+                          sortedCompletedTasks.map((task, index) => (
+                            // @ts-ignore
+                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                              {(provided, snapshot) => (
+                                <li
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  id={`task-item-${task.id}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => onSelectTask?.(task)}
+                                  className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${
+                                    snapshot.isDragging
+                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
+                                      : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-4 flex-1 mr-4">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                                    >
+                                      <CheckSquare className="w-4 h-4 text-white" />
+                                    </button>
+
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-semibold leading-relaxed text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A]">
+                                        {task.title}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    {task.duration && (
+                                      <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                                        {task.duration}
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Delete task item"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </li>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </ul>
+                    )}
+                  </Droppable>
                 </div>
               )}
             </DragDropContext>
 
-            {/* inline input field for adding project specific tasks */}
-            <form onSubmit={handleAddTaskSubmit} className="mt-4">
-              <div className="flex items-center gap-3 px-3 py-2 bg-[#141313] border border-[#27272A]/80 rounded-lg focus-within:border-white/30 transition-all">
-                <Plus className="w-4 h-4 text-[#8E9192]" />
-                <input
-                  type="text"
-                  className="bg-transparent border-none focus:outline-none text-xs text-white placeholder:text-[#8E9192]/60 w-full"
-                  placeholder="Add a new task..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  disabled={!newTaskTitle.trim()}
-                  className="bg-zinc-800 text-white hover:bg-zinc-700 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
-                >
-                  Create
-                </button>
+            {/* Archived Tab */}
+            {taskTab === 'archived' && (
+              <div className="space-y-4">
+                <div className="bg-[#141313]/60 border border-[#27272A]/80 rounded-lg p-3 flex items-center justify-between text-xs text-[#8E9192]">
+                  <div className="flex items-center gap-2">
+                    <Archive className="w-4 h-4 text-amber-400 shrink-0" />
+                    <span>Archived tasks read-only preview (dummy data).</span>
+                  </div>
+                  <span className="text-[10px] font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">
+                    Coming Soon
+                  </span>
+                </div>
+
+                <ul className="space-y-1.5 min-h-[40px]">
+                  {DUMMY_ARCHIVED_TASKS.map((task) => (
+                    <li
+                      key={task.id}
+                      className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#141313]/30 border border-[#27272A]/40 opacity-70 hover:opacity-100 transition-opacity select-none"
+                    >
+                      <div className="flex items-center gap-4 flex-1 mr-4">
+                        <Archive className="w-4 h-4 text-[#8E9192] shrink-0 mt-0.5" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold leading-relaxed text-[#8E9192] line-through decoration-[#27272A]">
+                            {task.title}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0">
+                        <span className="text-[9px] font-mono text-[#8E9192] bg-black/60 px-1.5 py-0.5 rounded border border-[#27272A]/50">
+                          {task.archivedDate}
+                        </span>
+                        {task.duration && (
+                          <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                            {task.duration}
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               </div>
-            </form>
+            )}
           </div>
         </div>
 
