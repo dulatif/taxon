@@ -462,77 +462,83 @@ export default function TaskDetailPanel({
                   </div>
 
                   {activePropertyEdit === 'date' && (
-                    <div 
-                      role="dialog"
-                      aria-label="Select Due Date"
-                      onClick={(e) => e.stopPropagation()}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Escape') {
-                          e.stopPropagation();
-                          setActivePropertyEdit(null);
-                        }
-                      }}
-                      className="absolute left-0 top-full mt-1.5 w-[340px] min-w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-50 shadow-2xl space-y-3 font-sans max-h-[80vh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in-95 duration-150"
-                    >
-                      {/* Quick Presets */}
-                      <div className="space-y-1">
-                        <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold tracking-wider mb-1.5">Quick Schedule</div>
-                        {getPresetDates().map((preset) => {
-                          const isSelected = editedTask.dueDate === preset.date;
-                          return (
-                            <button
-                              key={preset.label}
-                              type="button"
-                              onClick={() => {
-                                handleFieldChange('dueDate', preset.date);
-                                setActivePropertyEdit(null);
-                              }}
-                              className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
-                                isSelected ? 'bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30' : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-                              }`}
-                            >
-                              <span className="font-medium">{preset.label}</span>
-                              <span className="text-[10px] font-mono text-[#8E9192]">{preset.sub}</span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* Interactive Calendar DatePicker */}
-                      <div className="pt-2 border-t border-[#27272A]">
-                        <div className="flex items-center justify-between mb-2 px-1">
-                          <span className="text-xs font-bold text-white tracking-wide">
-                            {format(pickerMonth, 'MMMM yyyy')}
-                          </span>
-                          <div className="flex items-center gap-1">
-                            <button
-                              type="button"
-                              onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
-                              className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              title="Previous Month"
-                            >
-                              <ChevronLeft className="w-3.5 h-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
-                              className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
-                              title="Next Month"
-                            >
-                              <ChevronRight className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                    <>
+                      <div 
+                        className="fixed inset-0 z-[9998] cursor-default" 
+                        onClick={() => setActivePropertyEdit(null)} 
+                      />
+                      <div 
+                        role="dialog"
+                        aria-label="Select Due Date"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Escape') {
+                            e.stopPropagation();
+                            setActivePropertyEdit(null);
+                          }
+                        }}
+                        className="absolute left-0 top-full mt-1.5 w-[340px] min-w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-[9999] shadow-2xl space-y-3 font-sans max-h-[80vh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in-95 duration-150"
+                      >
+                        {/* Quick Presets */}
+                        <div className="space-y-1">
+                          <div className="text-[10px] text-[#8E9192] uppercase font-mono font-bold tracking-wider mb-1.5">Quick Schedule</div>
+                          {getPresetDates().map((preset) => {
+                            const isSelected = editedTask.dueDate === preset.date;
+                            return (
+                              <button
+                                key={preset.label}
+                                type="button"
+                                onClick={() => {
+                                  handleFieldChange('dueDate', preset.date);
+                                  setActivePropertyEdit(null);
+                                }}
+                                className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500 ${
+                                  isSelected ? 'bg-blue-500/20 text-blue-400 font-semibold border border-blue-500/30' : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+                                }`}
+                              >
+                                <span className="font-medium">{preset.label}</span>
+                                <span className="text-[10px] font-mono text-[#8E9192]">{preset.sub}</span>
+                              </button>
+                            );
+                          })}
                         </div>
 
-                        <DayPicker
-                          mode="single"
-                          selected={editedTask.dueDate ? new Date(editedTask.dueDate + 'T00:00:00') : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              handleFieldChange('dueDate', formatDateStr(date));
+                        {/* Interactive Calendar DatePicker */}
+                        <div className="pt-2 border-t border-[#27272A]">
+                          <div className="flex items-center justify-between mb-2 px-1">
+                            <span className="text-xs font-bold text-white tracking-wide">
+                              {format(pickerMonth, 'MMMM yyyy')}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                                className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                title="Previous Month"
+                              >
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                                className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                title="Next Month"
+                              >
+                                <ChevronRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          <DayPicker
+                            mode="single"
+                            required
+                            selected={editedTask.dueDate ? new Date(editedTask.dueDate + 'T00:00:00') : undefined}
+                            onSelect={(date) => {
+                              if (date) {
+                                handleFieldChange('dueDate', formatDateStr(date));
+                              }
                               setActivePropertyEdit(null);
-                            }
-                          }}
+                            }}
                           month={pickerMonth}
                           onMonthChange={setPickerMonth}
                           hideNavigation={true}
@@ -583,6 +589,7 @@ export default function TaskDetailPanel({
                         </button>
                       </div>
                     </div>
+                  </>
                   )}
                 </div>
 

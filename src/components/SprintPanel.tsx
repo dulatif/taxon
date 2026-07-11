@@ -1,10 +1,146 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { DayPicker } from 'react-day-picker';
+import { format, addMonths } from 'date-fns';
 import { 
   Rocket, ChevronDown, ChevronUp, Plus, Calendar, Target, CheckCircle2, 
-  Play, Edit3, Trash2, X, Check, Clock, Layers, Sparkles 
+  Play, Edit3, Trash2, X, Check, Clock, Layers, Sparkles, ChevronLeft, ChevronRight 
 } from 'lucide-react';
 import { Sprint, Task } from '../types';
+
+interface SprintDatePickerProps {
+  label: string;
+  value: string;
+  onChange: (dateStr: string) => void;
+}
+
+const SprintDatePicker: React.FC<SprintDatePickerProps> = ({ label, value, onChange }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState<Date>(() => {
+    if (value) {
+      const d = new Date(value + 'T00:00:00');
+      if (!isNaN(d.getTime())) return d;
+    }
+    return new Date();
+  });
+
+  const formatDateStr = (d: Date): string => {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  const formatDisplayDate = (dateStr: string): string => {
+    if (!dateStr) return 'Select date';
+    try {
+      const d = new Date(dateStr + 'T00:00:00');
+      return format(d, 'MMM d, yyyy');
+    } catch {
+      return dateStr;
+    }
+  };
+
+  return (
+    <div className={`relative ${isOpen ? 'z-[9999]' : 'z-10'}`}>
+      <label className="block text-[11px] font-mono text-[#8E9192] mb-1">{label}</label>
+      <button
+        type="button"
+        onClick={() => {
+          if (!isOpen && value) {
+            const d = new Date(value + 'T00:00:00');
+            if (!isNaN(d.getTime())) setPickerMonth(d);
+          }
+          setIsOpen(!isOpen);
+        }}
+        className="w-full bg-[#0A0A0A] border border-[#27272A] hover:border-white/30 rounded px-2.5 py-1.5 text-xs text-white flex items-center justify-between transition-colors cursor-pointer focus:outline-none focus:border-[#3B82F6]"
+      >
+        <span className="flex items-center gap-1.5 truncate">
+          <Calendar className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
+          <span>{formatDisplayDate(value)}</span>
+        </span>
+        <span className="text-[10px] font-mono text-[#8E9192] shrink-0 ml-1">{value}</span>
+      </button>
+
+      {isOpen && (
+        <>
+          <div 
+            className="fixed inset-0 z-[9998] cursor-default" 
+            onClick={() => setIsOpen(false)} 
+          />
+          <div 
+            role="dialog"
+            aria-label={label}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute left-0 top-full mt-1.5 w-[310px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3 z-[9999] shadow-2xl font-sans animate-in fade-in zoom-in-95 duration-150"
+          >
+            <div className="flex items-center justify-between mb-2 px-1 border-b border-[#27272A] pb-2">
+              <span className="text-xs font-bold text-white tracking-wide">
+                {format(pickerMonth, 'MMMM yyyy')}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                  className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                  className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+
+            <DayPicker
+              mode="single"
+              required
+              selected={value ? new Date(value + 'T00:00:00') : undefined}
+              onSelect={(date) => {
+                if (date) {
+                  onChange(formatDateStr(date));
+                }
+                setIsOpen(false);
+              }}
+              month={pickerMonth}
+              onMonthChange={setPickerMonth}
+              hideNavigation={true}
+            classNames={{
+              root: 'taxon-calendar',
+              months: 'taxon-months',
+              month: 'taxon-month',
+              month_caption: 'taxon-caption',
+              nav: 'taxon-nav',
+              button_previous: 'taxon-nav-button',
+              button_next: 'taxon-nav-button',
+              month_grid: 'taxon-table',
+              weekdays: 'taxon-head-row',
+              weekday: 'taxon-head-cell',
+              week: 'taxon-row',
+              day: 'taxon-cell',
+              day_button: 'taxon-day',
+              selected: 'taxon-day-selected',
+              today: 'taxon-day-today',
+              outside: 'taxon-day-outside',
+            }}
+          />
+
+          <div className="flex justify-end border-t border-[#27272A] pt-2 mt-2">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="text-[11px] font-mono text-[#8E9192] hover:text-white px-2 py-0.5 rounded hover:bg-white/5 transition-colors cursor-pointer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </>
+    )}
+  </div>
+  );
+};
 
 interface SprintPanelProps {
   projectId: string;
@@ -115,9 +251,9 @@ export default function SprintPanel({
   };
 
   return (
-    <div className="mb-6 bg-[#0A0A0A] border border-[#27272A] rounded-xl overflow-hidden shadow-sm transition-all">
+    <div className={`mb-6 bg-[#0A0A0A] border border-[#27272A] rounded-xl shadow-sm transition-all relative ${isExpanded ? 'z-40 overflow-visible' : 'overflow-hidden'}`}>
       {/* Header Bar */}
-      <div className="flex items-center justify-between px-4 py-3 bg-[#141313]/60 border-b border-[#27272A]/80">
+      <div className={`flex items-center justify-between px-4 py-3 bg-[#141313]/60 border-b border-[#27272A]/80 transition-all ${isExpanded ? 'rounded-t-xl' : 'rounded-xl border-b-0'}`}>
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2.5 text-xs font-mono font-bold uppercase tracking-wider text-[#8E9192] hover:text-white transition-colors cursor-pointer group"
@@ -151,7 +287,8 @@ export default function SprintPanel({
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.2, ease: 'easeInOut' }}
-            className="p-4 space-y-4"
+            style={{ overflow: isExpanded ? 'visible' : 'hidden' }}
+            className="p-4 space-y-4 relative z-40"
           >
             {/* Inline Creation Form */}
             <AnimatePresence>
@@ -161,7 +298,7 @@ export default function SprintPanel({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -10 }}
                   onSubmit={handleSaveNewSprint}
-                  className="bg-[#141313] border border-[#3B82F6]/50 rounded-lg p-4 space-y-3 shadow-lg relative"
+                  className="bg-[#141313] border border-[#3B82F6]/50 rounded-lg p-4 space-y-3 shadow-lg relative z-50"
                 >
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
@@ -189,26 +326,16 @@ export default function SprintPanel({
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-[#8E9192] mb-1">Start Date</label>
-                      <input
-                        type="date"
-                        value={newStartDate}
-                        onChange={e => setNewStartDate(e.target.value)}
-                        className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#3B82F6]"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-mono text-[#8E9192] mb-1">End Date</label>
-                      <input
-                        type="date"
-                        value={newEndDate}
-                        onChange={e => setNewEndDate(e.target.value)}
-                        className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#3B82F6]"
-                        required
-                      />
-                    </div>
+                    <SprintDatePicker
+                      label="Start Date"
+                      value={newStartDate}
+                      onChange={setNewStartDate}
+                    />
+                    <SprintDatePicker
+                      label="End Date"
+                      value={newEndDate}
+                      onChange={setNewEndDate}
+                    />
                   </div>
 
                   <div>
@@ -247,17 +374,17 @@ export default function SprintPanel({
                 const stats = getSprintStats(activeSprint.id);
                 const isSelected = selectedSprintId === activeSprint.id;
                 return (
-                  <div className={`relative rounded-xl border p-4 transition-all ${isSelected ? 'bg-[#141313] border-[#3B82F6] shadow-lg shadow-[#3B82F6]/10' : 'bg-[#141313] border-[#3B82F6]/40 hover:border-[#3B82F6]/60'}`}>
+                  <div 
+                    onClick={() => onSelectSprint(isSelected ? 'all' : activeSprint.id)}
+                    className={`relative rounded-xl border p-4 transition-all cursor-pointer ${isSelected ? 'bg-[#141313] border-[#3B82F6] shadow-lg shadow-[#3B82F6]/10' : 'bg-[#141313] border-[#3B82F6]/40 hover:border-[#3B82F6]/60'}`}
+                  >
                     <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
                       <div className="flex items-center gap-2.5">
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-[#3B82F6]/20 text-[#60A5FA] border border-[#3B82F6]/40">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-pulse" />
                           ACTIVE SPRINT
                         </span>
-                        <h4 
-                          onClick={() => onSelectSprint(isSelected ? 'all' : activeSprint.id)}
-                          className="text-sm font-bold text-white tracking-wide font-mono cursor-pointer hover:text-[#3B82F6] transition-colors flex items-center gap-1.5"
-                        >
+                        <h4 className="text-sm font-bold text-white tracking-wide font-mono hover:text-[#3B82F6] transition-colors flex items-center gap-1.5">
                           {activeSprint.name}
                         </h4>
                         <span className="text-xs font-mono text-[#8E9192] flex items-center gap-1">
@@ -268,20 +395,32 @@ export default function SprintPanel({
 
                       <div className="flex items-center gap-2">
                         <button
-                          onClick={() => onSelectSprint(isSelected ? 'all' : activeSprint.id)}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectSprint(isSelected ? 'all' : activeSprint.id);
+                          }}
                           className={`px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${isSelected ? 'bg-[#3B82F6] text-white font-bold' : 'bg-[#27272A] text-[#8E9192] hover:text-white'}`}
                         >
                           {isSelected ? 'Filtered' : 'Filter Tasks'}
                         </button>
                         <button
-                          onClick={() => handleStartEdit(activeSprint)}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleStartEdit(activeSprint);
+                          }}
                           className="p-1.5 rounded bg-[#27272A]/60 hover:bg-[#27272A] text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                           title="Edit Sprint"
                         >
                           <Edit3 className="w-3.5 h-3.5" />
                         </button>
                         <button
-                          onClick={() => onCompleteSprintTrigger(activeSprint)}
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCompleteSprintTrigger(activeSprint);
+                          }}
                           className="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs font-mono transition-colors flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/10"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
@@ -324,7 +463,7 @@ export default function SprintPanel({
 
             {/* Inline Edit Form Modal / Area */}
             {editingSprintId && (
-              <div className="bg-[#141313] border border-[#3B82F6] rounded-lg p-4 space-y-3 shadow-xl">
+              <div className="bg-[#141313] border border-[#3B82F6] rounded-lg p-4 space-y-3 shadow-xl relative z-50">
                 <div className="flex items-center justify-between border-b border-[#27272A] pb-2">
                   <span className="text-xs font-bold font-mono text-white flex items-center gap-1.5">
                     <Edit3 className="w-3.5 h-3.5 text-[#3B82F6]" />
@@ -357,24 +496,16 @@ export default function SprintPanel({
                       <option value="Completed">Completed</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-mono text-[#8E9192] mb-1">Start Date</label>
-                    <input
-                      type="date"
-                      value={editStartDate}
-                      onChange={e => setEditStartDate(e.target.value)}
-                      className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-mono text-[#8E9192] mb-1">End Date</label>
-                    <input
-                      type="date"
-                      value={editEndDate}
-                      onChange={e => setEditEndDate(e.target.value)}
-                      className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white"
-                    />
-                  </div>
+                  <SprintDatePicker
+                    label="Start Date"
+                    value={editStartDate}
+                    onChange={setEditStartDate}
+                  />
+                  <SprintDatePicker
+                    label="End Date"
+                    value={editEndDate}
+                    onChange={setEditEndDate}
+                  />
                 </div>
 
                 <div>

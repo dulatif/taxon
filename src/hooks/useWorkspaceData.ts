@@ -333,7 +333,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }, 50);
   }, [logCompletion, recalculateProjectProgress]);
 
-  const handleAddTask = useCallback((title: string, projectId?: string, dueDate?: string, recurrence?: RecurrenceRule) => {
+  const handleAddTask = useCallback((title: string, projectId?: string, dueDate?: string, recurrence?: RecurrenceRule, sprintId?: string | null) => {
     const getTodayStr = () => {
       const d = new Date();
       const year = d.getFullYear();
@@ -347,6 +347,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     const newTask: Task = {
       id: `task_${Date.now()}`,
       projectId: projectId || null,
+      sprintId: sprintId !== undefined ? sprintId : null,
       title,
       completed: false,
       duration: '45m',

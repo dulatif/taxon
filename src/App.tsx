@@ -399,7 +399,7 @@ export default function App() {
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
                 onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
                 onMoveTaskStatus={handleMoveTaskStatus}
-                onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
+                onAddTaskToProject={(title, projId, sprintId) => handleAddTask(title, projId, undefined, undefined, sprintId)}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}

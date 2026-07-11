@@ -17,7 +17,7 @@ interface KanbanViewProps {
   tasks: Task[];
   sprints?: Sprint[];
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
-  onAddTaskToProject: (taskTitle: string, projectId: string) => void;
+  onAddTaskToProject: (taskTitle: string, projectId: string, sprintId?: string | null) => Task | void;
   onSelectTask?: (task: Task) => void;
   onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
 }
@@ -65,7 +65,11 @@ export default function KanbanView({
 
   const handleAddTaskSubmit = (columnName: string) => {
     if (!newTaskTitle.trim()) return;
-    onAddTaskToProject(newTaskTitle, selectedProjectId);
+    const targetSprintId = (selectedSprintId !== 'all' && selectedSprintId !== 'backlog') ? selectedSprintId : null;
+    const createdTask = onAddTaskToProject(newTaskTitle, selectedProjectId, targetSprintId);
+    if (createdTask && targetSprintId && (!createdTask.sprintId || createdTask.sprintId !== targetSprintId) && onAssignTaskToSprint) {
+      onAssignTaskToSprint(createdTask.id, targetSprintId);
+    }
     setNewTaskTitle('');
     setIsAddingTask(null);
   };

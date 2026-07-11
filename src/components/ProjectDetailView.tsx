@@ -47,7 +47,7 @@ interface ProjectDetailViewProps {
   onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
   onSprintRollover?: (sprintId: string, targetSprintId: string | null) => void;
   onToggleTask: (id: string) => void;
-  onAddTask: (title: string, projectId: string, dueDate?: string) => void;
+  onAddTask: (title: string, projectId: string, dueDate?: string, recurrence?: any, sprintId?: string | null) => Task | void;
   onDeleteTask: (id: string) => void;
   onCompleteProject: (projectId: string) => void;
   onEditProject: (projectId: string, name: string, description: string, category?: string) => void;
@@ -206,7 +206,11 @@ export default function ProjectDetailView({
   const handleAddTaskSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    onAddTask(newTaskTitle, project.id, '');
+    const targetSprintId = (selectedSprintId !== 'all' && selectedSprintId !== 'backlog') ? selectedSprintId : null;
+    const createdTask = onAddTask(newTaskTitle, project.id, '', undefined, targetSprintId);
+    if (createdTask && targetSprintId && (!createdTask.sprintId || createdTask.sprintId !== targetSprintId) && onAssignTaskToSprint) {
+      onAssignTaskToSprint(createdTask.id, targetSprintId);
+    }
     setNewTaskTitle('');
     setTaskTab('todo');
   };

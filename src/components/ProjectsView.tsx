@@ -22,7 +22,7 @@ interface ProjectsViewProps {
   onAddProjectClick: () => void;
   onManageCategoriesClick?: () => void;
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
-  onAddTaskToProject: (taskTitle: string, projectId: string) => void;
+  onAddTaskToProject: (taskTitle: string, projectId: string, sprintId?: string | null) => Task | void;
   onSelectTask?: (task: Task) => void;
 }
 
