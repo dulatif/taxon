@@ -90,6 +90,16 @@ export const initDb = (): Promise<Database> => {
       } catch (_) {
         // Column already exists
       }
+      try {
+        await database.execute('ALTER TABLE tasks ADD COLUMN archived BOOLEAN');
+      } catch (_) {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE tasks ADD COLUMN archivedAt TEXT');
+      } catch (_) {
+        // Column already exists
+      }
       return database;
     })();
   }
@@ -160,6 +170,8 @@ export const getTasks = async (): Promise<Task[]> => {
       recurrence: parseJSON(t.recurrence),
       timeEffort: timeEffortNum,
       timeSpent: timeSpentNum,
+      archived: !!t.archived,
+      archivedAt: t.archivedAt || undefined,
     };
   });
 };
@@ -172,7 +184,7 @@ export const saveTask = async (t: Task) => {
   const recurrenceStr = t.recurrence ? JSON.stringify(t.recurrence) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)',
     [
       t.id ?? null, 
       t.projectId ?? null, 
@@ -190,7 +202,9 @@ export const saveTask = async (t: Task) => {
       t.timeEffort ?? null,
       t.timeSpent ?? null,
       t.sortOrder ?? null,
-      recurrenceStr
+      recurrenceStr,
+      t.archived ? 1 : 0,
+      t.archivedAt ?? null
     ]
   );
 };

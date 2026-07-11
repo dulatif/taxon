@@ -101,6 +101,9 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
   const monthEnd = getMonthEndStr();
 
   return tasks.filter((task) => {
+    // Exclude archived tasks from standard filtered views
+    if (task.archived) return false;
+
     // Priority filter
     if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) return false;
 

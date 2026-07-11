@@ -189,8 +189,18 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
 
   const recalculateProjectProgress = useCallback((projId: string) => {
     setTasks(latestTasks => {
-      const pTasks = latestTasks.filter(t => t.projectId === projId);
-      if (pTasks.length === 0) return latestTasks;
+      const pTasks = latestTasks.filter(t => t.projectId === projId && !t.archived);
+      if (pTasks.length === 0) {
+        setProjects(prevProjs => prevProjs.map(p => {
+          if (p.id === projId) {
+            const updatedProj = { ...p, progress: 0 };
+            saveProject(updatedProj);
+            return updatedProj;
+          }
+          return p;
+        }));
+        return latestTasks;
+      }
       const completed = pTasks.filter(t => t.completed).length;
       const computedPercentage = Math.round((completed / pTasks.length) * 100);
 
@@ -360,6 +370,56 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     if (updatedTask.projectId) {
       setTimeout(() => recalculateProjectProgress(updatedTask.projectId!), 50);
     }
+  }, [recalculateProjectProgress]);
+
+  const handleArchiveTask = useCallback((id: string) => {
+    let targetProjId: string | null = null;
+    const now = new Date().toISOString();
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        targetProjId = t.projectId;
+        const updatedTask = { ...t, archived: true, archivedAt: now };
+        saveTask(updatedTask);
+        return updatedTask;
+      }
+      return t;
+    }));
+    if (targetProjId) {
+      setTimeout(() => recalculateProjectProgress(targetProjId!), 50);
+    }
+  }, [recalculateProjectProgress]);
+
+  const handleUnarchiveTask = useCallback((id: string) => {
+    let targetProjId: string | null = null;
+    setTasks(prev => prev.map(t => {
+      if (t.id === id) {
+        targetProjId = t.projectId;
+        const updatedTask = { ...t, archived: false, archivedAt: undefined };
+        saveTask(updatedTask);
+        return updatedTask;
+      }
+      return t;
+    }));
+    if (targetProjId) {
+      setTimeout(() => recalculateProjectProgress(targetProjId!), 50);
+    }
+  }, [recalculateProjectProgress]);
+
+  const handleArchiveAllCompleted = useCallback((projectId?: string) => {
+    const now = new Date().toISOString();
+    const affectedProjectIds = new Set<string>();
+    setTasks(prev => prev.map(t => {
+      if (t.completed && !t.archived && (!projectId || t.projectId === projectId)) {
+        if (t.projectId) affectedProjectIds.add(t.projectId);
+        const updatedTask = { ...t, archived: true, archivedAt: now };
+        saveTask(updatedTask);
+        return updatedTask;
+      }
+      return t;
+    }));
+    setTimeout(() => {
+      affectedProjectIds.forEach(pid => recalculateProjectProgress(pid));
+    }, 50);
   }, [recalculateProjectProgress]);
 
   const handleCreateProject = useCallback((name: string, description: string, category: Project['category']) => {
@@ -709,6 +769,9 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     onTickFocusTime,
     handleReorderProjects,
     handleReorderTasks,
-    handleSetVaultPath
+    handleSetVaultPath,
+    handleArchiveTask,
+    handleUnarchiveTask,
+    handleArchiveAllCompleted
   };
 }

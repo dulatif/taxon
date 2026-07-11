@@ -159,6 +159,8 @@ export interface Task {
   timeSpent?: number; // time spent in minutes
   sortOrder?: number;
   recurrence?: RecurrenceRule;
+  archived?: boolean;
+  archivedAt?: string;
 }
 
 export interface DocumentFile {

@@ -18,7 +18,8 @@ import {
   AlertTriangle,
   X,
   ChevronRight,
-  Archive
+  Archive,
+  RotateCcw
 } from 'lucide-react';
 import { Project, Task, DocumentFile, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
@@ -30,12 +31,6 @@ import VaultFileTree from './VaultFileTree';
 import DocumentPanel from './DocumentPanel';
 import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
 import { VaultEntry } from '../types';
-
-const DUMMY_ARCHIVED_TASKS = [
-  { id: 'archived-1', title: 'Legacy data model refactoring & cleanup', duration: '2.5h', archivedDate: 'Jun 12, 2026', priority: 'Medium' },
-  { id: 'archived-2', title: 'Prototype initial UI mockups for dark mode', duration: '4h', archivedDate: 'Jun 05, 2026', priority: 'High' },
-  { id: 'archived-3', title: 'User authentication OAuth integration (v1)', duration: '6h', archivedDate: 'May 28, 2026', priority: 'Low' },
-];
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -54,6 +49,9 @@ interface ProjectDetailViewProps {
   onBackToProjects: () => void;
   onSelectTask?: (task: Task) => void;
   onSetVaultPath?: (projectId: string, vaultPath: string) => void;
+  onArchiveTask?: (id: string) => void;
+  onUnarchiveTask?: (id: string) => void;
+  onArchiveAllCompleted?: (projectId?: string) => void;
 }
 
 export default function ProjectDetailView({
@@ -73,6 +71,9 @@ export default function ProjectDetailView({
   onBackToProjects,
   onSelectTask,
   onSetVaultPath,
+  onArchiveTask,
+  onUnarchiveTask,
+  onArchiveAllCompleted
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
@@ -168,10 +169,11 @@ export default function ProjectDetailView({
 
   // Filters tasks for this project
   const projectTasks = tasks.filter(t => t.projectId === project.id);
+  const unarchivedProjectTasks = projectTasks.filter(t => !t.archived);
   const projectFiles = files.filter(f => f.projectId === project.id);
 
-  const completedCount = projectTasks.filter(t => t.completed).length;
-  const totalTasksCount = projectTasks.length;
+  const completedCount = unarchivedProjectTasks.filter(t => t.completed).length;
+  const totalTasksCount = unarchivedProjectTasks.length;
   const calculatedProgress = totalTasksCount > 0
     ? Math.round((completedCount / totalTasksCount) * 100)
     : project.progress;
@@ -219,8 +221,9 @@ export default function ProjectDetailView({
   };
 
   // Sort logic for tasks
-  const activeTasks = projectTasks.filter(t => !t.completed);
-  const completedTasks = projectTasks.filter(t => t.completed);
+  const activeTasks = projectTasks.filter(t => !t.completed && !t.archived);
+  const completedTasks = projectTasks.filter(t => t.completed && !t.archived);
+  const archivedTasks = projectTasks.filter(t => t.archived);
 
   const sortTasksHelper = (list: Task[]) => {
     return [...list].sort((a, b) => {
@@ -239,6 +242,7 @@ export default function ProjectDetailView({
 
   const sortedActiveTasks = sortTasksHelper(activeTasks);
   const sortedCompletedTasks = sortTasksHelper(completedTasks);
+  const sortedArchivedTasks = sortTasksHelper(archivedTasks);
 
   const handleDragEnd = (result: any) => {
     const { source, destination, draggableId } = result;
@@ -525,7 +529,7 @@ export default function ProjectDetailView({
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       taskTab === 'archived' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
                     }`}>
-                      {DUMMY_ARCHIVED_TASKS.length}
+                      {sortedArchivedTasks.length}
                     </span>
                   </button>
                 </div>
@@ -603,6 +607,13 @@ export default function ProjectDetailView({
                                         {task.duration}
                                       </span>
                                     )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onArchiveTask?.(task.id); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Archive task"
+                                    >
+                                      <Archive className="w-3.5 h-3.5" />
+                                    </button>
                                     <button
                                       onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -701,6 +712,13 @@ export default function ProjectDetailView({
                                       </span>
                                     )}
                                     <button
+                                      onClick={(e) => { e.stopPropagation(); onArchiveTask?.(task.id); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Archive task"
+                                    >
+                                      <Archive className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
                                       onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Delete task item"
@@ -717,6 +735,19 @@ export default function ProjectDetailView({
                       </ul>
                     )}
                   </Droppable>
+
+                  {sortedCompletedTasks.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-[#27272A]/60 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onArchiveAllCompleted?.(project.id)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#141313] hover:bg-[#201F1F] text-[#8E9192] hover:text-white border border-[#27272A]/80 transition-colors cursor-pointer shadow-sm"
+                      >
+                        <Archive className="w-3.5 h-3.5" />
+                        <span>Archive All Completed ({sortedCompletedTasks.length})</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </DragDropContext>
@@ -726,41 +757,67 @@ export default function ProjectDetailView({
               <div className="space-y-4">
                 <div className="bg-[#141313]/60 border border-[#27272A]/80 rounded-lg p-3 flex items-center justify-between text-xs text-[#8E9192]">
                   <div className="flex items-center gap-2">
-                    <Archive className="w-4 h-4 text-amber-400 shrink-0" />
-                    <span>Archived tasks read-only preview (dummy data).</span>
+                    <Archive className="w-4 h-4 text-[#8E9192] shrink-0" />
+                    <span>Archived tasks are read-only. Restore to resume or edit.</span>
                   </div>
-                  <span className="text-[10px] font-mono bg-amber-500/10 text-amber-400 border border-amber-500/20 px-2 py-0.5 rounded">
-                    Coming Soon
-                  </span>
                 </div>
 
                 <ul className="space-y-1.5 min-h-[40px]">
-                  {DUMMY_ARCHIVED_TASKS.map((task) => (
-                    <li
-                      key={task.id}
-                      className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#141313]/30 border border-[#27272A]/40 opacity-70 hover:opacity-100 transition-opacity select-none"
-                    >
-                      <div className="flex items-center gap-4 flex-1 mr-4">
-                        <Archive className="w-4 h-4 text-[#8E9192] shrink-0 mt-0.5" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold leading-relaxed text-[#8E9192] line-through decoration-[#27272A]">
-                            {task.title}
-                          </p>
-                        </div>
-                      </div>
+                  {sortedArchivedTasks.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#8E9192]">
+                      No archived tasks for this project.
+                    </div>
+                  ) : (
+                    sortedArchivedTasks.map((task) => {
+                      const archivedDateStr = task.archivedAt
+                        ? new Date(task.archivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                        : undefined;
+                      return (
+                        <li
+                          key={task.id}
+                          className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#141313]/30 border border-[#27272A]/40 opacity-70 hover:opacity-100 transition-opacity select-none group"
+                        >
+                          <div className="flex items-center gap-4 flex-1 mr-4">
+                            <Archive className="w-4 h-4 text-[#8E9192] shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold leading-relaxed text-[#8E9192] line-through decoration-[#27272A]">
+                                {task.title}
+                              </p>
+                            </div>
+                          </div>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        <span className="text-[9px] font-mono text-[#8E9192] bg-black/60 px-1.5 py-0.5 rounded border border-[#27272A]/50">
-                          {task.archivedDate}
-                        </span>
-                        {task.duration && (
-                          <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
-                            {task.duration}
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
+                          <div className="flex items-center gap-3 shrink-0">
+                            {archivedDateStr && (
+                              <span className="text-[9px] font-mono text-[#8E9192] bg-black/60 px-1.5 py-0.5 rounded border border-[#27272A]/50">
+                                Archived {archivedDateStr}
+                              </span>
+                            )}
+                            {task.duration && (
+                              <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                                {task.duration}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => onUnarchiveTask?.(task.id)}
+                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                              title="Restore task"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onDeleteTask(task.id)}
+                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                              title="Delete permanently"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })
+                  )}
                 </ul>
               </div>
             )}

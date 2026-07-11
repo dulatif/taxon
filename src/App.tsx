@@ -98,7 +98,10 @@ export default function App() {
     onTickFocusTime,
     handleReorderProjects,
     handleReorderTasks,
-    handleSetVaultPath
+    handleSetVaultPath,
+    handleArchiveTask,
+    handleUnarchiveTask,
+    handleArchiveAllCompleted
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -195,18 +198,18 @@ export default function App() {
   // Filtered Task views based on navbar selected page
   const getFilteredViewTasks = () => {
     if (currentView === 'inbox') {
-      return tasks.filter(t => !t.projectId && !t.dueDate && !t.completed);
+      return tasks.filter(t => !t.projectId && !t.dueDate && !t.completed && !t.archived);
     }
     if (currentView === 'todo') {
-      return tasks.filter(t => !t.completed);
+      return tasks.filter(t => !t.completed && !t.archived);
     }
     if (currentView === 'recurring') {
-      return tasks.filter(t => !t.completed && t.recurrence !== undefined);
+      return tasks.filter(t => !t.completed && t.recurrence !== undefined && !t.archived);
     }
     if (currentView === 'scheduled') {
-      return tasks;
+      return tasks.filter(t => !t.archived);
     }
-    return tasks;
+    return tasks.filter(t => !t.archived);
   };
 
   if (!isDataLoaded) {
@@ -412,6 +415,9 @@ export default function App() {
                 }}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
                 onSetVaultPath={handleSetVaultPath}
+                onArchiveTask={handleArchiveTask}
+                onUnarchiveTask={handleUnarchiveTask}
+                onArchiveAllCompleted={handleArchiveAllCompleted}
               />
             )}
 
