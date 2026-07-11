@@ -95,6 +95,8 @@ export default function ProjectDetailView({
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   // Deleting Vault Document confirmation modal
   const [docToDelete, setDocToDelete] = useState<VaultEntry | null>(null);
+  // Deleting Task confirmation modal
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
 
   // Vault state
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
@@ -615,7 +617,7 @@ export default function ProjectDetailView({
                                       <Archive className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                      onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Delete task item"
                                     >
@@ -719,7 +721,7 @@ export default function ProjectDetailView({
                                       <Archive className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                      onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Delete task item"
                                     >
@@ -807,7 +809,7 @@ export default function ProjectDetailView({
                             </button>
                             <button
                               type="button"
-                              onClick={() => onDeleteTask(task.id)}
+                              onClick={() => setTaskToDelete(task)}
                               className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                               title="Delete permanently"
                             >
@@ -983,6 +985,56 @@ export default function ProjectDetailView({
                 className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-red-600/20"
               >
                 <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Project
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Modal Confirmation for Deleting Task */}
+      {taskToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative shadow-2xl">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setTaskToDelete(null)}
+              className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-md font-bold uppercase tracking-wider font-mono text-white">
+                Delete Task
+              </h3>
+            </div>
+
+            <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
+              Are you sure you want to permanently delete <strong className="text-white font-semibold font-mono">"{taskToDelete.title}"</strong>? This task will be removed immediately. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setTaskToDelete(null)}
+                className="bg-black text-[#C4C7C8] border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#141313] hover:text-white transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = taskToDelete.id;
+                  setTaskToDelete(null);
+                  onDeleteTask(id);
+                }}
+                className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-red-600/20 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Task
               </button>
             </div>
           </div>

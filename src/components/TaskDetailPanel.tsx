@@ -19,7 +19,8 @@ import {
   Timer,
   Repeat,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from 'lucide-react';
 import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency } from '../types';
 
@@ -123,6 +124,7 @@ export default function TaskDetailPanel({
   const [activePropertyEdit, setActivePropertyEdit] = useState<string | null>(null);
   const [isCustomRecurrence, setIsCustomRecurrence] = useState(false);
   const [pickerMonth, setPickerMonth] = useState<Date>(new Date());
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -240,12 +242,7 @@ export default function TaskDetailPanel({
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => {
-                  if (window.confirm('Delete this task?')) {
-                    onDeleteTask(editedTask.id);
-                    onClose();
-                  }
-                }}
+                onClick={() => setIsDeleteConfirmOpen(true)}
                 title="Delete Task"
                 className="p-2 text-[#8E9192] hover:text-red-400 hover:bg-[#141313] rounded-lg transition-colors cursor-pointer"
               >
@@ -1147,6 +1144,56 @@ export default function TaskDetailPanel({
             </div>
 
           </div>
+
+          {/* Custom Modal Confirmation for Deleting Task */}
+          {isDeleteConfirmOpen && (
+            <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[999999] flex items-center justify-center p-4 pointer-events-auto">
+              <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative shadow-2xl">
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setIsDeleteConfirmOpen(false)}
+                  className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-3 text-red-400 mb-3">
+                  <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <h3 className="text-md font-bold uppercase tracking-wider font-mono text-white">
+                    Delete Task
+                  </h3>
+                </div>
+
+                <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
+                  Are you sure you want to permanently delete <strong className="text-white font-semibold font-mono">"{editedTask.title}"</strong>? This action cannot be undone.
+                </p>
+
+                <div className="flex items-center justify-end gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsDeleteConfirmOpen(false)}
+                    className="bg-black text-[#C4C7C8] border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#141313] hover:text-white transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsDeleteConfirmOpen(false);
+                      onDeleteTask(editedTask.id);
+                      onClose();
+                    }}
+                    className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-red-600/20 cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Task
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>
