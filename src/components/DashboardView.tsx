@@ -288,8 +288,8 @@ export default function DashboardView({
                                       title={task.priority}
                                       className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                     />
-                                    <div className="min-w-0 flex flex-col items-start gap-1">
-                                      <h3 className="text-white font-medium text-sm truncate leading-tight">{task.title}</h3>
+                                    <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
+                                      <h3 className="text-white font-medium text-sm truncate w-full block leading-tight" title={task.title}>{task.title}</h3>
                                       {proj && (
                                         <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block max-w-[200px] truncate leading-none">
                                           {proj.name}
@@ -401,8 +401,8 @@ export default function DashboardView({
                                             title={task.priority}
                                             className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                           />
-                                          <div className="min-w-0 flex flex-col items-start gap-1">
-                                            <span className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate leading-tight">
+                                          <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
+                                            <span className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate w-full block leading-tight" title={task.title}>
                                               {task.title}
                                             </span>
                                             {proj && (
