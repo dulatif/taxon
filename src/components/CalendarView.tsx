@@ -101,7 +101,7 @@ export default function CalendarView({
       if (filterMode === 'all') return true;
       if (filterMode === 'single' || filterMode === 'today') {
         const targetStr = selectedDate ? format(selectedDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
-        return dateStr.startsWith(targetStr);
+        return dateStr === targetStr;
       }
       if (activeRange?.from && activeRange?.to) {
         const fromStr = format(activeRange.from, 'yyyy-MM-dd');

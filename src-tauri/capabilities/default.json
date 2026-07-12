@@ -12,6 +12,63 @@
     "notification:default",
     "dialog:default",
     "fs:default",
+    "fs:allow-read",
+    "fs:allow-write",
+    "fs:allow-remove",
+    "fs:allow-mkdir",
+    "fs:allow-exists",
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    "fs:allow-write-file",
+    "fs:allow-read-text-file",
+    "fs:allow-write-text-file",
+    "fs:allow-create",
+    "fs:allow-stat",
+    "fs:allow-rename",
+    {
+      "identifier": "fs:allow-read-text-file",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-text-file",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-read-file",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-write-file",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-read-dir",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-create",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-remove",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-mkdir",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-exists",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-stat",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
+    {
+      "identifier": "fs:allow-rename",
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+    },
     "shell:default",
     "shell:allow-open",
     "core:window:default",

@@ -6,8 +6,9 @@ export interface Project {
   description: string;
   category: ProjectCategory;
   progress: number; // percentage (0 - 100)
-  dueDays: number;
+  dueDate?: string; // ISO date string (YYYY-MM-DD)
   sortOrder?: number;
+  vaultPath?: string;
 }
 
 export const PROJECT_CATEGORIES = [
@@ -140,9 +141,22 @@ export interface RecurrenceRule {
   daysOfWeek?: number[]; // 0=Sun, 1=Mon, ..., 6=Sat
 }
 
+export interface Sprint {
+  id: string;
+  projectId: string;
+  name: string;              // e.g. "Sprint 1", "Sprint 2"
+  status: 'Active' | 'Planned' | 'Completed';
+  startDate: string;         // ISO date (YYYY-MM-DD)
+  endDate: string;           // ISO date (YYYY-MM-DD)
+  goal?: string;             // Optional sprint goal description
+  sortOrder?: number;
+  completedAt?: string;      // ISO datetime when sprint was completed
+}
+
 export interface Task {
   id: string;
   projectId: string | null;
+  sprintId?: string | null;
   title: string;
   completed: boolean;
   duration: string; // e.g. "45m", "2h", "1.5h"
@@ -158,6 +172,8 @@ export interface Task {
   timeSpent?: number; // time spent in minutes
   sortOrder?: number;
   recurrence?: RecurrenceRule;
+  archived?: boolean;
+  archivedAt?: string;
 }
 
 export interface DocumentFile {
@@ -166,6 +182,13 @@ export interface DocumentFile {
   name: string;
   size: string;
   type: 'image' | 'code' | 'pdf' | 'spreadsheet';
+}
+
+export interface VaultEntry {
+  name: string;
+  path: string;
+  isDirectory: boolean;
+  children?: VaultEntry[];
 }
 
 export interface DailyActivity {

@@ -86,6 +86,7 @@ export default function DashboardView({
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority'>('custom');
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [isOverdueExpanded, setIsOverdueExpanded] = useState(true);
 
   const getTodayStr = () => {
     const d = new Date();
@@ -96,9 +97,9 @@ export default function DashboardView({
   };
 
   const todayStr = getTodayStr();
-  const allTodayTasks = tasks.filter(t => t.dueDate && t.dueDate.startsWith(todayStr));
-  const activeTodayTasks = allTodayTasks.filter(t => !t.completed);
-  const completedTodayTasks = allTodayTasks.filter(t => t.completed);
+  const activeTodayTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.substring(0, 10) === todayStr);
+  const overdueTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.substring(0, 10) < todayStr && !t.archived);
+  const completedTodayTasks = tasks.filter(t => t.completed && t.dueDate && t.dueDate.substring(0, 10) === todayStr && !t.archived);
 
   const sortTasksHelper = (taskList: Task[]) => {
     return [...taskList].sort((a, b) => {
@@ -111,6 +112,7 @@ export default function DashboardView({
   };
 
   const sortedActiveTasks = sortTasksHelper(activeTodayTasks);
+  const sortedOverdueTasks = sortTasksHelper(overdueTasks);
   const sortedCompletedTasks = sortTasksHelper(completedTodayTasks);
   const remainingTodayCount = sortedActiveTasks.length;
 
@@ -121,16 +123,22 @@ export default function DashboardView({
 
     const isSourceCompleted = source.droppableId === 'today-completed-tasks';
     const isDestCompleted = destination.droppableId === 'today-completed-tasks';
+    const isSourceOverdue = source.droppableId === 'today-overdue-tasks';
+    const isDestOverdue = destination.droppableId === 'today-overdue-tasks';
 
-    const draggedTask = allTodayTasks.find(t => t.id === draggableId);
+    const draggedTask = tasks.find(t => t.id === draggableId);
     if (!draggedTask) return;
 
     const currentActive = [...sortedActiveTasks];
+    const currentOverdue = [...sortedOverdueTasks];
     const currentCompleted = [...sortedCompletedTasks];
 
     if (isSourceCompleted) {
       const idx = currentCompleted.findIndex(t => t.id === draggableId);
       if (idx !== -1) currentCompleted.splice(idx, 1);
+    } else if (isSourceOverdue) {
+      const idx = currentOverdue.findIndex(t => t.id === draggableId);
+      if (idx !== -1) currentOverdue.splice(idx, 1);
     } else {
       const idx = currentActive.findIndex(t => t.id === draggableId);
       if (idx !== -1) currentActive.splice(idx, 1);
@@ -142,18 +150,25 @@ export default function DashboardView({
       status: isDestCompleted ? ('Done' as const) : ('To Do' as const)
     };
 
+    // If moved from overdue to today active, reschedule it
+    if (isSourceOverdue && destination.droppableId === 'today-active-tasks') {
+      updatedTask.dueDate = todayStr;
+    }
+
     if (isSourceCompleted !== isDestCompleted) {
       onToggleTask(draggedTask.id);
     }
 
     if (isDestCompleted) {
       currentCompleted.splice(destination.index, 0, updatedTask);
+    } else if (isDestOverdue) {
+      currentOverdue.splice(destination.index, 0, updatedTask);
     } else {
       currentActive.splice(destination.index, 0, updatedTask);
     }
 
-    const reorderedTodayTasks = [...currentActive, ...currentCompleted];
-    const otherTasks = tasks.filter(t => !(t.dueDate && t.dueDate.startsWith(todayStr)));
+    const reorderedTodayTasks = [...currentActive, ...currentOverdue, ...currentCompleted];
+    const otherTasks = tasks.filter(t => !reorderedTodayTasks.some(rt => rt.id === t.id));
     onReorderTasks([...reorderedTodayTasks, ...otherTasks]);
   };
 
@@ -235,6 +250,7 @@ export default function DashboardView({
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
+
               {/* Active Tasks Container */}
               <div className="p-4">
                 <Droppable droppableId="today-active-tasks" isDropDisabled={selectedSort !== 'custom'}>
@@ -281,8 +297,8 @@ export default function DashboardView({
                                       title={task.priority}
                                       className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                     />
-                                    <div className="min-w-0 flex flex-col items-start gap-1">
-                                      <h3 className="text-white font-medium text-sm truncate leading-tight">{task.title}</h3>
+                                    <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
+                                      <h3 className="text-white font-medium text-sm truncate w-full block leading-tight" title={task.title}>{task.title}</h3>
                                       {proj && (
                                         <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block max-w-[200px] truncate leading-none">
                                           {proj.name}
@@ -323,6 +339,121 @@ export default function DashboardView({
                   )}
                 </Droppable>
               </div>
+
+              {/* Overdue Tasks Accordion */}
+              {sortedOverdueTasks.length > 0 && (
+                <div className="border-t border-red-500/20 bg-red-500/5 pt-4 px-4 pb-4">
+                  <button
+                    type="button"
+                    onClick={() => setIsOverdueExpanded(!isOverdueExpanded)}
+                    className="w-full flex items-center justify-between py-2 text-red-400 hover:text-red-300 transition-colors cursor-pointer group px-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <ChevronRight
+                        className={`w-4 h-4 transition-transform duration-200 ${isOverdueExpanded ? 'rotate-90' : ''
+                          }`}
+                      />
+                      <span className="text-[11px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
+                        <Timer className="w-3.5 h-3.5" />
+                        Overdue Tasks
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 font-mono">
+                        {sortedOverdueTasks.length}
+                      </span>
+                    </div>
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {isOverdueExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2, ease: 'easeInOut' }}
+                        className="overflow-hidden mt-2"
+                      >
+                        <Droppable droppableId="today-overdue-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                          {(provided, snapshot) => (
+                            <ul
+                              ref={provided.innerRef}
+                              {...provided.droppableProps}
+                              className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-red-500/10 border border-red-500/20 p-1.5' : ''
+                                }`}
+                            >
+                              {sortedOverdueTasks.map((task, index) => {
+                                const proj = projects.find(p => p.id === task.projectId);
+                                return (
+                                  // @ts-ignore
+                                  <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                                    {(provided, snapshot) => (
+                                      <li
+                                        ref={provided.innerRef}
+                                        {...provided.draggableProps}
+                                        {...provided.dragHandleProps}
+                                        id={`task-item-${task.id}`}
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={() => onSelectTask?.(task)}
+                                        className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent bg-[#141313]/40 ${snapshot.isDragging
+                                          ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                          : 'hover:bg-[#141313]'
+                                          }`}
+                                      >
+                                        <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                            className="shrink-0 mt-0.5 text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
+                                          >
+                                            <Square className="w-4 h-4" />
+                                          </button>
+                                          <span
+                                            title={task.priority}
+                                            className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
+                                          />
+                                          <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
+                                            <h3 className="text-red-200/90 font-medium text-sm truncate w-full block leading-tight" title={task.title}>{task.title}</h3>
+                                            {proj && (
+                                              <span className="text-[10px] text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 inline-block max-w-[200px] truncate leading-none">
+                                                {proj.name}
+                                              </span>
+                                            )}
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-3 shrink-0">
+                                          <span className="text-[10px] text-red-400/70 flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-red-500/20">
+                                            <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
+                                          </span>
+                                          <button
+                                            onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
+                                            title="Start Focus Session"
+                                            className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
+                                          >
+                                            <Play className="w-3.5 h-3.5 fill-current" />
+                                          </button>
+                                          {onDeleteTask && (
+                                            <button
+                                              onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                              title="Delete task item"
+                                            >
+                                              <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </li>
+                                    )}
+                                  </Draggable>
+                                );
+                              })}
+                              {provided.placeholder}
+                            </ul>
+                          )}
+                        </Droppable>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
 
               {/* Completed Tasks Accordion */}
               {sortedCompletedTasks.length > 0 && (
@@ -394,8 +525,8 @@ export default function DashboardView({
                                             title={task.priority}
                                             className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                           />
-                                          <div className="min-w-0 flex flex-col items-start gap-1">
-                                            <span className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate leading-tight">
+                                          <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
+                                            <span className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate w-full block leading-tight" title={task.title}>
                                               {task.title}
                                             </span>
                                             {proj && (

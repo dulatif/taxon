@@ -12,7 +12,9 @@ import {
   Lock,
   Award,
   Minus,
-  Square
+  Square,
+  Sun,
+  Moon
 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import DashboardView from './components/DashboardView';
@@ -30,7 +32,9 @@ import AddProjectModal from './modals/AddProjectModal';
 import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
 import ManageCategoriesModal from './modals/ManageCategoriesModal';
+import SpotlightSearchModal from './modals/SpotlightSearchModal';
 import { Project } from './types';
+import { getTodayStr } from './utils/taskFilters';
 import { useFocusTimer } from './hooks/useFocusTimer';
 import { useWindowMaximize } from './hooks/useWindowMaximize';
 import { useSystemTray } from './hooks/useSystemTray';
@@ -48,8 +52,7 @@ export default function App() {
   // --- UI Navigation/Layout States ---
   const [currentView, setCurrentView] = useState<string>('dashboard');
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
 
   // --- Modal Dialog States ---
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -57,6 +60,7 @@ export default function App() {
   const [newProjName, setNewProjName] = useState('');
   const [newProjDesc, setNewProjDesc] = useState('');
   const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Engineering');
+  const [newProjDueDate, setNewProjDueDate] = useState<string>('');
 
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
@@ -96,7 +100,18 @@ export default function App() {
     setImportPendingJson,
     onTickFocusTime,
     handleReorderProjects,
-    handleReorderTasks
+    handleReorderTasks,
+    handleSetVaultPath,
+    handleArchiveTask,
+    handleUnarchiveTask,
+    handleArchiveAllCompleted,
+    sprints,
+    handleCreateSprint,
+    handleEditSprint,
+    handleCompleteSprint,
+    handleDeleteSprint,
+    handleAssignTaskToSprint,
+    handleSprintRollover
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -122,10 +137,11 @@ export default function App() {
     onQuickAddTask: () => setIsQuickAddTaskOpen(true),
     onLaunchFocusMode: () => {
       document.getElementById('header-focus-mode')?.click();
-    }
+    },
+    onOpenSpotlight: () => setIsSpotlightOpen(true),
   });
 
-  const { settings } = useSettings();
+  const { settings, updateSetting } = useSettings();
 
   const focusTimer = useFocusTimer({
     onTimerComplete: () => {
@@ -150,9 +166,10 @@ export default function App() {
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim()) return;
-    createProjectInHook(newProjName, newProjDesc, newProjCategory);
+    createProjectInHook(newProjName, newProjDesc, newProjCategory, newProjDueDate);
     setNewProjName('');
     setNewProjDesc('');
+    setNewProjDueDate('');
     setIsAddProjectOpen(false);
   };
 
@@ -192,24 +209,19 @@ export default function App() {
   // Filtered Task views based on navbar selected page
   const getFilteredViewTasks = () => {
     if (currentView === 'inbox') {
-      return tasks.filter(t => !t.projectId && !t.dueDate && !t.completed);
+      return tasks.filter(t => !t.projectId && !t.dueDate && !t.completed && !t.archived);
     }
     if (currentView === 'todo') {
-      return tasks.filter(t => !t.completed);
+      return tasks.filter(t => !t.completed && !t.archived);
     }
     if (currentView === 'recurring') {
-      return tasks.filter(t => !t.completed && t.recurrence !== undefined);
+      return tasks.filter(t => !t.completed && t.recurrence !== undefined && !t.archived);
     }
     if (currentView === 'scheduled') {
-      return tasks;
+      return tasks.filter(t => !t.archived);
     }
-    return tasks;
+    return tasks.filter(t => !t.archived);
   };
-
-  // Global search
-  const filteredSearchTasks = searchQuery.trim() === ''
-    ? []
-    : tasks.filter(t => t.title.toLowerCase().includes(searchQuery.toLowerCase()));
 
   if (!isDataLoaded) {
     return <div className="flex items-center justify-center h-screen bg-black text-white">Loading database...</div>;
@@ -280,6 +292,7 @@ export default function App() {
       <TaskDetailPanel
         task={selectedDetailTask}
         projects={projects}
+        sprints={sprints}
         onClose={() => setSelectedDetailTaskId(null)}
         onUpdateTask={handleUpdateTaskDetail}
         onDeleteTask={handleDeleteTask}
@@ -327,69 +340,38 @@ export default function App() {
             {/* Quick global utility actions */}
             <div className="flex items-center gap-6">
 
-              {/* Global Search Interface */}
-              <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] w-3.5 h-3.5" />
-                <input
-                  id="global-search-input"
-                  type="text"
-                  placeholder="Search tasks... (⌘K)"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setTimeout(() => setIsSearchFocused(false), 200)}
-                  className="bg-[#141313] border border-[#27272A] rounded-lg pl-9 pr-4 py-1.5 text-xs text-white placeholder-[#8E9192]/60 focus:outline-none focus:border-white w-64 transition-all"
-                />
+              {/* Global Search Trigger Button */}
+              <button
+                id="global-search-input"
+                onClick={() => setIsSpotlightOpen(true)}
+                className="relative group bg-[#141313] border border-[#27272A] hover:border-[#8E9192]/60 rounded-lg pl-9 pr-2.5 py-1.5 text-xs text-[#8E9192]/80 hover:text-white flex items-center justify-between w-64 transition-all cursor-pointer select-none"
+              >
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8E9192] group-hover:text-white w-3.5 h-3.5 transition-colors" />
+                <span>Search tasks & projects...</span>
+                <span className="px-1.5 py-0.5 rounded bg-[#1E1E22] border border-[#27272A] text-[10px] font-mono text-[#8E9192] group-hover:text-white transition-colors">
+                  ⌘K
+                </span>
+              </button>
 
-                {/* Dynamic search results overlay dashboard */}
-                {isSearchFocused && searchQuery.trim() !== '' && (
-                  <div className="absolute right-0 top-10 bg-[#0A0A0A] border border-[#27272A] w-80 rounded-xl p-3 z-50 shadow-2xl max-h-[300px] overflow-y-auto">
-                    <h4 className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] mb-2 font-mono">
-                      Search Results ({filteredSearchTasks.length})
-                    </h4>
-                    {filteredSearchTasks.length === 0 ? (
-                      <div className="text-xs text-[#8E9192] py-4 text-center">No tasks match queries</div>
-                    ) : (
-                      <div className="divide-y divide-[#27272A]/50">
-                        {filteredSearchTasks.map(t => (
-                          <div
-                            key={t.id}
-                            className="py-2 flex items-center justify-between text-xs cursor-pointer hover:bg-[#141313] px-1 rounded transition-colors"
-                            onClick={() => {
-                              if (t.projectId) {
-                                setSelectedProjectId(t.projectId);
-                                setCurrentView('project-details');
-                              } else {
-                                setCurrentView('dashboard');
-                              }
-                            }}
-                          >
-                            <span className={`${t.completed ? 'line-through text-[#8E9192]' : 'text-white'} truncate max-w-[200px]`}>
-                              {t.title}
-                            </span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleToggleTask(t.id);
-                              }}
-                              className="p-1 hover:bg-[#201F1F] rounded"
-                            >
-                              <Check className={`w-3 h-3 ${t.completed ? 'text-green-400' : 'text-[#8E9192]'}`} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+              {/* Theme Toggle Button */}
+              <button
+                onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+                title="Toggle Theme"
+                className="active:scale-95 transition-transform p-2 bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
+              >
+                {settings.theme === 'light' ? (
+                  <Sun className="w-4 h-4 text-white" />
+                ) : (
+                  <Moon className="w-4 h-4 text-white" />
                 )}
-              </div>
+              </button>
 
               {/* Immersive Focus Mode launcher button */}
               <button
                 id="header-focus-mode"
                 onClick={focusTimer.launchFocusMode}
                 title="Launch Immersive Focus Mode"
-                className="active:scale-95 transition-transform p-2 border border-[#27272A] hover:border-white bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
+                className="active:scale-95 transition-transform p-2 bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
               >
                 <Timer className="w-4 h-4 text-white" />
               </button>
@@ -427,12 +409,14 @@ export default function App() {
                 projects={projects}
                 tasks={tasks}
                 categories={categories}
+                sprints={sprints}
+                onAssignTaskToSprint={handleAssignTaskToSprint}
                 onProjectSelect={(id) => setSelectedProjectId(id)}
                 onViewChange={setCurrentView}
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
                 onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
                 onMoveTaskStatus={handleMoveTaskStatus}
-                onAddTaskToProject={(title, projId) => handleAddTask(title, projId)}
+                onAddTaskToProject={(title, projId, sprintId) => handleAddTask(title, projId, undefined, undefined, sprintId)}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}
@@ -443,6 +427,13 @@ export default function App() {
                 tasks={tasks}
                 files={files}
                 availableCategories={categories}
+                sprints={sprints}
+                onCreateSprint={handleCreateSprint}
+                onEditSprint={handleEditSprint}
+                onCompleteSprint={handleCompleteSprint}
+                onDeleteSprint={handleDeleteSprint}
+                onAssignTaskToSprint={handleAssignTaskToSprint}
+                onSprintRollover={handleSprintRollover}
                 onToggleTask={handleToggleTask}
                 onAddTask={handleAddTask}
                 onDeleteTask={handleDeleteTask}
@@ -457,6 +448,10 @@ export default function App() {
                   setCurrentView('projects');
                 }}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+                onSetVaultPath={handleSetVaultPath}
+                onArchiveTask={handleArchiveTask}
+                onUnarchiveTask={handleUnarchiveTask}
+                onArchiveAllCompleted={handleArchiveAllCompleted}
               />
             )}
 
@@ -470,7 +465,7 @@ export default function App() {
                 defaultGrouped={currentView !== 'inbox' && currentView !== 'recurring'}
                 isInboxView={currentView === 'inbox'}
                 isRecurringView={currentView === 'recurring'}
-                onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
+                onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, currentView === 'recurring' ? getTodayStr() : '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
                 addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : currentView === 'recurring' ? 'Add a new recurring task (defaults to daily)...' : 'Add a new task...'}
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
@@ -530,10 +525,12 @@ export default function App() {
         projName={newProjName}
         projDesc={newProjDesc}
         projCategory={newProjCategory}
+        projDueDate={newProjDueDate}
         availableCategories={categories}
         onChangeName={setNewProjName}
         onChangeDesc={setNewProjDesc}
         onChangeCategory={setNewProjCategory}
+        onChangeDueDate={setNewProjDueDate}
         onClose={() => setIsAddProjectOpen(false)}
         onSubmit={handleCreateProject}
       />
@@ -559,6 +556,27 @@ export default function App() {
           setImportPendingJson(null);
         }}
         onConfirm={confirmImport}
+      />
+
+      <SpotlightSearchModal
+        isOpen={isSpotlightOpen}
+        onClose={() => setIsSpotlightOpen(false)}
+        tasks={tasks}
+        projects={projects}
+        onToggleTask={handleToggleTask}
+        onSelectProject={(id) => {
+          setSelectedProjectId(id);
+          setCurrentView('project-details');
+        }}
+        onSelectTask={(id) => setSelectedDetailTaskId(id)}
+        onNavigate={(view) => {
+          setSelectedProjectId(null);
+          setCurrentView(view);
+        }}
+        onQuickAddTask={() => setIsQuickAddTaskOpen(true)}
+        onLaunchFocusMode={() => {
+          document.getElementById('header-focus-mode')?.click();
+        }}
       />
 
     </div>

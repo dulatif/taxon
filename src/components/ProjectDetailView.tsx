@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   CheckCircle,
   Clock,
@@ -17,31 +17,54 @@ import {
   ExternalLink,
   AlertTriangle,
   X,
-  ChevronRight
+  ChevronRight,
+  Archive,
+  RotateCcw,
+  CalendarIcon,
+  ChevronLeft
 } from 'lucide-react';
-import { Project, Task, DocumentFile, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
+import { DayPicker } from 'react-day-picker';
+import { format, addMonths } from 'date-fns';
+import { Project, Task, DocumentFile, Sprint, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { motion, AnimatePresence } from 'motion/react';
+import VaultFileTree from './VaultFileTree';
+import DocumentPanel from './DocumentPanel';
+import SprintPanel from './SprintPanel';
+import SprintCompleteModal from '../modals/SprintCompleteModal';
+import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
+import { VaultEntry } from '../types';
 
 interface ProjectDetailViewProps {
   project: Project;
   tasks: Task[];
   files: DocumentFile[];
   availableCategories?: string[];
+  sprints?: Sprint[];
+  onCreateSprint?: (projectId: string, name: string, startDate: string, endDate: string, goal?: string) => void;
+  onEditSprint?: (sprintId: string, updates: Partial<Sprint>) => void;
+  onCompleteSprint?: (sprintId: string) => void;
+  onDeleteSprint?: (sprintId: string) => void;
+  onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
+  onSprintRollover?: (sprintId: string, targetSprintId: string | null) => void;
   onToggleTask: (id: string) => void;
-  onAddTask: (title: string, projectId: string, dueDate?: string) => void;
+  onAddTask: (title: string, projectId: string, dueDate?: string, recurrence?: any, sprintId?: string | null) => Task | void;
   onDeleteTask: (id: string) => void;
   onCompleteProject: (projectId: string) => void;
-  onEditProject: (projectId: string, name: string, description: string, category?: string) => void;
+  onEditProject: (projectId: string, name: string, description: string, category?: string, dueDate?: string) => void;
   onDeleteProject: (projectId: string) => void;
   onAddFile: (projectId: string, name: string, size: string, type: DocumentFile['type']) => void;
   onDeleteFile: (id: string) => void;
   onReorderTasks?: (tasks: Task[]) => void;
   onBackToProjects: () => void;
   onSelectTask?: (task: Task) => void;
+  onSetVaultPath?: (projectId: string, vaultPath: string) => void;
+  onArchiveTask?: (id: string) => void;
+  onUnarchiveTask?: (id: string) => void;
+  onArchiveAllCompleted?: (projectId?: string) => void;
 }
 
 export default function ProjectDetailView({
@@ -60,10 +83,23 @@ export default function ProjectDetailView({
   onReorderTasks,
   onBackToProjects,
   onSelectTask,
+  onSetVaultPath,
+  onArchiveTask,
+  onUnarchiveTask,
+  onArchiveAllCompleted,
+  sprints,
+  onCreateSprint,
+  onEditSprint,
+  onCompleteSprint,
+  onDeleteSprint,
+  onAssignTaskToSprint,
+  onSprintRollover
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
-  const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
+  const [taskTab, setTaskTab] = useState<'todo' | 'completed' | 'archived'>('todo');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>('all');
+  const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
 
   // File addition triggers
   const [fileName, setFileName] = useState('');
@@ -75,17 +111,110 @@ export default function ProjectDetailView({
   const [editName, setEditName] = useState(project.name);
   const [editDesc, setEditDesc] = useState(project.description);
   const [editCategory, setEditCategory] = useState(project.category);
+  const [editDueDate, setEditDueDate] = useState(project.dueDate || '');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(new Date());
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
+
+  const formatDateStr = (d: Date) => d.toISOString().split('T')[0];
+  const formatDisplayDate = (dStr: string) => {
+    try {
+      return format(new Date(dStr + 'T00:00:00'), 'MMM d, yyyy');
+    } catch {
+      return dStr;
+    }
+  };
 
   // Deleting Project confirmation modal
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  // Deleting Vault Document confirmation modal
+  const [docToDelete, setDocToDelete] = useState<VaultEntry | null>(null);
+  // Deleting Task confirmation modal
+  const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
+
+  // Vault state
+  const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
+  const [selectedDocument, setSelectedDocument] = useState<VaultEntry | null>(null);
+  const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
+
+  const refreshVault = async () => {
+    if (project.vaultPath) {
+      try {
+        const entries = await scanVault(project.vaultPath);
+        setVaultEntries(entries);
+      } catch (err) {
+        console.error('Failed to scan vault:', err);
+      }
+    } else {
+      setVaultEntries([]);
+    }
+  };
+
+  useEffect(() => {
+    refreshVault();
+  }, [project.vaultPath]);
+
+  const handleSetVaultDirectory = async () => {
+    try {
+      const selected = await openDialog({
+        directory: true,
+        multiple: false
+      });
+      if (selected && typeof selected === 'string' && onSetVaultPath) {
+        onSetVaultPath(project.id, selected);
+      }
+    } catch (e) {
+      console.error('Failed to select vault directory:', e);
+    }
+  };
+
+  const handleCreateVaultDoc = async (filename: string) => {
+    if (!project.vaultPath) return;
+    const newPath = await createDocument(project.vaultPath, filename);
+    await refreshVault();
+    const cleanName = filename.trim().toLowerCase().endsWith('.md') || filename.trim().toLowerCase().endsWith('.txt')
+      ? filename.trim()
+      : `${filename.trim()}.md`;
+    setSelectedDocument({
+      name: cleanName,
+      path: newPath,
+      isDirectory: false
+    });
+    setIsDocumentPanelOpen(true);
+  };
+
+  const handleDeleteVaultDoc = (entry: VaultEntry) => {
+    setDocToDelete(entry);
+  };
+
+  const confirmDeleteVaultDoc = async () => {
+    if (!docToDelete) return;
+    try {
+      await deleteDocument(docToDelete.path);
+      if (selectedDocument?.path === docToDelete.path) {
+        setIsDocumentPanelOpen(false);
+        setSelectedDocument(null);
+      }
+      setDocToDelete(null);
+      await refreshVault();
+    } catch (e) {
+      console.error('Failed to delete vault document:', e);
+      setDocToDelete(null);
+    }
+  };
 
   // Filters tasks for this project
-  const projectTasks = tasks.filter(t => t.projectId === project.id);
+  const projectTasksAll = tasks.filter(t => t.projectId === project.id);
+  const projectTasks = projectTasksAll.filter(t => {
+    if (selectedSprintId === 'all') return true;
+    if (selectedSprintId === 'backlog') return !t.sprintId;
+    return t.sprintId === selectedSprintId;
+  });
+  const unarchivedProjectTasks = projectTasks.filter(t => !t.archived);
   const projectFiles = files.filter(f => f.projectId === project.id);
 
-  const completedCount = projectTasks.filter(t => t.completed).length;
-  const totalTasksCount = projectTasks.length;
+  const completedCount = unarchivedProjectTasks.filter(t => t.completed).length;
+  const totalTasksCount = unarchivedProjectTasks.length;
   const calculatedProgress = totalTasksCount > 0
     ? Math.round((completedCount / totalTasksCount) * 100)
     : project.progress;
@@ -93,8 +222,13 @@ export default function ProjectDetailView({
   const handleAddTaskSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    onAddTask(newTaskTitle, project.id, '');
+    const targetSprintId = (selectedSprintId !== 'all' && selectedSprintId !== 'backlog') ? selectedSprintId : null;
+    const createdTask = onAddTask(newTaskTitle, project.id, '', undefined, targetSprintId);
+    if (createdTask && targetSprintId && (!createdTask.sprintId || createdTask.sprintId !== targetSprintId) && onAssignTaskToSprint) {
+      onAssignTaskToSprint(createdTask.id, targetSprintId);
+    }
     setNewTaskTitle('');
+    setTaskTab('todo');
   };
 
   const handleNativeAddFile = async () => {
@@ -127,13 +261,14 @@ export default function ProjectDetailView({
   const handleSaveProjectEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) return;
-    onEditProject(project.id, editName, editDesc, editCategory);
+    onEditProject(project.id, editName, editDesc, editCategory, editDueDate);
     setIsEditingProj(false);
   };
 
   // Sort logic for tasks
-  const activeTasks = projectTasks.filter(t => !t.completed);
-  const completedTasks = projectTasks.filter(t => t.completed);
+  const activeTasks = projectTasks.filter(t => !t.completed && !t.archived);
+  const completedTasks = projectTasks.filter(t => t.completed && !t.archived);
+  const archivedTasks = projectTasks.filter(t => t.archived);
 
   const sortTasksHelper = (list: Task[]) => {
     return [...list].sort((a, b) => {
@@ -152,6 +287,7 @@ export default function ProjectDetailView({
 
   const sortedActiveTasks = sortTasksHelper(activeTasks);
   const sortedCompletedTasks = sortTasksHelper(completedTasks);
+  const sortedArchivedTasks = sortTasksHelper(archivedTasks);
 
   const handleDragEnd = (result: any) => {
     const { source, destination, draggableId } = result;
@@ -235,59 +371,159 @@ export default function ProjectDetailView({
               onChange={(e) => setEditDesc(e.target.value)}
               className="bg-black text-[#C4C7C8] border border-[#27272A] text-sm rounded p-2 w-full h-20 focus:outline-none focus:border-white"
             />
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono">
-                  Category Tag
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono mb-1">
+                  Due Date
                 </label>
-                {isCustomCategoryMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomCategoryMode(false);
-                      setEditCategory('Engineering');
-                    }}
-                    className="text-[10px] text-[#8E9192] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3 h-3" /> Select from list
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                  className="bg-black border border-[#27272A] text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white flex items-center justify-between cursor-pointer"
+                >
+                  {editDueDate ? (
+                    <span className="font-semibold">{formatDisplayDate(editDueDate)}</span>
+                  ) : (
+                    <span className="text-[#8E9192]">Set due date...</span>
+                  )}
+                  <CalendarIcon className="w-4 h-4 text-[#8E9192]" />
+                </button>
+
+                {isDatePickerOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-[9998]" 
+                      onClick={() => setIsDatePickerOpen(false)} 
+                    />
+                    <div className="absolute left-0 top-[calc(100%+8px)] w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-[9999] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-xs font-bold text-white tracking-wide">
+                          {format(pickerMonth, 'MMMM yyyy')}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                            className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                            className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <DayPicker
+                        mode="single"
+                        required
+                        selected={editDueDate ? new Date(editDueDate + 'T00:00:00') : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setEditDueDate(formatDateStr(date));
+                          }
+                          setIsDatePickerOpen(false);
+                        }}
+                        month={pickerMonth}
+                        onMonthChange={setPickerMonth}
+                        hideNavigation={true}
+                        classNames={{
+                          root: 'taxon-calendar',
+                          months: 'taxon-months',
+                          month: 'taxon-month',
+                          month_caption: 'taxon-caption',
+                          nav: 'taxon-nav',
+                          button_previous: 'taxon-nav-button',
+                          button_next: 'taxon-nav-button',
+                          month_grid: 'taxon-table',
+                          weekdays: 'taxon-head-row',
+                          weekday: 'taxon-head-cell',
+                          week: 'taxon-row',
+                          day: 'taxon-cell',
+                          day_button: 'taxon-day',
+                          selected: 'taxon-day-selected',
+                          today: 'taxon-day-today',
+                          outside: 'taxon-day-outside',
+                        }}
+                      />
+
+                      {editDueDate && (
+                        <div className="pt-2 mt-2 border-t border-[#27272A] flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditDueDate('');
+                              setIsDatePickerOpen(false);
+                            }}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Clear Date</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
-              {(() => {
-                const pooled = Array.from(new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)).filter(Boolean);
-                if (isCustomCategoryMode) {
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono">
+                    Category Tag
+                  </label>
+                  {isCustomCategoryMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomCategoryMode(false);
+                        setEditCategory('Engineering');
+                      }}
+                      className="text-[10px] text-[#8E9192] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3 h-3" /> Select from list
+                    </button>
+                  )}
+                </div>
+                {(() => {
+                  const pooled = Array.from(new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)).filter(Boolean);
+                  if (isCustomCategoryMode) {
+                    return (
+                      <input
+                        type="text"
+                        placeholder="Type custom category name (e.g. AI Research)..."
+                        className="bg-black border border-white/40 text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white"
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        autoFocus
+                      />
+                    );
+                  }
                   return (
-                    <input
-                      type="text"
-                      placeholder="Type custom category name (e.g. AI Research)..."
-                      className="bg-black border border-white/40 text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white"
-                      value={editCategory}
-                      onChange={(e) => setEditCategory(e.target.value)}
-                      autoFocus
-                    />
+                    <select
+                      value={pooled.includes(editCategory as any) ? editCategory : '__custom__'}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setIsCustomCategoryMode(true);
+                          setEditCategory('');
+                        } else {
+                          setEditCategory(e.target.value);
+                        }
+                      }}
+                      className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded p-2 w-full focus:outline-none focus:border-white cursor-pointer"
+                    >
+                      {pooled.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option disabled value="">───</option>
+                      <option value="__custom__">+ Add Custom Category...</option>
+                    </select>
                   );
-                }
-                return (
-                  <select
-                    value={pooled.includes(editCategory as any) ? editCategory : '__custom__'}
-                    onChange={(e) => {
-                      if (e.target.value === '__custom__') {
-                        setIsCustomCategoryMode(true);
-                        setEditCategory('');
-                      } else {
-                        setEditCategory(e.target.value);
-                      }
-                    }}
-                    className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded p-2 w-full focus:outline-none focus:border-white cursor-pointer"
-                  >
-                    {pooled.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option disabled value="">───</option>
-                    <option value="__custom__">+ Add Custom Category...</option>
-                  </select>
-                );
-              })()}
+                })()}
+              </div>
             </div>
             <div className="flex gap-2 justify-end">
               <button
@@ -329,6 +565,7 @@ export default function ProjectDetailView({
                   setEditName(project.name);
                   setEditDesc(project.description);
                   setEditCategory(project.category);
+                  setEditDueDate(project.dueDate || '');
                   setIsEditingProj(true);
                 }}
                 className="bg-black text-white border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#201F1F] transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -368,9 +605,9 @@ export default function ProjectDetailView({
                 ></div>
               </div>
             </div>
-            {project.dueDays > 0 && (
+            {project.dueDate && (
               <div className="text-[10px] text-[#8E9192] uppercase tracking-widest font-mono shrink-0 font-bold bg-[#141313] px-2.5 py-1 rounded inline-block border border-[#27272A]/50">
-                Due in {project.dueDays} days
+                Due on {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
               </div>
             )}
           </div>
@@ -382,220 +619,431 @@ export default function ProjectDetailView({
 
         {/* Task List Section */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
+          {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (
+            <SprintPanel
+              projectId={project.id}
+              sprints={sprints}
+              tasks={tasks}
+              onCreateSprint={onCreateSprint}
+              onEditSprint={onEditSprint}
+              onCompleteSprintTrigger={(s) => setSprintToComplete(s)}
+              onDeleteSprint={onDeleteSprint}
+              selectedSprintId={selectedSprintId}
+              onSelectSprint={setSelectedSprintId}
+            />
+          )}
+
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-                Tasks
-              </h2>
-              <button
-                onClick={() => {
-                  const seq: ('custom' | 'priority' | 'dueDate')[] = ['custom', 'priority', 'dueDate'];
-                  const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
-                  setSelectedSort(seq[nextIdx]);
-                }}
-                className="flex items-center gap-1.5 text-[#8E9192] hover:text-white transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer"
-              >
-                <SortAsc className="w-3.5 h-3.5" />
-                <span>Sort: {selectedSort}</span>
-              </button>
+            {sprints && (
+              <div className="flex items-center justify-between pb-4 mb-4 border-b border-[#27272A]/40 text-xs font-mono">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#8E9192]">Filter by Sprint:</span>
+                  <select
+                    value={selectedSprintId}
+                    onChange={(e) => setSelectedSprintId(e.target.value as any)}
+                    className="bg-[#141313] border border-[#27272A] rounded px-2.5 py-1 text-white text-xs focus:outline-none focus:border-[#3B82F6] cursor-pointer"
+                  >
+                    <option value="all">All Tasks</option>
+                    <option value="backlog">Backlog (Unassigned)</option>
+                    {sprints.filter(s => s.projectId === project.id).map(s => (
+                      <option key={s.id} value={s.id}>
+                        {s.name} ({s.status})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                {selectedSprintId !== 'all' && (
+                  <button
+                    onClick={() => setSelectedSprintId('all')}
+                    className="text-[#3B82F6] hover:underline text-[11px] cursor-pointer"
+                  >
+                    Clear filter
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Header and Segmented Control Tabs */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-[#27272A]/60">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+                <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+                  Tasks
+                </h2>
+                <div className="flex items-center bg-[#141313] p-1 rounded-lg border border-[#27272A]/80">
+                  <button
+                    type="button"
+                    onClick={() => setTaskTab('todo')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                      taskTab === 'todo'
+                        ? 'bg-[#28282A] text-white shadow'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                    }`}
+                  >
+                    <span>To Do</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      taskTab === 'todo' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                    }`}>
+                      {sortedActiveTasks.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTaskTab('completed')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                      taskTab === 'completed'
+                        ? 'bg-[#28282A] text-white shadow'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                    }`}
+                  >
+                    <span>Completed</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      taskTab === 'completed' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                    }`}>
+                      {sortedCompletedTasks.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setTaskTab('archived')}
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                      taskTab === 'archived'
+                        ? 'bg-[#28282A] text-white shadow'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                    }`}
+                  >
+                    <Archive className="w-3 h-3" />
+                    <span>Archived</span>
+                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                      taskTab === 'archived' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                    }`}>
+                      {sortedArchivedTasks.length}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {taskTab !== 'archived' && (
+                <button
+                  onClick={() => {
+                    const seq: ('custom' | 'priority' | 'dueDate')[] = ['custom', 'priority', 'dueDate'];
+                    const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
+                    setSelectedSort(seq[nextIdx]);
+                  }}
+                  className="flex items-center gap-1.5 text-[#8E9192] hover:text-white transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-[#141313] hover:bg-[#201F1F] px-2.5 py-1.5 rounded-lg border border-[#27272A]/80 self-start sm:self-auto"
+                >
+                  <SortAsc className="w-3.5 h-3.5" />
+                  <span>Sort: {selectedSort}</span>
+                </button>
+              )}
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-              {/* Active Tasks Container */}
-              <div className="mb-6">
-                <h3 className="text-[11px] font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-3">
-                  Active Tasks ({sortedActiveTasks.length})
-                </h3>
-                <Droppable droppableId="active-tasks" isDropDisabled={selectedSort !== 'custom'}>
-                  {(provided, snapshot) => (
-                    <ul
-                      ref={provided.innerRef}
-                      {...provided.droppableProps}
-                      className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+              {/* To Do Tab */}
+              {taskTab === 'todo' && (
+                <div>
+                  <Droppable droppableId="active-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                    {(provided, snapshot) => (
+                      <ul
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
+                          snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
                         }`}
-                    >
-                      {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
-                        <div className="py-8 text-center text-xs text-[#8E9192]">
-                          No active tasks. Use the field below to add one!
-                        </div>
-                      ) : (
-                        sortedActiveTasks.map((task, index) => (
-                          // @ts-ignore
-                          <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
-                            {(provided, snapshot) => (
-                              <li
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                id={`task-item-${task.id}`}
-                                role="button"
-                                tabIndex={0}
-                                onClick={() => onSelectTask?.(task)}
-                                className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
-                                  ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                                  : 'hover:bg-[#141313]/10 '
-                                  }`}
-                              >
-                                <div className="flex items-start gap-4 flex-1 mr-4">
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                                    className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
-                                  >
-                                    <Square className="w-4 h-4" />
-                                  </button>
-
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-semibold leading-relaxed text-white">
-                                      {task.title}
-                                    </p>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center gap-3 shrink-0">
-                                  {task.duration && (
-                                    <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
-                                      {task.duration}
-                                    </span>
-                                  )}
-                                  <button
-                                    onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
-                                    className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                    title="Delete task item"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                  </button>
-                                </div>
-                              </li>
-                            )}
-                          </Draggable>
-                        ))
-                      )}
-                      {provided.placeholder}
-                    </ul>
-                  )}
-                </Droppable>
-              </div>
-
-              {/* Completed Tasks Accordion */}
-              {sortedCompletedTasks.length > 0 && (
-                <div className="border-t border-gray-800/30 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsCompletedExpanded(!isCompletedExpanded)}
-                    className="w-full flex items-center justify-between py-2 text-[#8E9192] hover:text-white transition-colors cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2">
-                      <ChevronRight
-                        className={`w-4 h-4 transition-transform duration-200 ${isCompletedExpanded ? 'rotate-90 text-white' : 'text-[#8E9192] group-hover:text-white'
-                          }`}
-                      />
-                      <span className="text-[11px] font-bold uppercase tracking-wider font-mono">
-                        Completed Tasks
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-[#141313] text-[#8E9192] border border-[#27272A] font-mono">
-                        {sortedCompletedTasks.length}
-                      </span>
-                    </div>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {isCompletedExpanded && (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        exit={{ opacity: 0, height: 0 }}
-                        transition={{ duration: 0.2, ease: 'easeInOut' }}
-                        className="overflow-hidden mt-2"
                       >
-                        <Droppable droppableId="completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
-                          {(provided, snapshot) => (
-                            <ul
-                              ref={provided.innerRef}
-                              {...provided.droppableProps}
-                              className={`space-y-1.5 min-h-[30px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
-                                }`}
-                            >
-                              {sortedCompletedTasks.map((task, index) => (
-                                // @ts-ignore
-                                <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
-                                  {(provided, snapshot) => (
-                                    <li
-                                      ref={provided.innerRef}
-                                      {...provided.draggableProps}
-                                      {...provided.dragHandleProps}
-                                      id={`task-item-${task.id}`}
-                                      role="button"
-                                      tabIndex={0}
-                                      onClick={() => onSelectTask?.(task)}
-                                      className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${snapshot.isDragging
-                                        ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
-                                        : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
-                                        }`}
+                        {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
+                          <div className="py-8 text-center text-xs text-[#8E9192]">
+                            No active tasks. Use the field below to add one!
+                          </div>
+                        ) : (
+                          sortedActiveTasks.map((task, index) => (
+                            // @ts-ignore
+                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                              {(provided, snapshot) => (
+                                <li
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  id={`task-item-${task.id}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => onSelectTask?.(task)}
+                                  className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${
+                                    snapshot.isDragging
+                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                      : 'hover:bg-[#141313]/10 '
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-4 flex-1 mr-4">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                                     >
-                                      <div className="flex items-start gap-4 flex-1 mr-4">
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                                          className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
-                                        >
-                                          <CheckSquare className="w-4 h-4 text-white" />
-                                        </button>
+                                      <Square className="w-4 h-4" />
+                                    </button>
 
-                                        <div className="flex-1 min-w-0">
-                                          <p className="text-xs font-semibold leading-relaxed text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A]">
-                                            {task.title}
-                                          </p>
-                                        </div>
-                                      </div>
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-semibold leading-relaxed text-white">
+                                        {task.title}
+                                      </p>
+                                    </div>
+                                  </div>
 
-                                      <div className="flex items-center gap-3 shrink-0">
-                                        {task.duration && (
-                                          <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
-                                            {task.duration}
-                                          </span>
-                                        )}
-                                        <button
-                                          onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
-                                          className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                                          title="Delete task item"
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    {sprints && (
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <select
+                                          value={task.sprintId || ''}
+                                          onChange={(e) => onAssignTaskToSprint?.(task.id, e.target.value || null)}
+                                          className="text-[9px] font-mono bg-[#141313] hover:bg-[#201F1F] text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 cursor-pointer focus:outline-none transition-colors"
+                                          title="Assign or change sprint"
                                         >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
+                                          <option value="">Backlog</option>
+                                          {sprints.filter(s => s.projectId === project.id).map(s => (
+                                            <option key={s.id} value={s.id}>
+                                              {s.name}
+                                            </option>
+                                          ))}
+                                        </select>
                                       </div>
-                                    </li>
-                                  )}
-                                </Draggable>
-                              ))}
-                              {provided.placeholder}
-                            </ul>
-                          )}
-                        </Droppable>
-                      </motion.div>
+                                    )}
+                                    {task.duration && (
+                                      <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                                        {task.duration}
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onArchiveTask?.(task.id); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Archive task"
+                                    >
+                                      <Archive className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Delete task item"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </li>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </ul>
                     )}
-                  </AnimatePresence>
+                  </Droppable>
+
+                  {/* inline input field for adding project specific tasks */}
+                  <form onSubmit={handleAddTaskSubmit} className="mt-4">
+                    <div className="flex items-center gap-3 px-3 py-2 bg-[#141313] border border-[#27272A]/80 rounded-lg focus-within:border-white/30 transition-all">
+                      <Plus className="w-4 h-4 text-[#8E9192]" />
+                      <input
+                        type="text"
+                        className="bg-transparent border-none focus:outline-none text-xs text-white placeholder:text-[#8E9192]/60 w-full"
+                        placeholder="Add a new task..."
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                      />
+                      <button
+                        type="submit"
+                        disabled={!newTaskTitle.trim()}
+                        className="bg-zinc-800 text-white hover:bg-zinc-700 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
+                      >
+                        Create
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Completed Tab */}
+              {taskTab === 'completed' && (
+                <div>
+                  <Droppable droppableId="completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                    {(provided, snapshot) => (
+                      <ul
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
+                          snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                        }`}
+                      >
+                        {sortedCompletedTasks.length === 0 && !snapshot.isDraggingOver ? (
+                          <div className="py-8 text-center text-xs text-[#8E9192]">
+                            No completed tasks yet. Finish a task in the To Do tab!
+                          </div>
+                        ) : (
+                          sortedCompletedTasks.map((task, index) => (
+                            // @ts-ignore
+                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                              {(provided, snapshot) => (
+                                <li
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  id={`task-item-${task.id}`}
+                                  role="button"
+                                  tabIndex={0}
+                                  onClick={() => onSelectTask?.(task)}
+                                  className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${
+                                    snapshot.isDragging
+                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
+                                      : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
+                                  }`}
+                                >
+                                  <div className="flex items-start gap-4 flex-1 mr-4">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                                    >
+                                      <CheckSquare className="w-4 h-4 text-white" />
+                                    </button>
+
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-xs font-semibold leading-relaxed text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A]">
+                                        {task.title}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-3 shrink-0">
+                                    {sprints && (
+                                      <div onClick={(e) => e.stopPropagation()}>
+                                        <select
+                                          value={task.sprintId || ''}
+                                          onChange={(e) => onAssignTaskToSprint?.(task.id, e.target.value || null)}
+                                          className="text-[9px] font-mono bg-[#141313] hover:bg-[#201F1F] text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 cursor-pointer focus:outline-none transition-colors"
+                                          title="Assign or change sprint"
+                                        >
+                                          <option value="">Backlog</option>
+                                          {sprints.filter(s => s.projectId === project.id).map(s => (
+                                            <option key={s.id} value={s.id}>
+                                              {s.name}
+                                            </option>
+                                          ))}
+                                        </select>
+                                      </div>
+                                    )}
+                                    {task.duration && (
+                                      <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                                        {task.duration}
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); onArchiveTask?.(task.id); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Archive task"
+                                    >
+                                      <Archive className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
+                                      className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                      title="Delete task item"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                </li>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </ul>
+                    )}
+                  </Droppable>
+
+                  {sortedCompletedTasks.length > 0 && (
+                    <div className="mt-4 pt-3 border-t border-[#27272A]/60 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => onArchiveAllCompleted?.(project.id)}
+                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#141313] hover:bg-[#201F1F] text-[#8E9192] hover:text-white border border-[#27272A]/80 transition-colors cursor-pointer shadow-sm"
+                      >
+                        <Archive className="w-3.5 h-3.5" />
+                        <span>Archive All Completed ({sortedCompletedTasks.length})</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </DragDropContext>
 
-            {/* inline input field for adding project specific tasks */}
-            <form onSubmit={handleAddTaskSubmit} className="mt-4">
-              <div className="flex items-center gap-3 px-3 py-2 bg-[#141313] border border-[#27272A]/80 rounded-lg focus-within:border-white/30 transition-all">
-                <Plus className="w-4 h-4 text-[#8E9192]" />
-                <input
-                  type="text"
-                  className="bg-transparent border-none focus:outline-none text-xs text-white placeholder:text-[#8E9192]/60 w-full"
-                  placeholder="Add a new task..."
-                  value={newTaskTitle}
-                  onChange={(e) => setNewTaskTitle(e.target.value)}
-                />
-                <button
-                  type="submit"
-                  disabled={!newTaskTitle.trim()}
-                  className="bg-zinc-800 text-white hover:bg-zinc-700 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
-                >
-                  Create
-                </button>
+            {/* Archived Tab */}
+            {taskTab === 'archived' && (
+              <div className="space-y-4">
+                <div className="bg-[#141313]/60 border border-[#27272A]/80 rounded-lg p-3 flex items-center justify-between text-xs text-[#8E9192]">
+                  <div className="flex items-center gap-2">
+                    <Archive className="w-4 h-4 text-[#8E9192] shrink-0" />
+                    <span>Archived tasks are read-only. Restore to resume or edit.</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-1.5 min-h-[40px]">
+                  {sortedArchivedTasks.length === 0 ? (
+                    <div className="py-8 text-center text-xs text-[#8E9192]">
+                      No archived tasks for this project.
+                    </div>
+                  ) : (
+                    sortedArchivedTasks.map((task) => {
+                      const archivedDateStr = task.archivedAt
+                        ? new Date(task.archivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                        : undefined;
+                      return (
+                        <li
+                          key={task.id}
+                          className="flex items-center justify-between py-3 px-3 rounded-lg bg-[#141313]/30 border border-[#27272A]/40 opacity-70 hover:opacity-100 transition-opacity select-none group"
+                        >
+                          <div className="flex items-center gap-4 flex-1 mr-4">
+                            <Archive className="w-4 h-4 text-[#8E9192] shrink-0 mt-0.5" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-xs font-semibold leading-relaxed text-[#8E9192] line-through decoration-[#27272A]">
+                                {task.title}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 shrink-0">
+                            {archivedDateStr && (
+                              <span className="text-[9px] font-mono text-[#8E9192] bg-black/60 px-1.5 py-0.5 rounded border border-[#27272A]/50">
+                                Archived {archivedDateStr}
+                              </span>
+                            )}
+                            {task.duration && (
+                              <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-[#27272A]/50 text-[#8E9192]">
+                                {task.duration}
+                              </span>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => onUnarchiveTask?.(task.id)}
+                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                              title="Restore task"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setTaskToDelete(task)}
+                              className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+                              title="Delete permanently"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </li>
+                      );
+                    })
+                  )}
+                </ul>
               </div>
-            </form>
+            )}
           </div>
         </div>
 
@@ -605,28 +1053,70 @@ export default function ProjectDetailView({
             <div className="flex justify-between items-center mb-4 pb-2 border-b border-[#27272A]/50">
               <h3 className="text-sm font-semibold text-white uppercase tracking-wider font-mono flex items-center gap-2">
                 <FolderOpen className="w-4 h-4 text-white" />
-                Documents
+                Project Vault & Documents
               </h3>
-              <button
-                onClick={handleNativeAddFile}
-                className="text-[10px] text-white hover:underline uppercase tracking-wider font-mono"
-              >
-                + Add file
-              </button>
             </div>
 
-            <div className="space-y-4">
-              <div className="flex items-center gap-2 text-[#8E9192]/80 bg-black/40 p-2 rounded-md border border-[#27272A]/40 mb-1">
-                <FolderOpen className="w-4 h-4" />
-                <span className="text-xs font-semibold font-mono tracking-tight text-white">Source Files</span>
+            {project.vaultPath ? (
+              <div className="space-y-6">
+                <VaultFileTree
+                  entries={vaultEntries}
+                  selectedPath={selectedDocument?.path}
+                  vaultPath={project.vaultPath}
+                  onSelectFile={(entry) => {
+                    setSelectedDocument(entry);
+                    setIsDocumentPanelOpen(true);
+                  }}
+                  onDeleteFile={handleDeleteVaultDoc}
+                  onCreateDocument={handleCreateVaultDoc}
+                  onRefresh={refreshVault}
+                  onChangeVaultPath={handleSetVaultDirectory}
+                />
+              </div>
+            ) : (
+              <div className="bg-[#141313] border border-dashed border-[#27272A] hover:border-white/40 rounded-xl p-5 text-center space-y-3 transition-colors mb-6">
+                <div className="w-10 h-10 mx-auto rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+                  <FolderOpen className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-xs font-bold text-white font-mono uppercase tracking-wider">
+                    No Project Vault Set
+                  </h4>
+                  <p className="text-[11px] text-[#8E9192] mt-1 leading-relaxed max-w-xs mx-auto">
+                    Connect a local directory to scan for .md / .txt documents with live preview & editing.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleSetVaultDirectory}
+                  className="bg-white text-black hover:bg-white/90 font-bold text-xs px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow"
+                >
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Set Vault Directory</span>
+                </button>
+              </div>
+            )}
+
+            <div className="space-y-4 pt-4 border-t border-[#27272A]/50 mt-4">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2 text-[#8E9192]/80">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold font-mono tracking-tight text-white">Manual Attachments</span>
+                </div>
+                <button
+                  onClick={handleNativeAddFile}
+                  className="text-[10px] text-white hover:underline uppercase tracking-wider font-mono cursor-pointer"
+                >
+                  + Attach file
+                </button>
               </div>
 
               {projectFiles.length === 0 ? (
-                <div className="py-8 text-center text-[11px] text-[#8E9192] font-mono italic">
-                  No documents listed
+                <div className="py-6 text-center text-[11px] text-[#8E9192] font-mono italic">
+                  No manual attachments listed
                 </div>
               ) : (
-                <div className="ml-4 pl-4 border-l border-[#27272A]/50 space-y-2">
+                <div className="ml-2 pl-3 border-l border-[#27272A]/50 space-y-2">
                   {projectFiles.map((file) => (
                     <div
                       key={file.id}
@@ -720,6 +1210,134 @@ export default function ProjectDetailView({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Custom Modal Confirmation for Deleting Task */}
+      {taskToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative shadow-2xl">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setTaskToDelete(null)}
+              className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-md font-bold uppercase tracking-wider font-mono text-white">
+                Delete Task
+              </h3>
+            </div>
+
+            <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
+              Are you sure you want to permanently delete <strong className="text-white font-semibold font-mono">"{taskToDelete.title}"</strong>? This task will be removed immediately. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setTaskToDelete(null)}
+                className="bg-black text-[#C4C7C8] border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#141313] hover:text-white transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const id = taskToDelete.id;
+                  setTaskToDelete(null);
+                  onDeleteTask(id);
+                }}
+                className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-red-600/20 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Task
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Modal Confirmation for Deleting Vault Document */}
+      {docToDelete && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-[99999] flex items-center justify-center p-4">
+          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl w-full max-w-md p-6 relative shadow-2xl">
+            <button
+              type="button"
+              aria-label="Close"
+              onClick={() => setDocToDelete(null)}
+              className="absolute right-4 top-4 hover:bg-[#141313] p-1.5 rounded-lg text-[#8E9192] hover:text-white transition-colors cursor-pointer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-3 text-red-400 mb-3">
+              <div className="p-2.5 rounded-lg bg-red-500/10 border border-red-500/20">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-md font-bold uppercase tracking-wider font-mono text-white">
+                Delete Document
+              </h3>
+            </div>
+
+            <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
+              Are you sure you want to permanently delete <strong className="text-white font-semibold font-mono">"{docToDelete.name}"</strong> from disk? This file will be removed from <span className="font-mono text-[#8E9192] break-all">{docToDelete.path}</span>. This action cannot be undone.
+            </p>
+
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDocToDelete(null)}
+                className="bg-black text-[#C4C7C8] border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#141313] hover:text-white transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteVaultDoc}
+                className="bg-red-600 hover:bg-red-500 text-white font-bold text-xs px-4 py-2 rounded-lg transition-colors flex items-center gap-1.5 shadow-lg shadow-red-600/20 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" /> Yes, Delete Document
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <DocumentPanel
+        isOpen={isDocumentPanelOpen}
+        entry={selectedDocument}
+        onClose={() => setIsDocumentPanelOpen(false)}
+        onReadContent={readDocument}
+        onSaveContent={async (path, content) => {
+          await writeDocument(path, content);
+          await refreshVault();
+        }}
+      />
+
+      {/* Sprint Complete & Rollover Modal */}
+      {sprints && (
+        <SprintCompleteModal
+          isOpen={!!sprintToComplete}
+          sprint={sprintToComplete}
+          tasks={tasks}
+          plannedSprints={sprints.filter(s => s.projectId === project.id && s.status === 'Planned' && s.id !== sprintToComplete?.id)}
+          onCancel={() => setSprintToComplete(null)}
+          onConfirm={(rolloverAction, targetSprintId) => {
+            if (sprintToComplete) {
+              if (rolloverAction === 'keep') {
+                onCompleteSprint?.(sprintToComplete.id);
+              } else {
+                onSprintRollover?.(sprintToComplete.id, targetSprintId || null);
+              }
+              setSprintToComplete(null);
+            }
+          }}
+        />
       )}
     </div>
   );

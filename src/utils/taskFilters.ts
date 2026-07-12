@@ -23,7 +23,7 @@ export const PRIORITY_COLORS: Record<Task['priority'], { bg: string; text: strin
 // Date helpers
 // ---------------------------------------------------------------------------
 
-function getTodayStr(): string {
+export function getTodayStr(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
@@ -101,6 +101,9 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
   const monthEnd = getMonthEndStr();
 
   return tasks.filter((task) => {
+    // Exclude archived tasks from standard filtered views
+    if (task.archived) return false;
+
     // Priority filter
     if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) return false;
 

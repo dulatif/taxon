@@ -8,19 +8,21 @@ import {
   Plus,
   Settings
 } from 'lucide-react';
-import { Project, Task, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
+import { Project, Task, Sprint, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
 import KanbanView from './KanbanView';
 
 interface ProjectsViewProps {
   projects: Project[];
   tasks: Task[];
   categories?: string[];
+  sprints?: Sprint[];
+  onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
   onProjectSelect: (id: string) => void;
   onViewChange: (view: string) => void;
   onAddProjectClick: () => void;
   onManageCategoriesClick?: () => void;
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
-  onAddTaskToProject: (taskTitle: string, projectId: string) => void;
+  onAddTaskToProject: (taskTitle: string, projectId: string, sprintId?: string | null) => Task | void;
   onSelectTask?: (task: Task) => void;
 }
 
@@ -35,6 +37,8 @@ export default function ProjectsView({
   onMoveTaskStatus,
   onAddTaskToProject,
   onSelectTask,
+  sprints,
+  onAssignTaskToSprint,
 }: ProjectsViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -230,10 +234,10 @@ export default function ProjectsView({
                       style={{ width: `${progressValue}%` }}
                     ></div>
                   </div>
-                  {!isCompleted && project.dueDays > 0 && (
+                  {!isCompleted && project.dueDate && (
                     <div className="flex items-center gap-1 mt-3 text-[9px] text-[#8E9192] font-mono">
                       <Clock className="w-3 h-3" />
-                      <span>Due in {project.dueDays} days</span>
+                      <span>Due on {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     </div>
                   )}
                 </div>
@@ -246,9 +250,11 @@ export default function ProjectsView({
           <KanbanView 
             projects={filteredProjects}
             tasks={tasks}
+            sprints={sprints}
             onMoveTaskStatus={onMoveTaskStatus}
             onAddTaskToProject={onAddTaskToProject}
             onSelectTask={onSelectTask}
+            onAssignTaskToSprint={onAssignTaskToSprint}
           />
         </div>
       )}
