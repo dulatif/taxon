@@ -56,20 +56,22 @@ const markdownComponents: any = {
   blockquote: ({ node, ...props }: any) => (
     <blockquote className="border-l-4 border-blue-500/60 bg-[#141313] px-4 py-3 rounded-r-lg text-sm text-[#A1A1AA] italic mb-4" {...props} />
   ),
-  code: ({ inline, className, children, ...props }: any) => {
-    if (inline) {
+  pre: ({ node, ...props }: any) => (
+    <pre className="bg-[#141313] border border-[#27272A] rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-cyan-300 shadow-inner" {...props} />
+  ),
+  code: ({ node, className, children, ...props }: any) => {
+    const isBlock = /language-(\w+)/.exec(className || '') || String(children).includes('\n');
+    if (isBlock) {
       return (
-        <code className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono" {...props}>
+        <code className={className} {...props}>
           {children}
         </code>
       );
     }
     return (
-      <div className="bg-[#141313] border border-[#27272A] rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-cyan-300 shadow-inner">
-        <code className={className} {...props}>
-          {children}
-        </code>
-      </div>
+      <code className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono" {...props}>
+        {children}
+      </code>
     );
   },
   table: ({ node, ...props }: any) => (
