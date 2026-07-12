@@ -12,7 +12,9 @@ import {
   Lock,
   Award,
   Minus,
-  Square
+  Square,
+  Sun,
+  Moon
 } from 'lucide-react';
 import Sidebar from './components/Sidebar';
 import DashboardView from './components/DashboardView';
@@ -138,7 +140,7 @@ export default function App() {
     onOpenSpotlight: () => setIsSpotlightOpen(true),
   });
 
-  const { settings } = useSettings();
+  const { settings, updateSetting } = useSettings();
 
   const focusTimer = useFocusTimer({
     onTimerComplete: () => {
@@ -349,12 +351,25 @@ export default function App() {
                 </span>
               </button>
 
+              {/* Theme Toggle Button */}
+              <button
+                onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+                title="Toggle Theme"
+                className="active:scale-95 transition-transform p-2 bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
+              >
+                {settings.theme === 'light' ? (
+                  <Sun className="w-4 h-4 text-white" />
+                ) : (
+                  <Moon className="w-4 h-4 text-white" />
+                )}
+              </button>
+
               {/* Immersive Focus Mode launcher button */}
               <button
                 id="header-focus-mode"
                 onClick={focusTimer.launchFocusMode}
                 title="Launch Immersive Focus Mode"
-                className="active:scale-95 transition-transform p-2 border border-[#27272A] hover:border-white bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
+                className="active:scale-95 transition-transform p-2 bg-[#0A0A0A] hover:bg-[#141313] rounded-lg cursor-pointer"
               >
                 <Timer className="w-4 h-4 text-white" />
               </button>
