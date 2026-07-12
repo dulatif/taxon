@@ -1,56 +1,5 @@
 import { Project, Task, DocumentFile, DailyActivity, SettingsState, Sprint } from './types';
 
-export const INITIAL_PROJECTS: Project[] = [
-  {
-    id: 'web-redesign',
-    name: 'Website Redesign',
-    description: 'Overhaul of the corporate landing pages focusing on conversion rate optimization.',
-    category: 'Design',
-    progress: 74,
-    dueDays: 14,
-  },
-  {
-    id: 'mobile-app',
-    name: 'Mobile App',
-    description: 'Cross-platform companion app for the dashboard ecosystem.',
-    category: 'Engineering',
-    progress: 32,
-    dueDays: 28,
-  },
-  {
-    id: 'marketing',
-    name: 'Summer Brand Campaign',
-    description: 'Execute cross-channel marketing initiatives for Q3. Focus on technical audiences and developer tooling narrative.',
-    category: 'Marketing',
-    progress: 68,
-    dueDays: 14,
-  },
-  {
-    id: 'db-migration',
-    name: 'Database Migration',
-    description: 'Transitioning legacy user data to new distributed cluster architecture.',
-    category: 'Engineering',
-    progress: 92,
-    dueDays: 5,
-  },
-  {
-    id: 'obsidian-core',
-    name: 'Obsidian Core 2.0',
-    description: 'Major version update for the internal tooling framework.',
-    category: 'Product',
-    progress: 58,
-    dueDays: 45,
-  },
-  {
-    id: 'ui-refresh',
-    name: 'UI Kit Refresh',
-    description: 'System-wide token update and component library deprecation.',
-    category: 'Completed',
-    progress: 100,
-    dueDays: 0,
-  }
-];
-
 // Helper to format date as YYYY-MM-DD
 function formatDate(d: Date): string {
   return d.toISOString().split('T')[0];
@@ -62,6 +11,59 @@ function futureDate(daysFromNow: number): string {
   d.setDate(d.getDate() + daysFromNow);
   return formatDate(d);
 }
+
+export const INITIAL_PROJECTS: Project[] = [
+  {
+    id: 'web-redesign',
+    name: 'Website Redesign',
+    description: 'Overhaul of the corporate landing pages focusing on conversion rate optimization.',
+    category: 'Design',
+    progress: 74,
+    dueDate: futureDate(14),
+  },
+  {
+    id: 'mobile-app',
+    name: 'Mobile App',
+    description: 'Cross-platform companion app for the dashboard ecosystem.',
+    category: 'Engineering',
+    progress: 32,
+    dueDate: futureDate(28),
+  },
+  {
+    id: 'marketing',
+    name: 'Summer Brand Campaign',
+    description: 'Execute cross-channel marketing initiatives for Q3. Focus on technical audiences and developer tooling narrative.',
+    category: 'Marketing',
+    progress: 68,
+    dueDate: futureDate(14),
+  },
+  {
+    id: 'db-migration',
+    name: 'Database Migration',
+    description: 'Transitioning legacy user data to new distributed cluster architecture.',
+    category: 'Engineering',
+    progress: 92,
+    dueDate: futureDate(5),
+  },
+  {
+    id: 'obsidian-core',
+    name: 'Obsidian Core 2.0',
+    description: 'Major version update for the internal tooling framework.',
+    category: 'Product',
+    progress: 58,
+    dueDate: futureDate(45),
+  },
+  {
+    id: 'ui-refresh',
+    name: 'UI Kit Refresh',
+    description: 'System-wide token update and component library deprecation.',
+    category: 'Completed',
+    progress: 100,
+    dueDate: futureDate(0),
+  }
+];
+
+
 
 export const INITIAL_SPRINTS: Sprint[] = [
   {

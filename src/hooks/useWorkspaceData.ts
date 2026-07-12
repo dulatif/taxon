@@ -435,7 +435,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }, 50);
   }, [recalculateProjectProgress]);
 
-  const handleCreateProject = useCallback((name: string, description: string, category: Project['category']) => {
+  const handleCreateProject = useCallback((name: string, description: string, category: Project['category'], dueDate?: string) => {
     if (!name.trim()) return;
 
     const newId = `proj_${Date.now()}`;
@@ -445,7 +445,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       description: description.trim() || 'No description provided.',
       category,
       progress: 0,
-      dueDays: Math.floor(Math.random() * 20) + 10
+      dueDate
     };
 
     setProjects(prev => [...prev, newProj]);
@@ -501,10 +501,10 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }));
   }, [logCompletion]);
 
-  const handleEditProject = useCallback((projectId: string, name: string, description: string, category?: string) => {
+  const handleEditProject = useCallback((projectId: string, name: string, description: string, category?: string, dueDate?: string) => {
     setProjects(prev => prev.map(p => {
       if (p.id === projectId) {
-        const up = { ...p, name, description, ...(category ? { category } : {}) };
+        const up = { ...p, name, description, ...(category ? { category } : {}), ...(dueDate !== undefined ? { dueDate } : {}) };
         saveProject(up);
         return up;
       }

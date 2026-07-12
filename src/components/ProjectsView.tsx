@@ -234,10 +234,10 @@ export default function ProjectsView({
                       style={{ width: `${progressValue}%` }}
                     ></div>
                   </div>
-                  {!isCompleted && project.dueDays > 0 && (
+                  {!isCompleted && project.dueDate && (
                     <div className="flex items-center gap-1 mt-3 text-[9px] text-[#8E9192] font-mono">
                       <Clock className="w-3 h-3" />
-                      <span>Due in {project.dueDays} days</span>
+                      <span>Due on {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
                     </div>
                   )}
                 </div>

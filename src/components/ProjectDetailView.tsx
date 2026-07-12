@@ -19,8 +19,12 @@ import {
   X,
   ChevronRight,
   Archive,
-  RotateCcw
+  RotateCcw,
+  CalendarIcon,
+  ChevronLeft
 } from 'lucide-react';
+import { DayPicker } from 'react-day-picker';
+import { format, addMonths } from 'date-fns';
 import { Project, Task, DocumentFile, Sprint, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
@@ -50,7 +54,7 @@ interface ProjectDetailViewProps {
   onAddTask: (title: string, projectId: string, dueDate?: string, recurrence?: any, sprintId?: string | null) => Task | void;
   onDeleteTask: (id: string) => void;
   onCompleteProject: (projectId: string) => void;
-  onEditProject: (projectId: string, name: string, description: string, category?: string) => void;
+  onEditProject: (projectId: string, name: string, description: string, category?: string, dueDate?: string) => void;
   onDeleteProject: (projectId: string) => void;
   onAddFile: (projectId: string, name: string, size: string, type: DocumentFile['type']) => void;
   onDeleteFile: (id: string) => void;
@@ -107,7 +111,19 @@ export default function ProjectDetailView({
   const [editName, setEditName] = useState(project.name);
   const [editDesc, setEditDesc] = useState(project.description);
   const [editCategory, setEditCategory] = useState(project.category);
+  const [editDueDate, setEditDueDate] = useState(project.dueDate || '');
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
+  const [pickerMonth, setPickerMonth] = useState(new Date());
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
+
+  const formatDateStr = (d: Date) => d.toISOString().split('T')[0];
+  const formatDisplayDate = (dStr: string) => {
+    try {
+      return format(new Date(dStr + 'T00:00:00'), 'MMM d, yyyy');
+    } catch {
+      return dStr;
+    }
+  };
 
   // Deleting Project confirmation modal
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -245,7 +261,7 @@ export default function ProjectDetailView({
   const handleSaveProjectEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) return;
-    onEditProject(project.id, editName, editDesc, editCategory);
+    onEditProject(project.id, editName, editDesc, editCategory, editDueDate);
     setIsEditingProj(false);
   };
 
@@ -355,59 +371,159 @@ export default function ProjectDetailView({
               onChange={(e) => setEditDesc(e.target.value)}
               className="bg-black text-[#C4C7C8] border border-[#27272A] text-sm rounded p-2 w-full h-20 focus:outline-none focus:border-white"
             />
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono">
-                  Category Tag
+            <div className="grid grid-cols-2 gap-4">
+              <div className="relative">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono mb-1">
+                  Due Date
                 </label>
-                {isCustomCategoryMode && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsCustomCategoryMode(false);
-                      setEditCategory('Engineering');
-                    }}
-                    className="text-[10px] text-[#8E9192] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
-                  >
-                    <ArrowLeft className="w-3 h-3" /> Select from list
-                  </button>
+                <button
+                  type="button"
+                  onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+                  className="bg-black border border-[#27272A] text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white flex items-center justify-between cursor-pointer"
+                >
+                  {editDueDate ? (
+                    <span className="font-semibold">{formatDisplayDate(editDueDate)}</span>
+                  ) : (
+                    <span className="text-[#8E9192]">Set due date...</span>
+                  )}
+                  <CalendarIcon className="w-4 h-4 text-[#8E9192]" />
+                </button>
+
+                {isDatePickerOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-[9998]" 
+                      onClick={() => setIsDatePickerOpen(false)} 
+                    />
+                    <div className="absolute left-0 top-[calc(100%+8px)] w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-[9999] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="flex items-center justify-between mb-2 px-1">
+                        <span className="text-xs font-bold text-white tracking-wide">
+                          {format(pickerMonth, 'MMMM yyyy')}
+                        </span>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                            className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <ChevronLeft className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                            className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                          >
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <DayPicker
+                        mode="single"
+                        required
+                        selected={editDueDate ? new Date(editDueDate + 'T00:00:00') : undefined}
+                        onSelect={(date) => {
+                          if (date) {
+                            setEditDueDate(formatDateStr(date));
+                          }
+                          setIsDatePickerOpen(false);
+                        }}
+                        month={pickerMonth}
+                        onMonthChange={setPickerMonth}
+                        hideNavigation={true}
+                        classNames={{
+                          root: 'taxon-calendar',
+                          months: 'taxon-months',
+                          month: 'taxon-month',
+                          month_caption: 'taxon-caption',
+                          nav: 'taxon-nav',
+                          button_previous: 'taxon-nav-button',
+                          button_next: 'taxon-nav-button',
+                          month_grid: 'taxon-table',
+                          weekdays: 'taxon-head-row',
+                          weekday: 'taxon-head-cell',
+                          week: 'taxon-row',
+                          day: 'taxon-cell',
+                          day_button: 'taxon-day',
+                          selected: 'taxon-day-selected',
+                          today: 'taxon-day-today',
+                          outside: 'taxon-day-outside',
+                        }}
+                      />
+
+                      {editDueDate && (
+                        <div className="pt-2 mt-2 border-t border-[#27272A] flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditDueDate('');
+                              setIsDatePickerOpen(false);
+                            }}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-500/10 px-2 py-1 rounded text-[11px] font-medium transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            <span>Clear Date</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 )}
               </div>
-              {(() => {
-                const pooled = Array.from(new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)).filter(Boolean);
-                if (isCustomCategoryMode) {
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono">
+                    Category Tag
+                  </label>
+                  {isCustomCategoryMode && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsCustomCategoryMode(false);
+                        setEditCategory('Engineering');
+                      }}
+                      className="text-[10px] text-[#8E9192] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                    >
+                      <ArrowLeft className="w-3 h-3" /> Select from list
+                    </button>
+                  )}
+                </div>
+                {(() => {
+                  const pooled = Array.from(new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)).filter(Boolean);
+                  if (isCustomCategoryMode) {
+                    return (
+                      <input
+                        type="text"
+                        placeholder="Type custom category name (e.g. AI Research)..."
+                        className="bg-black border border-white/40 text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white"
+                        value={editCategory}
+                        onChange={(e) => setEditCategory(e.target.value)}
+                        autoFocus
+                      />
+                    );
+                  }
                   return (
-                    <input
-                      type="text"
-                      placeholder="Type custom category name (e.g. AI Research)..."
-                      className="bg-black border border-white/40 text-xs text-white rounded p-2 w-full focus:outline-none focus:border-white"
-                      value={editCategory}
-                      onChange={(e) => setEditCategory(e.target.value)}
-                      autoFocus
-                    />
+                    <select
+                      value={pooled.includes(editCategory as any) ? editCategory : '__custom__'}
+                      onChange={(e) => {
+                        if (e.target.value === '__custom__') {
+                          setIsCustomCategoryMode(true);
+                          setEditCategory('');
+                        } else {
+                          setEditCategory(e.target.value);
+                        }
+                      }}
+                      className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded p-2 w-full focus:outline-none focus:border-white cursor-pointer"
+                    >
+                      {pooled.map((cat) => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                      <option disabled value="">───</option>
+                      <option value="__custom__">+ Add Custom Category...</option>
+                    </select>
                   );
-                }
-                return (
-                  <select
-                    value={pooled.includes(editCategory as any) ? editCategory : '__custom__'}
-                    onChange={(e) => {
-                      if (e.target.value === '__custom__') {
-                        setIsCustomCategoryMode(true);
-                        setEditCategory('');
-                      } else {
-                        setEditCategory(e.target.value);
-                      }
-                    }}
-                    className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded p-2 w-full focus:outline-none focus:border-white cursor-pointer"
-                  >
-                    {pooled.map((cat) => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option disabled value="">───</option>
-                    <option value="__custom__">+ Add Custom Category...</option>
-                  </select>
-                );
-              })()}
+                })()}
+              </div>
             </div>
             <div className="flex gap-2 justify-end">
               <button
@@ -449,6 +565,7 @@ export default function ProjectDetailView({
                   setEditName(project.name);
                   setEditDesc(project.description);
                   setEditCategory(project.category);
+                  setEditDueDate(project.dueDate || '');
                   setIsEditingProj(true);
                 }}
                 className="bg-black text-white border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#201F1F] transition-colors flex items-center gap-1.5 cursor-pointer"
@@ -488,9 +605,9 @@ export default function ProjectDetailView({
                 ></div>
               </div>
             </div>
-            {project.dueDays > 0 && (
+            {project.dueDate && (
               <div className="text-[10px] text-[#8E9192] uppercase tracking-widest font-mono shrink-0 font-bold bg-[#141313] px-2.5 py-1 rounded inline-block border border-[#27272A]/50">
-                Due in {project.dueDays} days
+                Due on {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
               </div>
             )}
           </div>

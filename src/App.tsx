@@ -60,6 +60,7 @@ export default function App() {
   const [newProjName, setNewProjName] = useState('');
   const [newProjDesc, setNewProjDesc] = useState('');
   const [newProjCategory, setNewProjCategory] = useState<Project['category']>('Engineering');
+  const [newProjDueDate, setNewProjDueDate] = useState<string>('');
 
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
@@ -165,9 +166,10 @@ export default function App() {
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newProjName.trim()) return;
-    createProjectInHook(newProjName, newProjDesc, newProjCategory);
+    createProjectInHook(newProjName, newProjDesc, newProjCategory, newProjDueDate);
     setNewProjName('');
     setNewProjDesc('');
+    setNewProjDueDate('');
     setIsAddProjectOpen(false);
   };
 
@@ -523,10 +525,12 @@ export default function App() {
         projName={newProjName}
         projDesc={newProjDesc}
         projCategory={newProjCategory}
+        projDueDate={newProjDueDate}
         availableCategories={categories}
         onChangeName={setNewProjName}
         onChangeDesc={setNewProjDesc}
         onChangeCategory={setNewProjCategory}
+        onChangeDueDate={setNewProjDueDate}
         onClose={() => setIsAddProjectOpen(false)}
         onSubmit={handleCreateProject}
       />

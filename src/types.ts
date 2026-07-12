@@ -6,7 +6,7 @@ export interface Project {
   description: string;
   category: ProjectCategory;
   progress: number; // percentage (0 - 100)
-  dueDays: number;
+  dueDate?: string; // ISO date string (YYYY-MM-DD)
   sortOrder?: number;
   vaultPath?: string;
 }
