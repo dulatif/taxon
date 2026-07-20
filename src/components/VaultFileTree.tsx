@@ -70,7 +70,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   depth,
   isSearching
 }) => {
-  const [isExpanded, setIsExpanded] = useState(true);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   if (entry.isDirectory) {
     const expanded = isSearching || isExpanded;
