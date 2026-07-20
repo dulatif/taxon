@@ -19,22 +19,23 @@ export default function SettingsView({ onExportData, onImportDataTrigger }: Sett
         </div>
 
         <div className="space-y-4">
-          {/* Theme Toggle */}
+          {/* Theme Selection */}
           <div className="flex items-center justify-between p-3.5 bg-[#141313] border border-[#27272A] rounded-lg">
             <div>
-              <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">Light Theme</h4>
-              <p className="text-[10px] text-[#8E9192] mt-0.5">Switch to a bright, high-contrast interface.</p>
+              <h4 className="text-xs font-bold text-white uppercase tracking-wide font-mono">Theme</h4>
+              <p className="text-[10px] text-[#8E9192] mt-0.5">Choose light, dark, or system default.</p>
             </div>
-            <button
-              onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
-              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
-                settings.theme === 'light' ? 'bg-white' : 'bg-[#27272A]'
-              }`}
-            >
-              <div className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                settings.theme === 'light' ? 'bg-black ml-auto' : 'bg-[#8E9192] ml-0'
-              }`} />
-            </button>
+            <div className="bg-[#0A0A0A] border border-[#27272A] rounded-lg">
+              <select
+                value={settings.theme}
+                onChange={(e) => updateSetting('theme', e.target.value as any)}
+                className="bg-transparent border-none text-xs font-bold text-white rounded px-3 py-1.5 focus:outline-none font-mono cursor-pointer"
+              >
+                <option value="dark">Dark Mode</option>
+                <option value="light">Light Mode</option>
+                <option value="system">System Default</option>
+              </select>
+            </div>
           </div>
 
           {/* OLED Black Mode Toggle */}

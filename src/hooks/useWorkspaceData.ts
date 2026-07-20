@@ -220,8 +220,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         if (p.id === projId) {
           const updatedProj = {
             ...p,
-            progress: computedPercentage,
-            category: computedPercentage === 100 ? 'Completed' as const : p.category
+            progress: computedPercentage
           };
           saveProject(updatedProj);
           return updatedProj;
@@ -418,11 +417,15 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     }
   }, [recalculateProjectProgress]);
 
-  const handleArchiveAllCompleted = useCallback((projectId?: string) => {
+  const handleArchiveAllCompleted = useCallback((projectId?: string, taskIds?: string[]) => {
     const now = new Date().toISOString();
     const affectedProjectIds = new Set<string>();
     setTasks(prev => prev.map(t => {
-      if (t.completed && !t.archived && (!projectId || t.projectId === projectId)) {
+      const shouldArchive = taskIds 
+        ? taskIds.includes(t.id) && t.completed && !t.archived
+        : t.completed && !t.archived && (!projectId || t.projectId === projectId);
+        
+      if (shouldArchive) {
         if (t.projectId) affectedProjectIds.add(t.projectId);
         const updatedTask = { ...t, archived: true, archivedAt: now };
         saveTask(updatedTask);

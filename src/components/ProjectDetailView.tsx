@@ -64,7 +64,7 @@ interface ProjectDetailViewProps {
   onSetVaultPath?: (projectId: string, vaultPath: string) => void;
   onArchiveTask?: (id: string) => void;
   onUnarchiveTask?: (id: string) => void;
-  onArchiveAllCompleted?: (projectId?: string) => void;
+  onArchiveAllCompleted?: (projectId?: string, taskIds?: string[]) => void;
 }
 
 export default function ProjectDetailView({
@@ -98,7 +98,10 @@ export default function ProjectDetailView({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
   const [taskTab, setTaskTab] = useState<'todo' | 'completed' | 'archived'>('todo');
-  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>('all');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
+    const activeSprint = sprints?.find(s => s.projectId === project.id && s.status === 'Active');
+    return activeSprint ? activeSprint.id : 'all';
+  });
   const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
 
   // File addition triggers
@@ -673,13 +676,13 @@ export default function ProjectDetailView({
                   <button
                     type="button"
                     onClick={() => setTaskTab('todo')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer focus:outline-none ${
                       taskTab === 'todo'
-                        ? 'bg-[#28282A] text-white shadow'
-                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                        ? 'bg-white text-black font-bold shadow-sm'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60 border border-transparent'
                     }`}
                   >
-                    <span>To Do</span>
+                    <span className="translate-y-[1px]">To Do</span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       taskTab === 'todo' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
                     }`}>
@@ -690,13 +693,13 @@ export default function ProjectDetailView({
                   <button
                     type="button"
                     onClick={() => setTaskTab('completed')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer focus:outline-none ${
                       taskTab === 'completed'
-                        ? 'bg-[#28282A] text-white shadow'
-                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                        ? 'bg-white text-black font-bold shadow-sm'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60 border border-transparent'
                     }`}
                   >
-                    <span>Completed</span>
+                    <span className="translate-y-[1px]">Completed</span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       taskTab === 'completed' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
                     }`}>
@@ -707,14 +710,14 @@ export default function ProjectDetailView({
                   <button
                     type="button"
                     onClick={() => setTaskTab('archived')}
-                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-medium transition-colors cursor-pointer focus:outline-none ${
                       taskTab === 'archived'
-                        ? 'bg-[#28282A] text-white shadow'
-                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60'
+                        ? 'bg-white text-black font-bold shadow-sm'
+                        : 'text-[#8E9192] hover:text-white hover:bg-[#1C1B1B]/60 border border-transparent'
                     }`}
                   >
-                    <Archive className="w-3 h-3" />
-                    <span>Archived</span>
+                    <Archive className="w-3 h-3 translate-y-[1px]" />
+                    <span className="translate-y-[1px]">Archived</span>
                     <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                       taskTab === 'archived' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
                     }`}>
@@ -963,8 +966,8 @@ export default function ProjectDetailView({
                     <div className="mt-4 pt-3 border-t border-[#27272A]/60 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => onArchiveAllCompleted?.(project.id)}
-                        className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-mono font-medium bg-[#141313] hover:bg-[#201F1F] text-[#8E9192] hover:text-white border border-[#27272A]/80 transition-colors cursor-pointer shadow-sm"
+                        onClick={() => onArchiveAllCompleted?.(project.id, sortedCompletedTasks.map(t => t.id))}
+                        className="bg-black text-white border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#201F1F] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                       >
                         <Archive className="w-3.5 h-3.5" />
                         <span>Archive All Completed ({sortedCompletedTasks.length})</span>
