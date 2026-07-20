@@ -35,8 +35,8 @@ export default function TaskListHeader({
             title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
             className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border transition-all cursor-pointer ${
               allExpanded
-                ? 'bg-white/10 border-white/20 text-white'
-                : 'bg-transparent border-border-primary text-text-muted hover:text-white hover:border-white/30'
+                ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                : 'bg-transparent border-border-primary text-text-muted hover:text-text-primary hover:border-border-focus'
             }`}
           >
             <ChevronsUpDown className="w-3 h-3" />
@@ -50,8 +50,8 @@ export default function TaskListHeader({
             title={groupByProject ? 'Switch to flat list' : 'Group by project'}
             className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border transition-all cursor-pointer ${
               groupByProject
-                ? 'bg-white/10 border-white/20 text-white'
-                : 'bg-transparent border-border-primary text-text-muted hover:text-white hover:border-white/30'
+                ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                : 'bg-transparent border-border-primary text-text-muted hover:text-text-primary hover:border-border-focus'
             }`}
           >
             <Folder className="w-3 h-3" />

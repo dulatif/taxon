@@ -75,8 +75,8 @@ function FilterPopover({
         onClick={() => setOpen((o) => !o)}
         className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer ${
           active
-            ? 'bg-white text-black border-white'
-            : 'bg-surface-secondary text-text-muted border-border-primary hover:border-white/40 hover:text-white'
+            ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+            : 'bg-surface-secondary text-text-muted border-border-primary hover:border-border-focus hover:text-text-primary'
         }`}
       >
         <Icon className="w-3 h-3" />
@@ -306,8 +306,8 @@ export default function TaskListView({
               onClick={cycleSortBy}
               className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer ${
                 sortBy !== 'none'
-                  ? 'bg-white/10 text-white border-white/20'
-                  : 'bg-surface-secondary text-text-muted border-border-primary hover:border-white/40 hover:text-white'
+                  ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                  : 'bg-surface-secondary text-text-muted border-border-primary hover:border-border-focus hover:text-text-primary'
               }`}
             >
               {sortBy === 'none' ? (
@@ -330,13 +330,13 @@ export default function TaskListView({
                       onClick={() => togglePriority(p)}
                       className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
                         on
-                          ? 'bg-white/10 text-white'
-                          : 'text-text-muted hover:bg-surface-hover hover:text-white'
+                          ? 'bg-interactive-primary text-interactive-primary-text'
+                          : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
                       }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${c.dot}`} />
                       {p}
-                      {on && <Check className="w-3 h-3 ml-auto text-white" />}
+                      {on && <Check className="w-3 h-3 ml-auto text-interactive-primary-text" />}
                     </button>
                   );
                 })}
@@ -354,8 +354,8 @@ export default function TaskListView({
                       onClick={() => toggleStatus(s)}
                       className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
                         on
-                          ? 'bg-white/10 text-white'
-                          : 'text-text-muted hover:bg-surface-hover hover:text-white'
+                          ? 'bg-interactive-primary text-interactive-primary-text'
+                          : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
                       }`}
                     >
                       <span
@@ -368,7 +368,7 @@ export default function TaskListView({
                         }`}
                       />
                       {s}
-                      {on && <Check className="w-3 h-3 ml-auto text-white" />}
+                      {on && <Check className="w-3 h-3 ml-auto text-interactive-primary-text" />}
                     </button>
                   );
                 })}
@@ -387,13 +387,15 @@ export default function TaskListView({
                         onClick={() => toggleProject(proj.id)}
                         className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
                           on
-                            ? 'bg-white/10 text-white'
-                            : 'text-text-muted hover:bg-surface-hover hover:text-white'
+                            ? 'bg-interactive-primary text-interactive-primary-text'
+                            : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
                         }`}
                       >
                         <span className="w-2 h-2 rounded-sm bg-surface-secondary border border-border-primary" />
                         <span className="truncate max-w-[140px]">{proj.name}</span>
-                        {on && <Check className="w-3 h-3 ml-auto shrink-0 text-white" />}
+                        {on && (
+                          <Check className="w-3 h-3 ml-auto shrink-0 text-interactive-primary-text" />
+                        )}
                       </button>
                     );
                   })}
@@ -420,12 +422,12 @@ export default function TaskListView({
                         onClick={() => setDueDateRange(opt.key)}
                         className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
                           on
-                            ? 'bg-white/10 text-white'
-                            : 'text-text-muted hover:bg-surface-hover hover:text-white'
+                            ? 'bg-interactive-primary text-interactive-primary-text'
+                            : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
                         }`}
                       >
                         {opt.label}
-                        {on && <Check className="w-3 h-3 ml-auto text-white" />}
+                        {on && <Check className="w-3 h-3 ml-auto text-interactive-primary-text" />}
                       </button>
                     );
                   })}
@@ -436,13 +438,13 @@ export default function TaskListView({
                         type="date"
                         value={filters.customFrom}
                         onChange={(e) => setFilters((f) => ({ ...f, customFrom: e.target.value }))}
-                        className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-white/40"
+                        className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-border-focus/40"
                       />
                       <input
                         type="date"
                         value={filters.customTo}
                         onChange={(e) => setFilters((f) => ({ ...f, customTo: e.target.value }))}
-                        className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-white/40"
+                        className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-border-focus/40"
                       />
                     </div>
                   )}
