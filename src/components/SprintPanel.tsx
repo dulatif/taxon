@@ -195,7 +195,7 @@ export default function SprintPanel({
   const completedSprints = projectSprints.filter(s => s.status === 'Completed');
 
   const getSprintStats = (sprintId: string) => {
-    const sTasks = tasks.filter(t => t.sprintId === sprintId && !t.archived);
+    const sTasks = tasks.filter(t => t.sprintId === sprintId);
     const completed = sTasks.filter(t => t.completed).length;
     const total = sTasks.length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
