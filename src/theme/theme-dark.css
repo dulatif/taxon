@@ -1,0 +1,28 @@
+/* src/theme/theme-dark.css
+   ============================================
+   DARK THEME (Default)
+   ============================================ */
+
+:root {
+  --_surface-app: #000000;
+  --_surface-primary: #0a0a0a;
+  --_surface-secondary: #141313;
+  --_surface-tertiary: #1c1b1b;
+  --_surface-elevated: #0a0a0a;
+  --_surface-hover: #201f1f;
+  --_surface-active: #27272a;
+
+  --_border-primary: #27272a;
+  --_border-secondary: rgba(39, 39, 42, 0.5);
+  --_border-hover: rgba(255, 255, 255, 0.2);
+  --_border-focus: rgba(255, 255, 255, 0.4);
+
+  --_text-primary: #ffffff;
+  --_text-secondary: #c4c7c8;
+  --_text-muted: #8e9192;
+  --_text-inverted: #000000;
+
+  --_interactive-primary: #ffffff;
+  --_interactive-primary-text: #000000;
+  --_interactive-hover: rgba(255, 255, 255, 0.9);
+}

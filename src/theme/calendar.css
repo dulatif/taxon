@@ -1,0 +1,174 @@
+/* src/theme/calendar.css
+   ============================================
+   react-day-picker Calendar Styles
+   Matching the Taxon theme using design tokens
+   ============================================ */
+
+.taxon-calendar {
+  --rdp-cell-size: 40px;
+  width: 100%;
+  color: var(--text-primary);
+}
+
+.taxon-months {
+  display: flex;
+  justify-content: center;
+}
+.taxon-month {
+  width: 100%;
+}
+.taxon-caption {
+  display: none;
+}
+
+.taxon-calendar .taxon-nav {
+  position: static !important;
+  display: flex !important;
+  gap: 0.5rem !important;
+  justify-content: flex-end !important;
+  align-items: center !important;
+  margin-bottom: 0.75rem !important;
+  width: 100% !important;
+  height: auto !important;
+  inset: auto !important;
+}
+
+.taxon-calendar .taxon-nav-button,
+.taxon-calendar .rdp-button_previous,
+.taxon-calendar .rdp-button_next {
+  position: static !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 28px !important;
+  height: 28px !important;
+  border-radius: var(--radius-md) !important;
+  border: 1px solid var(--border-primary) !important;
+  background: var(--surface-secondary) !important;
+  color: var(--text-muted) !important;
+  cursor: pointer !important;
+  transition: all var(--transition-normal) !important;
+  inset: auto !important;
+  margin: 0 !important;
+}
+
+.taxon-calendar .taxon-nav-button:hover,
+.taxon-calendar .rdp-button_previous:hover,
+.taxon-calendar .rdp-button_next:hover {
+  color: var(--text-primary) !important;
+  border-color: var(--border-hover) !important;
+  background: var(--surface-hover) !important;
+}
+
+.taxon-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 2px;
+}
+
+.taxon-head-row {
+  display: flex;
+  justify-content: space-around;
+  margin-bottom: 4px;
+}
+
+.taxon-head-cell {
+  flex: 1;
+  text-align: center;
+  font-size: var(--text-2xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  padding: 6px 0;
+  font-family: var(--font-mono);
+}
+
+.taxon-row {
+  display: flex;
+  justify-content: space-around;
+}
+.taxon-cell {
+  flex: 1;
+  text-align: center;
+  padding: 2px;
+}
+
+.taxon-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: var(--radius-md);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  border: 1px solid transparent;
+  background: transparent;
+  font-family: var(--font-mono);
+}
+
+.taxon-day:hover {
+  background: var(--surface-secondary);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+.taxon-day-selected .taxon-day {
+  background: var(--interactive-primary) !important;
+  color: var(--interactive-primary-text) !important;
+  border-color: var(--interactive-primary) !important;
+  font-weight: 800;
+}
+
+.taxon-range-middle .taxon-day {
+  background: var(--surface-tertiary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--surface-hover) !important;
+}
+
+.taxon-range-start .taxon-day,
+.taxon-range-end .taxon-day {
+  background: var(--interactive-primary) !important;
+  color: var(--interactive-primary-text) !important;
+  border-color: var(--interactive-primary) !important;
+  font-weight: 800;
+}
+
+.taxon-day-today .taxon-day {
+  border-color: var(--interactive-primary);
+  color: var(--text-primary);
+  font-weight: 800;
+}
+
+.taxon-day-outside .taxon-day {
+  color: var(--border-primary);
+}
+.taxon-day-outside .taxon-day:hover {
+  color: var(--text-muted);
+}
+
+.taxon-has-tasks .taxon-day {
+  position: relative;
+}
+.taxon-has-tasks .taxon-day::after {
+  content: "";
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.taxon-has-tasks.taxon-day-selected .taxon-day::after,
+.taxon-has-tasks.taxon-range-start .taxon-day::after,
+.taxon-has-tasks.taxon-range-end .taxon-day::after {
+  background: var(--interactive-primary-text);
+}
