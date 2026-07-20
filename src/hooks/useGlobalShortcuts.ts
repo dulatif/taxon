@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { register, unregisterAll } from '@tauri-apps/plugin-global-shortcut';
+import { useEffect } from 'react';
 
 interface UseGlobalShortcutsOptions {
   onQuickAddTask: () => void;
@@ -7,7 +7,11 @@ interface UseGlobalShortcutsOptions {
   onOpenSpotlight: () => void;
 }
 
-export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode, onOpenSpotlight }: UseGlobalShortcutsOptions) {
+export function useGlobalShortcuts({
+  onQuickAddTask,
+  onLaunchFocusMode,
+  onOpenSpotlight,
+}: UseGlobalShortcutsOptions) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -23,7 +27,7 @@ export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode, onOpenSp
     const setupShortcuts = async () => {
       try {
         await unregisterAll();
-        
+
         await register('CommandOrControl+K', (e) => {
           if (e.state === 'Pressed') {
             onOpenSpotlight();
@@ -42,7 +46,7 @@ export function useGlobalShortcuts({ onQuickAddTask, onLaunchFocusMode, onOpenSp
           }
         });
       } catch (err) {
-        console.error("Failed to register global shortcuts:", err);
+        console.error('Failed to register global shortcuts:', err);
       }
     };
 

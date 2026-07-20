@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { Task } from '../types';;
 import { sendNotification } from '@tauri-apps/plugin-notification';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { Task } from '../types';
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 
@@ -161,7 +161,9 @@ export function useFocusTimer({
               setCompletedWorkSessions(nextCount);
               sendNotification({
                 title: 'Work Session Complete!',
-                body: currentTask ? `Good job on: ${currentTask.title}. Time for a break!` : 'Time for a break!',
+                body: currentTask
+                  ? `Good job on: ${currentTask.title}. Time for a break!`
+                  : 'Time for a break!',
               });
               onTimerCompleteRef.current(currentTask, 'work');
 

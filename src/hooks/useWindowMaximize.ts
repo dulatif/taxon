@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
-import { getCurrentWindow } from '@tauri-apps/api/window';
 import { listen } from '@tauri-apps/api/event';
+import { getCurrentWindow } from '@tauri-apps/api/window';
+import { useEffect, useState } from 'react';
 
 export function useWindowMaximize() {
   const [isMaximized, setIsMaximized] = useState(false);
@@ -18,7 +18,7 @@ export function useWindowMaximize() {
     });
 
     return () => {
-      unlistenPromise.then(unlisten => unlisten());
+      unlistenPromise.then((unlisten) => unlisten());
     };
   }, []);
 

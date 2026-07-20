@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
 import { listen } from '@tauri-apps/api/event';
+import { useEffect } from 'react';
 
 interface UseSystemTrayOptions {
   onQuickAdd: () => void;
@@ -16,8 +16,8 @@ export function useSystemTray({ onQuickAdd, onStartFocus }: UseSystemTrayOptions
     });
 
     return () => {
-      unlistenAdd.then(f => f());
-      unlistenFocus.then(f => f());
+      unlistenAdd.then((f) => f());
+      unlistenFocus.then((f) => f());
     };
   }, [onQuickAdd, onStartFocus]);
 }
