@@ -4,7 +4,8 @@
    Applied when body has class "light-theme"
    ============================================ */
 
-body.light-theme {
+:root.light-theme {
+  color-scheme: light;
   --_surface-app: #f4f4f5;
   --_surface-primary: #ffffff;
   --_surface-secondary: #fafafa;

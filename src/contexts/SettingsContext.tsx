@@ -36,15 +36,15 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         settings.theme === 'dark' || (settings.theme === 'system' && mediaQuery.matches);
 
       if (!isDark) {
-        document.body.classList.add('light-theme');
+        document.documentElement.classList.add('light-theme');
       } else {
-        document.body.classList.remove('light-theme');
+        document.documentElement.classList.remove('light-theme');
       }
 
       if (settings.oledBlackMode && isDark) {
-        document.body.classList.add('oled-black');
+        document.documentElement.classList.add('oled-black');
       } else {
-        document.body.classList.remove('oled-black');
+        document.documentElement.classList.remove('oled-black');
       }
     };
 

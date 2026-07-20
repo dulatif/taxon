@@ -193,7 +193,7 @@ export default function ProjectTaskList({
                         </div>
                       )}
                       {task.duration && !task.archived && (
-                        <span className="text-[9px] font-mono font-semibold bg-black px-1.5 py-0.5 rounded border border-border-primary/50 text-text-muted">
+                        <span className="text-[9px] font-mono font-semibold bg-surface-primary px-1.5 py-0.5 rounded border border-border-primary/50 text-text-muted">
                           {task.duration}
                         </span>
                       )}

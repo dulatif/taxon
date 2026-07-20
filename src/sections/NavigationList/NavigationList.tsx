@@ -43,7 +43,7 @@ export default function NavigationList({
     const isPrimary = currentView === id && selectedProjectId === null;
     return `w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
       isPrimary
-        ? 'text-white font-bold bg-surface-hover'
+        ? 'text-text-primary font-bold bg-surface-hover'
         : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary'
     }`;
   };

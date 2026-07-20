@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PROJECT_CATEGORIES } from '../constants/categories';
 import {
   INITIAL_DAILY_ACTIVITY,

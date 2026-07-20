@@ -82,26 +82,29 @@ export default function AddProjectModal({
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.95, opacity: 0 }}
-            className="relative bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 max-w-md w-full shadow-2xl z-10"
+            className="relative bg-surface-secondary border border-border-primary rounded-xl p-6 max-w-md w-full shadow-2xl z-10"
           >
             <div className="flex justify-between items-center mb-6">
-              <h3 className="text-sm font-bold text-white uppercase tracking-wider font-mono">
+              <h3 className="text-sm font-bold text-text-primary uppercase tracking-wider font-mono">
                 Initialize Project Board
               </h3>
-              <button onClick={onClose} className="text-[#8E9192] hover:text-white cursor-pointer">
+              <button
+                onClick={onClose}
+                className="text-text-muted hover:text-text-primary cursor-pointer"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <form onSubmit={onSubmit} className="space-y-4">
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5 font-mono">
                   Project Title
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Core System Refactor"
-                  className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-2.5 w-full focus:outline-none focus:border-white focus:ring-0"
+                  className="bg-surface-primary border border-border-primary text-xs text-text-primary rounded-lg p-2.5 w-full focus:outline-none focus:border-border-focus focus:ring-0"
                   value={projName}
                   onChange={(e) => onChangeName(e.target.value)}
                   autoFocus
@@ -109,12 +112,12 @@ export default function AddProjectModal({
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">
+                <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5 font-mono">
                   Executive Summary
                 </label>
                 <textarea
                   placeholder="Summarize key features, scopes, or launch schedules..."
-                  className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-2.5 w-full h-24 focus:outline-none focus:border-white focus:ring-0"
+                  className="bg-surface-primary border border-border-primary text-xs text-text-primary rounded-lg p-2.5 w-full h-24 focus:outline-none focus:border-border-focus focus:ring-0"
                   value={projDesc}
                   onChange={(e) => onChangeDesc(e.target.value)}
                 />
@@ -122,20 +125,20 @@ export default function AddProjectModal({
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="relative">
-                  <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] mb-1.5 font-mono">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted mb-1.5 font-mono">
                     Due Date
                   </label>
                   <button
                     type="button"
                     onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                    className="bg-black border border-[#27272A] text-xs text-white rounded-lg p-2.5 w-full focus:outline-none focus:border-white focus:ring-0 flex items-center justify-between cursor-pointer"
+                    className="bg-surface-primary border border-border-primary text-xs text-text-primary rounded-lg p-2.5 w-full focus:outline-none focus:border-border-focus focus:ring-0 flex items-center justify-between cursor-pointer"
                   >
                     {projDueDate ? (
                       <span className="font-semibold">{formatDisplayDate(projDueDate)}</span>
                     ) : (
-                      <span className="text-[#8E9192]">Set due date...</span>
+                      <span className="text-text-muted">Set due date...</span>
                     )}
-                    <CalendarIcon className="w-4 h-4 text-[#8E9192]" />
+                    <CalendarIcon className="w-4 h-4 text-text-muted" />
                   </button>
 
                   {isDatePickerOpen && (
@@ -144,23 +147,23 @@ export default function AddProjectModal({
                         className="fixed inset-0 z-[9998]"
                         onClick={() => setIsDatePickerOpen(false)}
                       />
-                      <div className="absolute left-0 top-[calc(100%+8px)] w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-[9999] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
+                      <div className="absolute left-0 top-[calc(100%+8px)] w-[340px] bg-surface-secondary border border-border-primary rounded-xl p-3.5 z-[9999] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                         <div className="flex items-center justify-between mb-2 px-1">
-                          <span className="text-xs font-bold text-white tracking-wide">
+                          <span className="text-xs font-bold text-text-primary tracking-wide">
                             {format(pickerMonth, 'MMMM yyyy')}
                           </span>
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => setPickerMonth((prev) => addMonths(prev, -1))}
-                              className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-6 h-6 rounded-md border border-border-primary bg-surface-primary hover:bg-surface-hover hover:border-border-focus text-text-muted hover:text-text-primary flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                               <ChevronLeft className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => setPickerMonth((prev) => addMonths(prev, 1))}
-                              className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                              className="w-6 h-6 rounded-md border border-border-primary bg-surface-primary hover:bg-surface-hover hover:border-border-focus text-text-muted hover:text-text-primary flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                               <ChevronRight className="w-3.5 h-3.5" />
                             </button>
@@ -201,7 +204,7 @@ export default function AddProjectModal({
                         />
 
                         {projDueDate && onChangeDueDate && (
-                          <div className="pt-2 mt-2 border-t border-[#27272A] flex justify-end">
+                          <div className="pt-2 mt-2 border-t border-border-primary flex justify-end">
                             <button
                               type="button"
                               onClick={() => {
@@ -221,7 +224,7 @@ export default function AddProjectModal({
                 </div>
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-[#8E9192] font-mono">
+                    <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted font-mono">
                       Category Tag
                     </label>
                     {isCustomMode && (
@@ -231,7 +234,7 @@ export default function AddProjectModal({
                           setIsCustomMode(false);
                           onChangeCategory('Engineering');
                         }}
-                        className="text-[10px] text-[#8E9192] hover:text-white flex items-center gap-1 font-mono transition-colors cursor-pointer"
+                        className="text-[10px] text-text-muted hover:text-text-primary flex items-center gap-1 font-mono transition-colors cursor-pointer"
                       >
                         <ArrowLeft className="w-3 h-3" /> Select from list
                       </button>
@@ -242,13 +245,13 @@ export default function AddProjectModal({
                     <input
                       type="text"
                       placeholder="Type custom category name (e.g. AI Research)..."
-                      className="bg-black border border-white/40 text-xs text-white rounded-lg p-2.5 w-full focus:outline-none focus:border-white focus:ring-0"
+                      className="bg-surface-primary border border-white/40 text-xs text-text-primary rounded-lg p-2.5 w-full focus:outline-none focus:border-border-focus focus:ring-0"
                       value={projCategory}
                       onChange={(e) => onChangeCategory(e.target.value)}
                     />
                   ) : (
                     <select
-                      className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded-lg p-2.5 w-full focus:outline-none focus:border-white cursor-pointer"
+                      className="bg-surface-primary border border-border-primary text-xs text-text-muted rounded-lg p-2.5 w-full focus:outline-none focus:border-border-focus cursor-pointer"
                       value={
                         allPooledCategories.includes(projCategory) ? projCategory : '__custom__'
                       }
@@ -272,14 +275,14 @@ export default function AddProjectModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="text-xs font-semibold text-[#8E9192] hover:text-white px-3 py-2 cursor-pointer"
+                  className="text-xs font-semibold text-text-muted hover:text-text-primary px-3 py-2 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={!projName.trim()}
-                  className="bg-white text-black font-bold text-xs px-4 py-2 rounded-lg hover:bg-white/90 disabled:opacity-40 transition-colors"
+                  className="bg-interactive-primary text-interactive-primary-text font-bold text-xs px-4 py-2 rounded-lg hover:bg-interactive-hover disabled:opacity-40 transition-colors"
                 >
                   Create Board
                 </button>

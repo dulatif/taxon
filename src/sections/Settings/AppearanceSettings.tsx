@@ -68,7 +68,7 @@ export default function AppearanceSettings({
         >
           <div
             className={`w-4 h-4 rounded-full transition-all duration-200 ${
-              oledBlackMode ? 'bg-white ml-auto' : 'bg-text-muted ml-0'
+              oledBlackMode ? 'bg-interactive-primary-text ml-auto' : 'bg-text-muted ml-0'
             }`}
           />
         </button>

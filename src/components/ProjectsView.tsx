@@ -97,22 +97,24 @@ export default function ProjectsView({
       {/* View Mode & Header Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Projects</h1>
-          <p className="text-[#C4C7C8] text-sm mt-1">
+          <h1 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight">
+            Projects
+          </h1>
+          <p className="text-text-muted text-sm mt-1">
             Managing {projects.length} workspace projects ({activeProjectsCount} active).
           </p>
         </div>
 
         {/* High-Contrast Toggles and Actions */}
         <div className="flex items-center gap-3">
-          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-lg p-0.5 flex">
+          <div className="bg-surface-secondary border border-border-primary rounded-lg p-0.5 flex">
             <button
               onClick={() => setViewMode('grid')}
               id="toggle-projects-grid"
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 viewMode === 'grid'
-                  ? 'bg-[#201F1F] text-white border border-[#27272A]'
-                  : 'text-[#8E9192] hover:text-white'
+                  ? 'bg-surface-hover text-text-primary border border-border-primary'
+                  : 'text-text-muted hover:text-text-primary'
               }`}
             >
               <Grid2X2 className="w-3.5 h-3.5" />
@@ -123,8 +125,8 @@ export default function ProjectsView({
               onClick={() => setViewMode('kanban')}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
                 viewMode === 'kanban'
-                  ? 'bg-[#201F1F] text-white border border-[#27272A]'
-                  : 'text-[#8E9192] hover:text-white'
+                  ? 'bg-surface-hover text-text-primary border border-border-primary'
+                  : 'text-text-muted hover:text-text-primary'
               }`}
             >
               <Kanban className="w-3.5 h-3.5" />
@@ -135,7 +137,7 @@ export default function ProjectsView({
           <button
             onClick={onAddProjectClick}
             id="btn-projects-new-project"
-            className="bg-white hover:bg-white/90 text-black text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
+            className="bg-interactive-primary hover:bg-interactive-hover text-interactive-primary-text text-xs font-bold px-4 py-2 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4 shrink-0" />
             <span>New Project</span>
@@ -144,7 +146,7 @@ export default function ProjectsView({
       </div>
 
       {/* Category Filter Chips */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar border-b border-[#27272A]/40 shrink-0">
+      <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar border-b border-border-primary/40 shrink-0">
         {availableCategories.map((cat) => {
           const isSelected = selectedCategory === cat;
           const count =
@@ -157,18 +159,18 @@ export default function ProjectsView({
               onClick={() => setSelectedCategory(cat)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium font-mono tracking-tight transition-all inline-flex items-center justify-center gap-1.5 shrink-0 cursor-pointer ${
                 isSelected
-                  ? 'bg-white text-black font-bold shadow-md'
-                  : 'bg-[#0A0A0A] text-[#8E9192] hover:text-white border border-[#27272A]/80 hover:border-white/20'
+                  ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow-md'
+                  : 'bg-surface-secondary text-text-muted hover:text-text-primary border border-border-primary/80 hover:border-white/20'
               }`}
             >
               {style && (
                 <span
-                  className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${isSelected ? 'bg-black' : style.dot}`}
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${isSelected ? 'bg-interactive-primary-text' : style.dot}`}
                 />
               )}
               <span className="self-center leading-tight">{cat}</span>
               <span
-                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono self-center leading-tight ${isSelected ? 'bg-black/10 text-black' : 'bg-[#141313] text-[#8E9192]'}`}
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono self-center leading-tight ${isSelected ? 'bg-surface-primary/20 text-interactive-primary-text' : 'bg-surface-secondary text-text-muted'}`}
               >
                 {count}
               </span>
@@ -178,7 +180,7 @@ export default function ProjectsView({
         {onManageCategoriesClick && (
           <button
             onClick={onManageCategoriesClick}
-            className="ml-auto px-2.5 py-1.5 rounded-lg text-xs font-medium text-[#8E9192] hover:text-white bg-[#0A0A0A] border border-[#27272A] hover:border-white/30 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
+            className="ml-auto px-2.5 py-1.5 rounded-lg text-xs font-medium text-text-muted hover:text-text-primary bg-surface-secondary border border-border-primary hover:border-white/30 transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
             title="Manage Category Tags"
           >
             <Settings className="w-3.5 h-3.5" />
@@ -205,8 +207,8 @@ export default function ProjectsView({
                 key={project.id}
                 id={`project-card-${project.id}`}
                 onClick={() => handleProjectCardClick(project.id)}
-                className={`p-6 flex flex-col justify-between group hover:bg-[#121212] border border-[#27272A] hover:border-white/20 transition-all duration-300 min-h-[220px] rounded-xl cursor-pointer ${
-                  isCompleted ? 'bg-[#0A0A0A]/40 opacity-70' : 'bg-[#0A0A0A]'
+                className={`p-6 flex flex-col justify-between group hover:bg-surface-hover border border-border-primary hover:border-white/20 transition-all duration-300 min-h-[220px] rounded-xl cursor-pointer ${
+                  isCompleted ? 'bg-surface-secondary/40 opacity-70' : 'bg-surface-secondary'
                 }`}
               >
                 <div>
@@ -220,35 +222,35 @@ export default function ProjectsView({
                       <span className="self-center">{project.category}</span>
                     </span>
                     {isCompleted ? (
-                      <CheckCircle className="w-4 h-4 text-white" />
+                      <CheckCircle className="w-4 h-4 text-text-primary" />
                     ) : (
-                      <ArrowUpRight className="w-4 h-4 text-[#8E9192] group-hover:text-white transition-colors" />
+                      <ArrowUpRight className="w-4 h-4 text-text-muted group-hover:text-text-primary transition-colors" />
                     )}
                   </div>
 
                   <h2
-                    className={`text-lg font-bold text-white mb-2 tracking-tight ${isCompleted ? 'line-through decoration-[#8E9192]' : ''}`}
+                    className={`text-lg font-bold text-text-primary mb-2 tracking-tight ${isCompleted ? 'line-through decoration-border-primary' : ''}`}
                   >
                     {project.name}
                   </h2>
-                  <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6 block truncate">
+                  <p className="text-xs text-text-muted leading-relaxed mb-6 block truncate">
                     {project.description}
                   </p>
                 </div>
 
                 <div>
                   <div className="flex justify-between items-end mb-2 text-[10px] font-mono tracking-wider">
-                    <span className="text-[#8E9192]">Progress</span>
-                    <span className="text-white font-bold">{progressValue}%</span>
+                    <span className="text-text-muted">Progress</span>
+                    <span className="text-text-primary font-bold">{progressValue}%</span>
                   </div>
-                  <div className="w-full bg-[#121212] h-1.5 rounded-full overflow-hidden border border-[#27272A]/30">
+                  <div className="w-full bg-surface-hover h-1.5 rounded-full overflow-hidden border border-border-primary/30">
                     <div
-                      className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-white/60' : 'bg-white'}`}
+                      className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-interactive-primary/60' : 'bg-interactive-primary'}`}
                       style={{ width: `${progressValue}%` }}
                     ></div>
                   </div>
                   {!isCompleted && project.dueDate && (
-                    <div className="flex items-center gap-1 mt-3 text-[9px] text-[#8E9192] font-mono">
+                    <div className="flex items-center gap-1 mt-3 text-[9px] text-text-muted font-mono">
                       <Clock className="w-3 h-3" />
                       <span>
                         Due on{' '}

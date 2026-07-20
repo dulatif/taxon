@@ -52,7 +52,6 @@ textarea,
 
 /* ─── Global Select Styling ─── */
 select {
-  color-scheme: dark;
   background-color: var(--surface-secondary);
   color: var(--text-primary);
 }

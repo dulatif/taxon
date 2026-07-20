@@ -185,21 +185,21 @@ export default function CalendarView({
 
         {/* Right Column: Calendar Widget & Filter Summary (col-span-12 lg:col-span-4) */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-          <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 sticky top-24">
+          <div className="bg-surface-secondary border border-border-primary rounded-xl p-6 sticky top-24">
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
+              <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider font-mono flex items-center gap-2">
                 <Calendar className="w-4 h-4" />
                 Date Filter
               </h2>
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-[#8E9192] font-mono uppercase tracking-wider">
+                <span className="text-[10px] text-text-muted font-mono uppercase tracking-wider">
                   {format(currentMonth, 'MMMM yyyy')}
                 </span>
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
                     onClick={() => setCurrentMonth((prev) => addMonths(prev, -1))}
-                    className="w-7 h-7 rounded-lg border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all"
+                    className="w-7 h-7 rounded-lg border border-border-primary bg-surface-primary hover:bg-surface-hover hover:border-border-focus text-text-muted hover:text-text-primary flex items-center justify-center transition-all"
                     title="Previous Month"
                   >
                     <ChevronLeft className="w-4 h-4" />
@@ -207,7 +207,7 @@ export default function CalendarView({
                   <button
                     type="button"
                     onClick={() => setCurrentMonth((prev) => addMonths(prev, 1))}
-                    className="w-7 h-7 rounded-lg border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all"
+                    className="w-7 h-7 rounded-lg border border-border-primary bg-surface-primary hover:bg-surface-hover hover:border-border-focus text-text-muted hover:text-text-primary flex items-center justify-center transition-all"
                     title="Next Month"
                   >
                     <ChevronRight className="w-4 h-4" />
@@ -267,10 +267,10 @@ export default function CalendarView({
             />
 
             {/* Filter status and quick toggles */}
-            <div className="mt-6 pt-6 border-t border-[#27272A]/50 space-y-3">
+            <div className="mt-6 pt-6 border-t border-border-primary/50 space-y-3">
               <div className="flex items-center justify-between text-xs font-mono mb-1">
-                <span className="text-[#8E9192]">Filter State:</span>
-                <span className="text-white font-bold">
+                <span className="text-text-muted">Filter State:</span>
+                <span className="text-text-primary font-bold">
                   {filterMode === 'all' && 'All Scheduled'}
                   {filterMode === 'today' && 'Today'}
                   {filterMode === 'week' && 'This Week'}
@@ -292,8 +292,8 @@ export default function CalendarView({
                   }}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
                     filterMode === 'today'
-                      ? 'bg-white text-black border-white'
-                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                      : 'bg-surface-primary hover:bg-surface-hover text-text-muted border-border-primary hover:border-border-focus/30 hover:text-text-primary'
                   }`}
                 >
                   Today
@@ -308,8 +308,8 @@ export default function CalendarView({
                   }}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
                     filterMode === 'week'
-                      ? 'bg-white text-black border-white'
-                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                      : 'bg-surface-primary hover:bg-surface-hover text-text-muted border-border-primary hover:border-border-focus/30 hover:text-text-primary'
                   }`}
                 >
                   This Week
@@ -324,8 +324,8 @@ export default function CalendarView({
                   }}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
                     filterMode === 'last-week'
-                      ? 'bg-white text-black border-white'
-                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                      : 'bg-surface-primary hover:bg-surface-hover text-text-muted border-border-primary hover:border-border-focus/30 hover:text-text-primary'
                   }`}
                 >
                   Last Week
@@ -340,8 +340,8 @@ export default function CalendarView({
                   }}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
                     filterMode === 'next-week'
-                      ? 'bg-white text-black border-white'
-                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                      : 'bg-surface-primary hover:bg-surface-hover text-text-muted border-border-primary hover:border-border-focus/30 hover:text-text-primary'
                   }`}
                 >
                   Next Week
@@ -355,8 +355,8 @@ export default function CalendarView({
                   }}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
                     filterMode === 'month'
-                      ? 'bg-white text-black border-white'
-                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                      : 'bg-surface-primary hover:bg-surface-hover text-text-muted border-border-primary hover:border-border-focus/30 hover:text-text-primary'
                   }`}
                 >
                   This Month
@@ -369,8 +369,8 @@ export default function CalendarView({
                   }}
                   className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all flex items-center justify-center ${
                     filterMode === 'custom'
-                      ? 'bg-white text-black border-white'
-                      : 'bg-[#141313] hover:bg-[#201F1F] text-[#C4C7C8] border-[#27272A] hover:border-white/30 hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                      : 'bg-surface-primary hover:bg-surface-hover text-text-muted border-border-primary hover:border-border-focus/30 hover:text-text-primary'
                   }`}
                 >
                   Custom Range
@@ -385,8 +385,8 @@ export default function CalendarView({
                 }}
                 className={`w-full py-2 px-3 rounded-lg text-xs font-bold border transition-all flex items-center justify-center gap-2 mt-1 ${
                   filterMode === 'all'
-                    ? 'bg-white text-black border-white'
-                    : 'bg-[#141313] hover:bg-[#201F1F] text-white border-[#27272A] hover:border-white/30'
+                    ? 'bg-interactive-primary text-interactive-primary-text border-interactive-primary'
+                    : 'bg-surface-primary hover:bg-surface-hover text-text-primary border-border-primary hover:border-border-focus/30'
                 }`}
               >
                 All Scheduled Tasks
@@ -394,23 +394,23 @@ export default function CalendarView({
 
               {/* Custom Range Inputs */}
               {filterMode === 'custom' && (
-                <div className="pt-3 space-y-2 border-t border-[#27272A]/40 animate-in fade-in">
+                <div className="pt-3 space-y-2 border-t border-border-primary/40 animate-in fade-in">
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-[#8E9192] font-mono w-10">From:</span>
+                    <span className="text-[10px] text-text-muted font-mono w-10">From:</span>
                     <input
                       type="date"
                       value={customFrom}
                       onChange={(e) => setCustomFrom(e.target.value)}
-                      className="bg-[#141313] border border-[#27272A] rounded px-2 py-1 text-xs text-white flex-1 font-mono focus:outline-none focus:border-white/40"
+                      className="bg-surface-primary border border-border-primary rounded px-2 py-1 text-xs text-text-primary flex-1 font-mono focus:outline-none focus:border-border-focus/40"
                     />
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-[#8E9192] font-mono w-10">To:</span>
+                    <span className="text-[10px] text-text-muted font-mono w-10">To:</span>
                     <input
                       type="date"
                       value={customTo}
                       onChange={(e) => setCustomTo(e.target.value)}
-                      className="bg-[#141313] border border-[#27272A] rounded px-2 py-1 text-xs text-white flex-1 font-mono focus:outline-none focus:border-white/40"
+                      className="bg-surface-primary border border-border-primary rounded px-2 py-1 text-xs text-text-primary flex-1 font-mono focus:outline-none focus:border-border-focus/40"
                     />
                   </div>
                 </div>
@@ -419,16 +419,16 @@ export default function CalendarView({
 
             {/* Quick stats for current filter */}
             <div className="grid grid-cols-2 gap-3 mt-4">
-              <div className="p-3 bg-[#141313] border border-[#27272A] rounded-lg">
-                <div className="text-lg font-bold font-mono text-white">
+              <div className="p-3 bg-surface-primary border border-border-primary rounded-lg">
+                <div className="text-lg font-bold font-mono text-text-primary">
                   {filteredTasks.filter((t) => !t.completed).length}
                 </div>
                 <div className="text-[9px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-0.5">
                   To Do
                 </div>
               </div>
-              <div className="p-3 bg-[#141313] border border-[#27272A] rounded-lg">
-                <div className="text-lg font-bold font-mono text-white">
+              <div className="p-3 bg-surface-primary border border-border-primary rounded-lg">
+                <div className="text-lg font-bold font-mono text-text-primary">
                   {filteredTasks.filter((t) => t.completed).length}
                 </div>
                 <div className="text-[9px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-0.5">

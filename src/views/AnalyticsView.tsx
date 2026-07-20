@@ -153,36 +153,38 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
       score = Math.round(day.hours);
     }
 
-    if (score === 0) return 'bg-[#141313] border-[#27272A]/40 hover:border-white/40';
-    if (score <= 2) return 'bg-white/25 border-white/20 hover:border-white/60';
-    if (score <= 4) return 'bg-white/50 border-white/40 hover:border-white/80';
-    if (score <= 7) return 'bg-white/75 border-white/60 hover:border-white';
-    return 'bg-white border-white shadow-[0_0_8px_rgba(255,255,255,0.4)]';
+    if (score === 0) {
+      return 'bg-surface-secondary border-border-primary/40 hover:border-border-focus/40';
+    }
+    if (score <= 2) return 'bg-text-primary/25 border-text-primary/20 hover:border-text-primary/60';
+    if (score <= 4) return 'bg-text-primary/50 border-text-primary/40 hover:border-text-primary/80';
+    if (score <= 7) return 'bg-text-primary/75 border-text-primary/60 hover:border-text-primary';
+    return 'bg-text-primary border-text-primary shadow-[0_0_8px_rgba(255,255,255,0.4)]';
   };
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 space-y-6">
-      <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-8">
+      <div className="bg-surface-primary border border-border-primary rounded-xl p-6 space-y-8">
         {/* Header */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-[#27272A]/10 pb-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-border-primary/10 pb-6">
           <div>
-            <h2 className="text-sm font-bold text-white uppercase tracking-wider font-mono flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-white" />
+            <h2 className="text-sm font-bold text-text-primary uppercase tracking-wider font-mono flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-text-primary" />
               <span>Performance & Contribution Analytics</span>
             </h2>
-            <p className="text-xs text-[#8E9192] mt-1">
+            <p className="text-xs text-text-muted mt-1">
               Daily velocity report and annual activity heatmap across all projects and sprints.
             </p>
           </div>
 
           {/* Metric Selector Tabs */}
-          <div className="flex items-center bg-[#141313] border border-[#27272A] rounded-lg p-1 gap-1">
+          <div className="flex items-center bg-surface-secondary border border-border-primary rounded-lg p-1 gap-1">
             <button
               onClick={() => setSelectedMetric('combined')}
               className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer ${
                 selectedMetric === 'combined'
-                  ? 'bg-white text-black font-bold shadow-sm'
-                  : 'text-[#8E9192] hover:text-white'
+                  ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
               }`}
             >
               Combined Activity
@@ -191,8 +193,8 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               onClick={() => setSelectedMetric('completions')}
               className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedMetric === 'completions'
-                  ? 'bg-white text-black font-bold shadow-sm'
-                  : 'text-[#8E9192] hover:text-white'
+                  ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
               }`}
             >
               <CheckCircle2 className="w-3 h-3" />
@@ -202,8 +204,8 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               onClick={() => setSelectedMetric('hours')}
               className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
                 selectedMetric === 'hours'
-                  ? 'bg-white text-black font-bold shadow-sm'
-                  : 'text-[#8E9192] hover:text-white'
+                  ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow-sm'
+                  : 'text-text-muted hover:text-text-primary'
               }`}
             >
               <Clock className="w-3 h-3" />
@@ -214,47 +216,47 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
         {/* High Level Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 relative overflow-hidden group hover:border-white/20 transition-all">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">
+          <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 relative overflow-hidden group hover:border-border-focus/20 transition-all">
+            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-text-muted">
               Focus Velocity
             </span>
-            <div className="text-3xl font-bold font-mono text-white mt-2">
+            <div className="text-3xl font-bold font-mono text-text-primary mt-2">
               {analyticsData.focusVelocity}%
             </div>
-            <p className="text-[10px] text-[#8E9192] mt-1">
+            <p className="text-[10px] text-text-muted mt-1">
               Completion rate across all active sprint tasks
             </p>
           </div>
-          <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 group hover:border-white/20 transition-all">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">
+          <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 group hover:border-border-focus/20 transition-all">
+            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-text-muted">
               30-Day Accomplishments
             </span>
-            <div className="text-3xl font-bold font-mono text-white mt-2">
+            <div className="text-3xl font-bold font-mono text-text-primary mt-2">
               {analyticsData.taskAccomplishments}
             </div>
-            <p className="text-[10px] text-[#8E9192] mt-1">
+            <p className="text-[10px] text-text-muted mt-1">
               Total tasks completed over the last 30 days
             </p>
           </div>
-          <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 group hover:border-white/20 transition-all">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">
+          <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 group hover:border-border-focus/20 transition-all">
+            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-text-muted">
               Uninterrupted Streaks
             </span>
-            <div className="text-3xl font-bold font-mono text-white mt-2 flex items-center gap-2">
-              <Flame className="w-6 h-6 text-white fill-current animate-pulse" />
+            <div className="text-3xl font-bold font-mono text-text-primary mt-2 flex items-center gap-2">
+              <Flame className="w-6 h-6 text-text-primary fill-current animate-pulse" />
               <span>
                 {analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}
               </span>
             </div>
-            <p className="text-[10px] text-[#8E9192] mt-1">
+            <p className="text-[10px] text-text-muted mt-1">
               Maintained daily completion focus sprint
             </p>
           </div>
         </div>
 
         {/* Weekly Strategic Activity Bar Chart */}
-        <div className="border-t border-[#27272A]/50 pt-6">
-          <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-4">
+        <div className="border-t border-border-primary/50 pt-6">
+          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
             Current Week Strategic Load
           </h3>
           <div className="h-44 flex items-end justify-between gap-4">
@@ -263,15 +265,15 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
                 key={i}
                 className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"
               >
-                <div className="text-xs text-white bg-[#141313] border border-[#27272A] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
+                <div className="text-xs text-text-primary bg-surface-secondary border border-border-primary px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
                   {d.completions}t / {(d.hours * 60).toFixed(0)}m
                 </div>
                 <div
                   style={{ height: `${Math.max(4, (d.hours / 6) * 100)}%` }}
-                  className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-[#1C1B1B] group-hover:bg-zinc-600'}`}
+                  className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-interactive-primary shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-surface-tertiary group-hover:bg-zinc-600'}`}
                 />
                 <span
-                  className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-white' : 'text-[#8E9192]'}`}
+                  className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-text-primary' : 'text-text-muted'}`}
                 >
                   {d.day}
                 </span>
@@ -281,36 +283,38 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         </div>
 
         {/* 1-Year Contribution Heatmap Section */}
-        <div className="border-t border-[#27272A]/50 pt-6 space-y-4">
+        <div className="border-t border-border-primary/50 pt-6 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono">
+              <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono">
                 Annual Contribution Heatmap
               </h3>
               <div className="flex items-center gap-3 text-xs font-mono mt-1">
-                <span className="text-white font-bold">
+                <span className="text-text-primary font-bold">
                   {totalYearCompletions}{' '}
-                  <span className="text-[#8E9192] font-normal">tasks completed</span>
+                  <span className="text-text-muted font-normal">tasks completed</span>
                 </span>
-                <span className="text-[#27272A]">•</span>
-                <span className="text-white font-bold">
+                <span className="text-border-primary">•</span>
+                <span className="text-text-primary font-bold">
                   {totalYearHours}h{' '}
-                  <span className="text-[#8E9192] font-normal">focused past year</span>
+                  <span className="text-text-muted font-normal">focused past year</span>
                 </span>
               </div>
             </div>
 
             {/* Hovered cell status bar */}
-            <div className="min-h-[24px] flex items-center text-xs font-mono text-[#8E9192]">
+            <div className="min-h-[24px] flex items-center text-xs font-mono text-text-muted">
               {hoveredDay ? (
-                <span className="text-white font-medium bg-[#141313] border border-[#27272A] px-2.5 py-0.5 rounded flex items-center gap-2">
-                  <span className="text-[#8E9192]">{hoveredDay.formattedDate}:</span>
-                  <span className="text-white font-bold">{hoveredDay.completions} tasks</span>
-                  <span className="text-[#8E9192]">•</span>
-                  <span className="text-white font-bold">{hoveredDay.hours}h focused</span>
+                <span className="text-text-primary font-medium bg-surface-secondary border border-border-primary px-2.5 py-0.5 rounded flex items-center gap-2">
+                  <span className="text-text-muted">{hoveredDay.formattedDate}:</span>
+                  <span className="text-text-primary font-bold">
+                    {hoveredDay.completions} tasks
+                  </span>
+                  <span className="text-text-muted">•</span>
+                  <span className="text-text-primary font-bold">{hoveredDay.hours}h focused</span>
                 </span>
               ) : (
-                <span className="text-[11px] text-[#8E9192] flex items-center gap-1.5">
+                <span className="text-[11px] text-text-muted flex items-center gap-1.5">
                   <Info className="w-3 h-3" />
                   <span>Hover over any day square to inspect sprint details</span>
                 </span>
@@ -319,15 +323,15 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           </div>
 
           {/* Heatmap Grid Box */}
-          <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 overflow-x-auto scrollbar-thin">
+          <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 overflow-x-auto scrollbar-thin">
             <div className="min-w-[720px]">
               {/* Month Header Row */}
-              <div className="flex relative h-5 mb-1 pl-8 text-[10px] font-mono text-[#8E9192] select-none">
+              <div className="flex relative h-5 mb-1 pl-8 text-[10px] font-mono text-text-muted select-none">
                 {monthLabels.map((m, idx) => (
                   <span
                     key={idx}
                     style={{ left: `${32 + m.colIndex * 14}px` }}
-                    className="absolute top-0 font-medium text-white/70 tracking-wider"
+                    className="absolute top-0 font-medium text-text-primary/70 tracking-wider"
                   >
                     {m.monthName}
                   </span>
@@ -337,7 +341,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               {/* Grid Body: Day Labels + Week Columns */}
               <div className="flex gap-2">
                 {/* Day of week labels */}
-                <div className="flex flex-col justify-between text-[9px] font-mono text-[#8E9192] py-0.5 pr-1 select-none w-6 h-[98px]">
+                <div className="flex flex-col justify-between text-[9px] font-mono text-text-muted py-0.5 pr-1 select-none w-6 h-[98px]">
                   <span>Mon</span>
                   <span>Wed</span>
                   <span>Fri</span>
@@ -366,13 +370,13 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               </div>
 
               {/* Legend */}
-              <div className="flex justify-end items-center gap-2 mt-4 text-[10px] font-mono text-[#8E9192] pt-3 border-t border-[#27272A]/40">
+              <div className="flex justify-end items-center gap-2 mt-4 text-[10px] font-mono text-text-muted pt-3 border-t border-border-primary/40">
                 <span>Less</span>
-                <div className="w-3 h-3 rounded-[2px] bg-[#141313] border border-[#27272A]/40" />
-                <div className="w-3 h-3 rounded-[2px] bg-white/25 border border-white/20" />
-                <div className="w-3 h-3 rounded-[2px] bg-white/50 border border-white/40" />
-                <div className="w-3 h-3 rounded-[2px] bg-white/75 border border-white/60" />
-                <div className="w-3 h-3 rounded-[2px] bg-white border border-white shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
+                <div className="w-3 h-3 rounded-[2px] bg-surface-secondary border border-border-primary/40" />
+                <div className="w-3 h-3 rounded-[2px] bg-text-primary/25 border border-text-primary/20" />
+                <div className="w-3 h-3 rounded-[2px] bg-text-primary/50 border border-text-primary/40" />
+                <div className="w-3 h-3 rounded-[2px] bg-text-primary/75 border border-text-primary/60" />
+                <div className="w-3 h-3 rounded-[2px] bg-text-primary border border-text-primary shadow-[0_0_8px_rgba(255,255,255,0.4)]" />
                 <span>More</span>
               </div>
             </div>

@@ -5,7 +5,8 @@
    Applied when body has class "oled-black"
    ============================================ */
 
-body.oled-black {
+:root.oled-black {
+  color-scheme: dark;
   --_surface-app: #000000;
   --_surface-primary: #000000;
   --_surface-secondary: #000000;

@@ -37,7 +37,7 @@ export default function NotificationSettings({
         >
           <div
             className={`w-4 h-4 rounded-full transition-all duration-200 ${
-              soundAlerts ? 'bg-white ml-auto' : 'bg-text-muted ml-0'
+              soundAlerts ? 'bg-interactive-primary-text ml-auto' : 'bg-text-muted ml-0'
             }`}
           />
         </button>

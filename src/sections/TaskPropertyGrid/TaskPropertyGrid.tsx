@@ -101,7 +101,7 @@ export default function TaskPropertyGrid({
                 setActivePropertyEdit(null);
               }}
               className={`dropdown-item ${
-                task.status === s ? 'bg-white/10 text-white font-semibold' : ''
+                task.status === s ? 'bg-surface-hover text-text-primary font-semibold' : ''
               }`}
             >
               <span>{s}</span>
@@ -124,7 +124,7 @@ export default function TaskPropertyGrid({
                 onChange('projectId', null);
                 setActivePropertyEdit(null);
               }}
-              className={`dropdown-item ${!task.projectId ? 'bg-white/10 text-white font-semibold' : ''}`}
+              className={`dropdown-item ${!task.projectId ? 'bg-surface-hover text-text-primary font-semibold' : ''}`}
             >
               No Project
             </button>
@@ -138,7 +138,9 @@ export default function TaskPropertyGrid({
                     setActivePropertyEdit(null);
                   }}
                   className={`dropdown-item truncate ${
-                    task.projectId === p.id ? 'bg-white/10 text-white font-semibold' : ''
+                    task.projectId === p.id
+                      ? 'bg-surface-hover text-text-primary font-semibold'
+                      : ''
                   }`}
                 >
                   {p.name}
@@ -226,7 +228,7 @@ export default function TaskPropertyGrid({
                 setActivePropertyEdit(null);
               }}
               className={`dropdown-item ${
-                task.priority === p ? 'bg-white/10 text-white font-semibold' : ''
+                task.priority === p ? 'bg-surface-hover text-text-primary font-semibold' : ''
               }`}
             >
               <span>{p}</span>
@@ -257,7 +259,7 @@ export default function TaskPropertyGrid({
                 onChange('sprintId', null);
                 setActivePropertyEdit(null);
               }}
-              className={`dropdown-item ${!task.sprintId ? 'bg-white/10 text-white font-semibold' : ''}`}
+              className={`dropdown-item ${!task.sprintId ? 'bg-surface-hover text-text-primary font-semibold' : ''}`}
             >
               Backlog (Unassigned)
             </button>
@@ -269,7 +271,7 @@ export default function TaskPropertyGrid({
                   setActivePropertyEdit(null);
                 }}
                 className={`dropdown-item flex items-center justify-between ${
-                  task.sprintId === s.id ? 'bg-white/10 text-white font-semibold' : ''
+                  task.sprintId === s.id ? 'bg-surface-hover text-text-primary font-semibold' : ''
                 }`}
               >
                 <span className="truncate">{s.name}</span>
@@ -292,7 +294,7 @@ export default function TaskPropertyGrid({
                     e.stopPropagation();
                     handleRemoveLabel(lbl);
                   }}
-                  className="text-[10px] bg-black px-1.5 py-0.5 rounded border border-border-primary text-text-muted hover:text-red-400 hover:border-red-400/40 transition-colors cursor-pointer"
+                  className="text-[10px] bg-surface-primary px-1.5 py-0.5 rounded border border-border-primary text-text-muted hover:text-red-400 hover:border-red-400/40 transition-colors cursor-pointer"
                 >
                   {lbl} ×
                 </span>
@@ -325,6 +327,25 @@ export default function TaskPropertyGrid({
               </button>
             </form>
           )}
+        </PropertyCard>
+
+        {/* Reminders */}
+        <PropertyCard
+          icon={<Clock className="w-5 h-5" />}
+          label="Reminders"
+          value={
+            task.reminders && task.reminders.length > 0 && task.reminders[0] !== 'Add Reminders'
+              ? `${task.reminders.length} Set`
+              : 'None'
+          }
+          isActive={activePropertyEdit === 'reminders'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'reminders' ? null : 'reminders')
+          }
+        >
+          <div className="p-1">
+            <div className="text-xs text-text-muted text-center p-2">Reminders coming soon!</div>
+          </div>
         </PropertyCard>
 
         {/* Time Spent */}
@@ -370,8 +391,36 @@ export default function TaskPropertyGrid({
             </div>
           </div>
         </PropertyCard>
-      </div>
 
+        {/* Time Effort */}
+        <PropertyCard
+          icon={<Clock className="w-5 h-5" />}
+          label="Time Effort"
+          value={formatMinutes(task.timeEffort || 0)}
+          isActive={activePropertyEdit === 'effort'}
+          onClick={() => setActivePropertyEdit(activePropertyEdit === 'effort' ? null : 'effort')}
+        >
+          <div className="p-1 space-y-2">
+            <div className="flex justify-between items-center gap-1.5 pt-1">
+              <input
+                type="number"
+                min="0"
+                placeholder="Mins..."
+                value={task.timeEffort || ''}
+                onChange={(e) => onChange('timeEffort', parseInt(e.target.value) || 0)}
+                className="w-full bg-surface-secondary border border-border-primary text-xs text-text-primary rounded p-1 focus:outline-none focus:border-white"
+              />
+              <button
+                type="button"
+                onClick={() => onChange('timeEffort', 0)}
+                className="px-2 py-1 bg-red-500/10 text-red-400 border border-red-500/30 rounded text-[10px] font-mono hover:bg-red-500/20"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </PropertyCard>
+      </div>
       {((task.timeEffort && task.timeEffort > 0) || (task.timeSpent && task.timeSpent > 0)) && (
         <div className="bg-surface-secondary border border-border-primary rounded-xl p-3.5 space-y-2 mt-3">
           <div className="flex justify-between items-center text-xs font-mono">
@@ -383,7 +432,7 @@ export default function TaskPropertyGrid({
                 : ''}
             </span>
           </div>
-          <div className="w-full bg-black h-2 rounded-full overflow-hidden border border-border-primary">
+          <div className="w-full bg-surface-primary h-2 rounded-full overflow-hidden border border-border-primary">
             <div
               className={`h-full transition-all duration-300 ${
                 task.timeEffort && (task.timeSpent || 0) > task.timeEffort

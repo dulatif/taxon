@@ -64,12 +64,12 @@ export default function FocusModeView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-[#000000] text-white z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none"
+      className="fixed inset-0 bg-surface-app text-text-primary z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none"
     >
       {/* Hide / Minimize button to close full screen without stopping timer */}
       <button
         onClick={onMinimizeFocusMode}
-        className="absolute top-14 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141313]/80 hover:bg-[#1A1919] border border-[#27272A] hover:border-white/40 text-[#8E9192] hover:text-white transition-all cursor-pointer font-mono text-xs uppercase font-semibold"
+        className="absolute top-14 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-secondary/80 hover:bg-surface-hover border border-border-primary hover:border-border-focus/40 text-text-muted hover:text-text-primary transition-all cursor-pointer font-mono text-xs uppercase font-semibold"
         title="Hide full screen focus mode (keep timer running)"
       >
         <Minimize2 className="w-3.5 h-3.5" />
@@ -96,28 +96,28 @@ export default function FocusModeView({
                 : '🌴 Long Break'}
           </span>
         </div>
-        <span className="font-mono text-[10px] font-semibold text-[#8E9192] uppercase tracking-[0.2em] mb-1 block">
+        <span className="font-mono text-[10px] font-semibold text-text-muted uppercase tracking-[0.2em] mb-1 block">
           Working On
         </span>
-        <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight px-4 leading-normal truncate">
+        <h2 className="text-2xl md:text-3xl font-black text-text-primary tracking-tight px-4 leading-normal truncate">
           {activeTask ? activeTask.title : 'Standalone Focus'}
         </h2>
 
         {/* Priority tags metadata indicators */}
-        <div className="mt-4 flex items-center justify-center space-x-2 text-[#8E9192] text-xs flex-wrap gap-y-2">
-          <span className="font-mono uppercase px-2 py-0.5 rounded border border-[#27272A]/80 bg-[#121212]/50">
+        <div className="mt-4 flex items-center justify-center space-x-2 text-text-muted text-xs flex-wrap gap-y-2">
+          <span className="font-mono uppercase px-2 py-0.5 rounded border border-border-primary/80 bg-surface-primary/50">
             {currentProject ? currentProject.name : 'Personal'}
           </span>
-          <span className="text-[#27272A] font-bold">•</span>
-          <span className="font-mono uppercase font-bold text-white tracking-wider">
+          <span className="text-border-primary font-bold">•</span>
+          <span className="font-mono uppercase font-bold text-text-primary tracking-wider">
             {activeTask ? activeTask.priority || 'Medium' : 'FREE SESSION'}
           </span>
           {activeTask && onUnlinkTask && (
             <>
-              <span className="text-[#27272A] font-bold">•</span>
+              <span className="text-border-primary font-bold">•</span>
               <button
                 onClick={onUnlinkTask}
-                className="flex items-center gap-1 font-mono text-[10px] uppercase text-[#8E9192] hover:text-white bg-[#141313] hover:bg-[#1A1919] px-2 py-0.5 rounded border border-[#27272A] transition-colors cursor-pointer"
+                className="flex items-center gap-1 font-mono text-[10px] uppercase text-text-muted hover:text-text-primary bg-surface-secondary hover:bg-surface-hover px-2 py-0.5 rounded border border-border-primary transition-colors cursor-pointer"
                 title="Unlink task to run a standalone focus session"
               >
                 <Unlink className="w-3 h-3" />
@@ -139,7 +139,7 @@ export default function FocusModeView({
         >
           {/* Background track circle */}
           <circle
-            className="text-[#121212]"
+            className="text-surface-primary"
             stroke="currentColor"
             strokeWidth="4"
             fill="transparent"
@@ -149,7 +149,7 @@ export default function FocusModeView({
           />
           {/* Active progress meter stroke with transition and correct timing coordinates */}
           <circle
-            className="text-white transition-[stroke-dashoffset] duration-1000 ease-linear"
+            className="text-text-primary transition-[stroke-dashoffset] duration-1000 ease-linear"
             stroke="currentColor"
             strokeWidth="4"
             strokeDasharray={2 * Math.PI * 140}
@@ -164,10 +164,10 @@ export default function FocusModeView({
 
         {/* Floating monospace timer readouts */}
         <div className="absolute inset-0 flex flex-col items-center justify-center">
-          <div className="font-sans font-medium text-6xl md:text-[80px] tracking-tighter text-white font-mono leading-none">
+          <div className="font-sans font-medium text-6xl md:text-[80px] tracking-tighter text-text-primary font-mono leading-none">
             {formattedTime()}
           </div>
-          <div className="mt-2 flex items-center space-x-1.5 text-[#8E9192] group-hover:text-white transition-colors">
+          <div className="mt-2 flex items-center space-x-1.5 text-text-muted group-hover:text-text-primary transition-colors">
             {timerIsRunning ? (
               <>
                 <Pause className="w-4 h-4 fill-current" />
@@ -191,9 +191,9 @@ export default function FocusModeView({
       <div className="flex items-center space-x-8 z-10 pb-4">
         <button
           onClick={onEndFocusMode}
-          className="flex flex-col items-center justify-center text-[#8E9192] hover:text-white transition-colors group cursor-pointer"
+          className="flex flex-col items-center justify-center text-text-muted hover:text-text-primary transition-colors group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-full border border-[#27272A] flex items-center justify-center mb-2 group-hover:border-white transition-colors">
+          <div className="w-12 h-12 rounded-full border border-border-primary flex items-center justify-center mb-2 group-hover:border-border-focus transition-colors">
             <StopCircle className="w-5 h-5 text-red-500 fill-current" />
           </div>
           <span className="text-[10px] uppercase font-bold tracking-widest font-mono">
@@ -203,9 +203,9 @@ export default function FocusModeView({
 
         <button
           onClick={onSkipTimer}
-          className="flex flex-col items-center justify-center text-[#8E9192] hover:text-white transition-colors group cursor-pointer"
+          className="flex flex-col items-center justify-center text-text-muted hover:text-text-primary transition-colors group cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-full border border-[#27272A] flex items-center justify-center mb-2 group-hover:border-white transition-colors">
+          <div className="w-12 h-12 rounded-full border border-border-primary flex items-center justify-center mb-2 group-hover:border-border-focus transition-colors">
             <SkipForward className="w-5 h-5" />
           </div>
           <span className="text-[10px] uppercase font-bold tracking-widest font-mono">Skip</span>
@@ -213,16 +213,16 @@ export default function FocusModeView({
       </div>
 
       {/* Up Next pending tasks footer queue */}
-      <div className="w-full max-w-lg pb-4 border-t border-[#121212] pt-6 relative z-10 bg-black">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black px-4 whitespace-nowrap">
-          <span className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.2em]">
+      <div className="w-full max-w-lg pb-4 border-t border-border-primary pt-6 relative z-10 bg-surface-app">
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-surface-app px-4 whitespace-nowrap">
+          <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">
             Up Next Queue
           </span>
         </div>
 
         <div className="flex flex-col space-y-3.5 max-h-[140px] overflow-y-auto scrollbar-none px-2">
           {upNextTasks.length === 0 ? (
-            <div className="text-center py-2 text-xs text-[#8E9192]/50 italic">
+            <div className="text-center py-2 text-xs text-text-muted/50 italic">
               No pending tasks queued
             </div>
           ) : (
@@ -230,13 +230,13 @@ export default function FocusModeView({
               <div
                 key={task.id}
                 onClick={() => onSelectTaskToFocus(task)}
-                className="flex items-center justify-between text-[#8E9192] hover:text-white transition-colors cursor-pointer group"
+                className="flex items-center justify-between text-text-muted hover:text-text-primary transition-colors cursor-pointer group"
               >
                 <div className="flex items-center space-x-3 truncate">
-                  <Circle className="w-2.5 h-2.5 fill-transparent text-[#27272A]/80 group-hover:text-white transition-colors shrink-0" />
+                  <Circle className="w-2.5 h-2.5 fill-transparent text-border-primary/80 group-hover:text-text-primary transition-colors shrink-0" />
                   <span className="text-xs font-semibold truncate max-w-[280px]">{task.title}</span>
                 </div>
-                <span className="font-mono text-[10px] text-[#27272A] group-hover:text-[#8E9192] font-semibold transition-colors shrink-0 bg-[#0E0E0E] px-2 py-0.5 rounded border border-[#27272A]/50">
+                <span className="font-mono text-[10px] text-border-primary group-hover:text-text-muted font-semibold transition-colors shrink-0 bg-surface-primary px-2 py-0.5 rounded border border-border-primary/50">
                   {task.duration || '25m'}
                 </span>
               </div>

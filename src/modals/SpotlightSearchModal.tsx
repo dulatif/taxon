@@ -87,7 +87,7 @@ export default function SpotlightSearchModal({
         type: 'action' as const,
         label: 'Quick Add Task',
         subLabel: 'Create a new task immediately',
-        icon: <Plus className="w-4 h-4 text-white" />,
+        icon: <Plus className="w-4 h-4 text-text-primary" />,
         action: () => {
           onClose();
           onQuickAddTask();
@@ -228,7 +228,7 @@ export default function SpotlightSearchModal({
         type: 'project',
         label: proj.name,
         subLabel: `${proj.category} • ${proj.progress}% Complete`,
-        icon: <Folder className="w-4 h-4 text-[#8E9192]" />,
+        icon: <Folder className="w-4 h-4 text-text-muted" />,
         action: () => {
           onClose();
           onSelectProject(proj.id);
@@ -250,7 +250,7 @@ export default function SpotlightSearchModal({
               e.stopPropagation();
               onToggleTask(task.id);
             }}
-            className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center hover:border-white transition-colors cursor-pointer shrink-0"
+            className="w-4 h-4 rounded border border-border-primary flex items-center justify-center hover:border-border-focus transition-colors cursor-pointer shrink-0"
           >
             <Check
               className={`w-3 h-3 ${task.completed ? 'text-green-400' : 'text-transparent'}`}
@@ -344,28 +344,28 @@ export default function SpotlightSearchModal({
             transition={{ duration: 0.18, ease: 'easeOut' }}
             onClick={(e) => e.stopPropagation()}
             onKeyDown={handleKeyDown}
-            className="w-full max-w-2xl bg-[#0A0A0A]/95 backdrop-blur-2xl border border-[#27272A] rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[70vh]"
+            className="w-full max-w-2xl bg-surface-primary/95 backdrop-blur-2xl border border-border-primary rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.8)] overflow-hidden flex flex-col max-h-[70vh]"
           >
             {/* Search Input Bar */}
-            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[#27272A]/80 bg-[#141313]/50">
-              <Search className="w-5 h-5 text-[#8E9192] shrink-0 ml-1" />
+            <div className="flex items-center gap-3 px-4 py-3.5 border-b border-border-primary/80 bg-surface-secondary/50">
+              <Search className="w-5 h-5 text-text-muted shrink-0 ml-1" />
               <input
                 ref={inputRef}
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Type a command or search tasks & projects... (↑↓ to navigate)"
-                className="w-full bg-transparent border-0 text-sm text-white placeholder-[#8E9192]/60 focus:outline-none focus:ring-0"
+                className="w-full bg-transparent border-0 text-sm text-text-primary placeholder-text-muted/60 focus:outline-none focus:ring-0"
               />
               {query && (
                 <button
                   onClick={() => setQuery('')}
-                  className="text-[10px] text-[#8E9192] hover:text-white font-mono uppercase bg-[#141313] px-2 py-1 rounded border border-[#27272A]"
+                  className="text-[10px] text-text-muted hover:text-text-primary font-mono uppercase bg-surface-secondary px-2 py-1 rounded border border-border-primary"
                 >
                   Clear
                 </button>
               )}
-              <span className="text-[10px] bg-[#1E1E22] border border-[#27272A] rounded px-2 py-1 font-mono text-[#8E9192] shrink-0">
+              <span className="text-[10px] bg-surface-tertiary border border-border-primary rounded px-2 py-1 font-mono text-text-muted shrink-0">
                 ESC
               </span>
             </div>
@@ -374,9 +374,9 @@ export default function SpotlightSearchModal({
             <div ref={listRef} className="flex-1 overflow-y-auto p-2 space-y-4 scrollbar-thin">
               {combinedList.length === 0 ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
-                  <Command className="w-8 h-8 text-[#27272A] mb-3 stroke-[1.5]" />
-                  <p className="text-xs text-[#8E9192]">No results matching "{query}"</p>
-                  <p className="text-[11px] text-[#8E9192]/60 mt-1">
+                  <Command className="w-8 h-8 text-border-primary mb-3 stroke-[1.5]" />
+                  <p className="text-xs text-text-muted">No results matching "{query}"</p>
+                  <p className="text-[11px] text-text-muted/60 mt-1">
                     Try checking for typos or searching a different keyword.
                   </p>
                 </div>
@@ -385,8 +385,8 @@ export default function SpotlightSearchModal({
                   {/* Quick Actions Group */}
                   {filteredActions.length > 0 && (
                     <div className="space-y-1">
-                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] font-mono">
-                        <Sparkles className="w-3 h-3 text-[#8E9192]" />
+                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] font-mono">
+                        <Sparkles className="w-3 h-3 text-text-muted" />
                         <span>Quick Actions</span>
                       </div>
                       <div className="space-y-0.5">
@@ -401,27 +401,27 @@ export default function SpotlightSearchModal({
                               onClick={action.action}
                               className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                                 isSelected
-                                  ? 'bg-[#1E1E22] border border-[#27272A] text-white shadow-sm'
-                                  : 'border border-transparent hover:bg-[#141313]/50 text-[#8E9192] hover:text-white'
+                                  ? 'bg-surface-tertiary border border-border-primary text-text-primary shadow-sm'
+                                  : 'border border-transparent hover:bg-surface-secondary/50 text-text-muted hover:text-text-primary'
                               }`}
                             >
                               <div className="flex items-center gap-3 min-w-0">
-                                <div className="p-1.5 rounded-lg bg-[#1E1E22] border border-[#27272A]/60">
+                                <div className="p-1.5 rounded-lg bg-surface-tertiary border border-border-primary/60">
                                   {action.icon}
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-semibold truncate text-white">
+                                  <div className="text-xs font-semibold truncate text-text-primary">
                                     {action.label}
                                   </div>
                                   {action.subLabel && (
-                                    <div className="text-[11px] text-[#8E9192]/80 truncate">
+                                    <div className="text-[11px] text-text-muted/80 truncate">
                                       {action.subLabel}
                                     </div>
                                   )}
                                 </div>
                               </div>
                               <ArrowRight
-                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`}
+                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-text-primary' : 'opacity-0'}`}
                               />
                             </div>
                           );
@@ -433,8 +433,8 @@ export default function SpotlightSearchModal({
                   {/* Projects Group */}
                   {filteredProjects.length > 0 && (
                     <div className="space-y-1">
-                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] font-mono">
-                        <Folder className="w-3 h-3 text-[#8E9192]" />
+                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] font-mono">
+                        <Folder className="w-3 h-3 text-text-muted" />
                         <span>Projects ({filteredProjects.length})</span>
                       </div>
                       <div className="space-y-0.5">
@@ -452,25 +452,25 @@ export default function SpotlightSearchModal({
                               }}
                               className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                                 isSelected
-                                  ? 'bg-[#1E1E22] border border-[#27272A] text-white shadow-sm'
-                                  : 'border border-transparent hover:bg-[#141313]/50 text-[#8E9192] hover:text-white'
+                                  ? 'bg-surface-tertiary border border-border-primary text-text-primary shadow-sm'
+                                  : 'border border-transparent hover:bg-surface-secondary/50 text-text-muted hover:text-text-primary'
                               }`}
                             >
                               <div className="flex items-center gap-3 min-w-0">
-                                <div className="p-1.5 rounded-lg bg-[#1E1E22] border border-[#27272A]/60 text-[#8E9192]">
+                                <div className="p-1.5 rounded-lg bg-surface-tertiary border border-border-primary/60 text-text-muted">
                                   <Folder className="w-4 h-4" />
                                 </div>
                                 <div className="min-w-0">
-                                  <div className="text-xs font-semibold truncate text-white">
+                                  <div className="text-xs font-semibold truncate text-text-primary">
                                     {proj.name}
                                   </div>
-                                  <div className="text-[11px] text-[#8E9192]/80 truncate">
+                                  <div className="text-[11px] text-text-muted/80 truncate">
                                     {proj.category} • {proj.progress}% Complete
                                   </div>
                                 </div>
                               </div>
                               <ArrowRight
-                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`}
+                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-text-primary' : 'opacity-0'}`}
                               />
                             </div>
                           );
@@ -482,8 +482,8 @@ export default function SpotlightSearchModal({
                   {/* Tasks Group */}
                   {filteredTasks.length > 0 && (
                     <div className="space-y-1">
-                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.15em] font-mono">
-                        <Check className="w-3 h-3 text-[#8E9192]" />
+                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] font-mono">
+                        <Check className="w-3 h-3 text-text-muted" />
                         <span>Tasks ({filteredTasks.length})</span>
                       </div>
                       <div className="space-y-0.5">
@@ -507,8 +507,8 @@ export default function SpotlightSearchModal({
                               }}
                               className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                                 isSelected
-                                  ? 'bg-[#1E1E22] border border-[#27272A] text-white shadow-sm'
-                                  : 'border border-transparent hover:bg-[#141313]/50 text-[#8E9192] hover:text-white'
+                                  ? 'bg-surface-tertiary border border-border-primary text-text-primary shadow-sm'
+                                  : 'border border-transparent hover:bg-surface-secondary/50 text-text-muted hover:text-text-primary'
                               }`}
                             >
                               <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -521,7 +521,7 @@ export default function SpotlightSearchModal({
                                   className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
                                     task.completed
                                       ? 'bg-green-500/10 border-green-500 text-green-400'
-                                      : 'border-[#27272A] hover:border-white'
+                                      : 'border-border-primary hover:border-border-focus'
                                   }`}
                                 >
                                   <Check
@@ -530,17 +530,17 @@ export default function SpotlightSearchModal({
                                 </button>
                                 <div className="min-w-0 flex-1">
                                   <div
-                                    className={`text-xs font-semibold truncate ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}
+                                    className={`text-xs font-semibold truncate ${task.completed ? 'line-through text-text-muted' : 'text-text-primary'}`}
                                   >
                                     {task.title}
                                   </div>
-                                  <div className="flex items-center gap-2 text-[11px] text-[#8E9192]/80 truncate mt-0.5">
+                                  <div className="flex items-center gap-2 text-[11px] text-text-muted/80 truncate mt-0.5">
                                     {proj ? (
-                                      <span className="bg-[#1E1E22] px-1.5 py-0.5 rounded text-[10px] border border-[#27272A]">
+                                      <span className="bg-surface-tertiary px-1.5 py-0.5 rounded text-[10px] border border-border-primary">
                                         {proj.name}
                                       </span>
                                     ) : (
-                                      <span className="text-[#8E9192]/60">Inbox</span>
+                                      <span className="text-text-muted/60">Inbox</span>
                                     )}
                                     {task.priority && (
                                       <span className="text-[10px] opacity-80 font-mono">
@@ -550,7 +550,7 @@ export default function SpotlightSearchModal({
                                   </div>
                                 </div>
                               </div>
-                              <span className="text-[10px] font-mono text-[#8E9192]/60 shrink-0 ml-2">
+                              <span className="text-[10px] font-mono text-text-muted/60 shrink-0 ml-2">
                                 {task.completed ? 'Done' : 'Active'}
                               </span>
                             </div>
@@ -564,22 +564,22 @@ export default function SpotlightSearchModal({
             </div>
 
             {/* Footer Shortcuts Guide */}
-            <div className="px-4 py-2.5 border-t border-[#27272A]/80 bg-[#141313]/40 flex items-center justify-between text-[11px] text-[#8E9192] font-mono">
+            <div className="px-4 py-2.5 border-t border-border-primary/80 bg-surface-secondary/40 flex items-center justify-between text-[11px] text-text-muted font-mono">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                  <span className="px-1.5 py-0.5 bg-surface-tertiary border border-border-primary rounded text-[10px] text-text-primary">
                     ↑↓
                   </span>
                   Navigate
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                  <span className="px-1.5 py-0.5 bg-surface-tertiary border border-border-primary rounded text-[10px] text-text-primary">
                     ↵
                   </span>
                   Select
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                  <span className="px-1.5 py-0.5 bg-surface-tertiary border border-border-primary rounded text-[10px] text-text-primary">
                     ESC
                   </span>
                   Close
@@ -587,7 +587,7 @@ export default function SpotlightSearchModal({
               </div>
               <div className="flex items-center gap-1">
                 <span>Spotlight</span>
-                <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                <span className="px-1.5 py-0.5 bg-surface-tertiary border border-border-primary rounded text-[10px] text-text-primary">
                   ⌘K
                 </span>
               </div>

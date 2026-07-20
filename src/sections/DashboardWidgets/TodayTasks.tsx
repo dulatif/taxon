@@ -150,7 +150,7 @@ export default function TodayTasks({
                             </div>
 
                             <div className="flex items-center gap-3 shrink-0">
-                              <span className="text-[10px] text-text-muted flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-border-primary/50">
+                              <span className="text-[10px] text-text-muted flex items-center gap-1 font-mono tracking-wider bg-surface-secondary/80 px-2 py-0.5 rounded border border-border-primary/50">
                                 <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                               </span>
                               <button
@@ -288,7 +288,7 @@ export default function TodayTasks({
                                     </div>
                                   </div>
                                   <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-[10px] text-red-400/70 flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-red-500/20">
+                                    <span className="text-[10px] text-red-400/70 flex items-center gap-1 font-mono tracking-wider bg-surface-secondary/80 px-2 py-0.5 rounded border border-red-500/20">
                                       <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                                     </span>
                                     <button
@@ -431,7 +431,7 @@ export default function TodayTasks({
                                   </div>
 
                                   <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-[10px] text-text-muted flex items-center gap-1 font-mono tracking-wider bg-black/40 px-2 py-0.5 rounded border border-border-primary/50">
+                                    <span className="text-[10px] text-text-muted flex items-center gap-1 font-mono tracking-wider bg-surface-secondary/80 px-2 py-0.5 rounded border border-border-primary/50">
                                       <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                                     </span>
                                     {onDeleteTask && (

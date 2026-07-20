@@ -4,6 +4,7 @@
    ============================================ */
 
 :root {
+  color-scheme: dark;
   --_surface-app: #000000;
   --_surface-primary: #0a0a0a;
   --_surface-secondary: #141313;
