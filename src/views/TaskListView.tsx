@@ -1,19 +1,31 @@
-import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Check, Trash2, ChevronDown, ChevronRight, ArrowUpDown, SortAsc, X, Filter, Calendar, Tag, Folder, AlertCircle, ChevronsUpDown, Plus, Repeat } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Task, Project, RecurrenceRule } from '../types';;
 import {
-  TaskFilters,
+  AlertCircle,
+  ArrowUpDown,
+  Calendar,
+  Check,
+  ChevronDown,
+  Filter,
+  Folder,
+  SortAsc,
+  X,
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import TaskEmptyState from '../sections/TaskList/TaskEmptyState';
+import TaskListGroup from '../sections/TaskList/TaskListGroup';
+import TaskListHeader from '../sections/TaskList/TaskListHeader';
+import TaskListItem from '../sections/TaskList/TaskListItem';
+import type { Project, Task } from '../types';
+import {
   DEFAULT_FILTERS,
-  SortKey,
-  PRIORITY_COLORS,
-  PRIORITY_ORDER,
+  type DueDateRangeKey,
   filterTasks,
-  sortTasks,
   groupTasksByProject,
   hasActiveFilters,
-  getDueDateLabel,
-  DueDateRangeKey,
+  PRIORITY_COLORS,
+  type SortKey,
+  sortTasks,
+  type TaskFilters,
 } from '../utils/taskFilters';
 
 interface TaskListViewProps {
@@ -35,7 +47,12 @@ interface TaskListViewProps {
 // ---------------------------------------------------------------------------
 // Dropdown popover wrapper
 // ---------------------------------------------------------------------------
-function FilterPopover({ label, icon: Icon, active, children }: {
+function FilterPopover({
+  label,
+  icon: Icon,
+  active,
+  children,
+}: {
   label: string;
   icon: React.ElementType;
   active: boolean;
@@ -55,11 +72,11 @@ function FilterPopover({ label, icon: Icon, active, children }: {
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen(o => !o)}
-        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all ${
+        onClick={() => setOpen((o) => !o)}
+        className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer ${
           active
             ? 'bg-white text-black border-white'
-            : 'bg-[#141313] text-[#A1A1AA] border-[#27272A] hover:border-white/40 hover:text-white'
+            : 'bg-surface-secondary text-text-muted border-border-primary hover:border-white/40 hover:text-white'
         }`}
       >
         <Icon className="w-3 h-3" />
@@ -73,77 +90,13 @@ function FilterPopover({ label, icon: Icon, active, children }: {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.97 }}
             transition={{ duration: 0.12 }}
-            className="absolute top-full left-0 mt-1.5 z-50 min-w-[180px] bg-[#0A0A0A] border border-[#27272A] rounded-xl shadow-2xl overflow-hidden"
+            className="absolute top-full left-0 mt-1.5 z-50 min-w-[180px] bg-surface-primary border border-border-primary rounded-xl shadow-2xl overflow-hidden"
           >
             {children}
           </motion.div>
         )}
       </AnimatePresence>
     </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Priority badge pill
-// ---------------------------------------------------------------------------
-function PriorityBadge({ priority }: { priority: Task['priority'] }) {
-  const c = PRIORITY_COLORS[priority];
-  return (
-    <span className={`inline-flex items-center justify-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider leading-tight ${c.bg} ${c.text}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${c.dot}`} />
-      <span className="self-center">{priority}</span>
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Due date badge
-// ---------------------------------------------------------------------------
-function DueDateBadge({ dueDate }: { dueDate: string | undefined }) {
-  const label = getDueDateLabel(dueDate);
-  if (!label) return null;
-  const isOverdue = label === 'Overdue';
-  const isToday = label === 'Today';
-  return (
-    <span className={`inline-flex items-center gap-1 text-[9px] font-bold font-mono px-1.5 py-0.5 rounded border ${
-      isOverdue
-        ? 'text-red-400 border-red-500/40 bg-red-500/10'
-        : isToday
-        ? 'text-yellow-400 border-yellow-500/40 bg-yellow-500/10'
-        : 'text-[#8E9192] border-[#27272A] bg-black/30'
-    }`}>
-      <Calendar className="w-2.5 h-2.5" />
-      {label}
-    </span>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Recurrence badge
-// ---------------------------------------------------------------------------
-function RecurrenceBadge({ recurrence }: { recurrence?: RecurrenceRule }) {
-  if (!recurrence) return null;
-  let label = 'Daily';
-  if (recurrence.frequency === 'daily') label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}d` : 'Daily';
-  else if (recurrence.frequency === 'weekdays') label = 'Weekdays';
-  else if (recurrence.frequency === 'weekly') {
-    if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
-      const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      const days = recurrence.daysOfWeek.map(d => names[d]).join(',');
-      label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}w (${days})` : `Weekly (${days})`;
-    } else {
-      label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}w` : 'Weekly';
-    }
-  }
-  else if (recurrence.frequency === 'monthly') label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}m` : 'Monthly';
-  else if (recurrence.frequency === 'yearly') label = recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}y` : 'Yearly';
-  else if (recurrence.frequency === 'custom') label = `Every ${recurrence.interval || 1}d`;
-
-  return (
-    <span className="inline-flex items-center gap-1 text-[9px] font-bold font-mono px-1.5 py-0.5 rounded border text-blue-400 border-blue-500/40 bg-blue-500/10" title="Recurring Task">
-      <Repeat className="w-2.5 h-2.5" />
-      {label}
-    </span>
   );
 }
 
@@ -161,124 +114,12 @@ const FilterChip: React.FC<{ label: string; onRemove: () => void }> = ({ label, 
       className="inline-flex items-center gap-1.5 px-2 py-1 bg-white/10 border border-white/20 rounded-lg text-[10px] font-semibold text-white"
     >
       {label}
-      <button onClick={onRemove} className="hover:text-red-400 transition-colors">
+      <button onClick={onRemove} className="hover:text-red-400 transition-colors cursor-pointer">
         <X className="w-2.5 h-2.5" />
       </button>
     </motion.span>
   );
 };
-
-// ---------------------------------------------------------------------------
-// Collapsible group section
-// ---------------------------------------------------------------------------
-const TaskGroup: React.FC<{
-  groupName: string;
-  tasks: Task[];
-  collapsed: boolean;
-  onToggle: () => void;
-  onToggleTask: (id: string) => void;
-  onDeleteTask: (id: string) => void;
-  onSelectTask: (task: Task) => void;
-}> = ({
-  groupName,
-  tasks,
-  collapsed,
-  onToggle,
-  onToggleTask,
-  onDeleteTask,
-  onSelectTask,
-}) => {
-  const done = tasks.filter(t => t.completed).length;
-
-  return (
-    <div className="mb-1">
-      {/* Group header */}
-      <button
-        onClick={onToggle}
-        className="w-full flex items-center gap-2 px-2 py-2 rounded-lg hover:bg-[#141313]/60 transition-colors group"
-      >
-        {collapsed
-          ? <ChevronRight className="w-3.5 h-3.5 text-[#8E9192]" />
-          : <ChevronDown className="w-3.5 h-3.5 text-[#8E9192]" />
-        }
-        <Folder className="w-3.5 h-3.5 text-[#8E9192]" />
-        <span className="text-xs font-bold text-[#A1A1AA] tracking-wide">{groupName}</span>
-        <span className="text-[10px] font-mono bg-[#1a1a1a] border border-[#27272A] text-[#8E9192] px-1.5 py-0.5 rounded ml-auto">
-          {done}/{tasks.length}
-        </span>
-      </button>
-
-      {/* Group rows */}
-      <AnimatePresence initial={false}>
-        {!collapsed && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18, ease: 'easeInOut' }}
-            className="overflow-hidden"
-          >
-            <div className="divide-y divide-[#27272A]/40 pl-2">
-              <AnimatePresence>
-                {tasks.map((task, index) => (
-                  <motion.div
-                    key={task.id}
-                    layout
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, x: 40 }}
-                    transition={{ delay: index * 0.03 }}
-                    className="py-3 flex items-center justify-between group hover:bg-[#141313]/50 px-2 rounded-lg transition-colors cursor-pointer"
-                    onClick={() => onSelectTask(task)}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                        aria-label="Toggle Complete"
-                        className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
-                      >
-                        <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
-                      </button>
-                      <div className="min-w-0">
-                        <span className={`text-xs font-semibold truncate block max-w-sm ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
-                          {task.title}
-                        </span>
-                        <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                          <PriorityBadge priority={task.priority} />
-                          <DueDateBadge dueDate={task.dueDate} />
-                          <RecurrenceBadge recurrence={task.recurrence} />
-                          {task.labels && task.labels.length > 0 && (
-                            <span className="inline-flex items-center gap-1 text-[9px] text-[#8E9192] bg-black/30 border border-[#27272A]/50 px-1.5 py-0.5 rounded">
-                              <Tag className="w-2.5 h-2.5" />
-                              {task.labels[0]}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="text-[9px] font-mono text-[#8E9192] bg-[#141313] border border-[#27272A]/40 px-1.5 py-0.5 rounded hidden group-hover:inline-flex items-center gap-1">
-                        {task.duration || '25m'}
-                      </span>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
-                        aria-label="Delete Task"
-                        className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Main component
@@ -321,17 +162,20 @@ export default function TaskListView({
 
   // Whenever groups change (filter/group-by toggle), initialise newly-seen IDs as collapsed
   const groupIds = useMemo(
-    () => groups?.map(g => g.projectId ?? '__unassigned__') ?? [],
-    [groups]
+    () => groups?.map((g) => g.projectId ?? '__unassigned__') ?? [],
+    [groups],
   );
   useEffect(() => {
     if (groupIds.length === 0) return;
-    setCollapsedGroups(prev => {
+    setCollapsedGroups((prev) => {
       // Only set IDs that aren't already tracked (preserve user overrides)
       const next = new Set(prev);
       let changed = false;
-      groupIds.forEach(id => {
-        if (!next.has(id)) { next.add(id); changed = true; }
+      groupIds.forEach((id) => {
+        if (!next.has(id)) {
+          next.add(id);
+          changed = true;
+        }
       });
       return changed ? next : prev;
     });
@@ -350,9 +194,10 @@ export default function TaskListView({
   };
 
   const toggleGroup = (id: string) => {
-    setCollapsedGroups(prev => {
+    setCollapsedGroups((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -361,35 +206,37 @@ export default function TaskListView({
   const STATUSES: Task['status'][] = ['To Do', 'In Progress', 'Done'];
   const DUE_DATE_OPTIONS: { key: DueDateRangeKey; label: string }[] = [
     { key: 'overdue', label: 'Overdue' },
-    { key: 'today',   label: 'Today' },
-    { key: 'week',    label: 'This Week' },
-    { key: 'month',   label: 'This Month' },
-    { key: 'custom',  label: 'Custom Range' },
+    { key: 'today', label: 'Today' },
+    { key: 'week', label: 'This Week' },
+    { key: 'month', label: 'This Month' },
+    { key: 'custom', label: 'Custom Range' },
   ];
 
   const togglePriority = (p: Task['priority']) => {
-    setFilters(f => ({
+    setFilters((f) => ({
       ...f,
-      priority: f.priority.includes(p) ? f.priority.filter(x => x !== p) : [...f.priority, p],
+      priority: f.priority.includes(p) ? f.priority.filter((x) => x !== p) : [...f.priority, p],
     }));
   };
 
   const toggleStatus = (s: Task['status']) => {
-    setFilters(f => ({
+    setFilters((f) => ({
       ...f,
-      status: f.status.includes(s) ? f.status.filter(x => x !== s) : [...f.status, s],
+      status: f.status.includes(s) ? f.status.filter((x) => x !== s) : [...f.status, s],
     }));
   };
 
   const toggleProject = (id: string) => {
-    setFilters(f => ({
+    setFilters((f) => ({
       ...f,
-      projectIds: f.projectIds.includes(id) ? f.projectIds.filter(x => x !== id) : [...f.projectIds, id],
+      projectIds: f.projectIds.includes(id)
+        ? f.projectIds.filter((x) => x !== id)
+        : [...f.projectIds, id],
     }));
   };
 
   const setDueDateRange = (key: DueDateRangeKey) => {
-    setFilters(f => ({
+    setFilters((f) => ({
       ...f,
       dueDateRange: f.dueDateRange === key ? null : key,
       customFrom: key !== 'custom' ? '' : f.customFrom,
@@ -399,120 +246,93 @@ export default function TaskListView({
 
   const clearAllFilters = () => setFilters(DEFAULT_FILTERS);
 
-  const activeFilterCount = filters.priority.length + filters.status.length + filters.projectIds.length + (filters.dueDateRange ? 1 : 0);
-
   const cycleSortBy = () => {
     const order: SortKey[] = ['dueDate', 'priority', 'none'];
     const next = order[(order.indexOf(sortBy) + 1) % order.length];
     setSortBy(next);
   };
 
-  const sortLabel = sortBy === 'dueDate' ? 'Due Date' : sortBy === 'priority' ? 'Priority' : 'Default';
+  const sortLabel =
+    sortBy === 'dueDate' ? 'Due Date' : sortBy === 'priority' ? 'Priority' : 'Default';
 
   // Build active chip descriptors
   const activeChips: { label: string; remove: () => void }[] = [
-    ...filters.priority.map(p => ({
+    ...filters.priority.map((p) => ({
       label: `Priority: ${p}`,
       remove: () => togglePriority(p),
     })),
-    ...filters.status.map(s => ({
+    ...filters.status.map((s) => ({
       label: `Status: ${s}`,
       remove: () => toggleStatus(s),
     })),
-    ...filters.projectIds.map(id => {
-      const proj = projects.find(p => p.id === id);
+    ...filters.projectIds.map((id) => {
+      const proj = projects.find((p) => p.id === id);
       return {
         label: `Project: ${proj?.name ?? id}`,
         remove: () => toggleProject(id),
       };
     }),
     ...(filters.dueDateRange
-      ? [{
-          label: `Date: ${DUE_DATE_OPTIONS.find(o => o.key === filters.dueDateRange)?.label ?? filters.dueDateRange}`,
-          remove: () => setFilters(f => ({ ...f, dueDateRange: null, customFrom: '', customTo: '' })),
-        }]
+      ? [
+          {
+            label: `Date: ${DUE_DATE_OPTIONS.find((o) => o.key === filters.dueDateRange)?.label ?? filters.dueDateRange}`,
+            remove: () =>
+              setFilters((f) => ({ ...f, dueDateRange: null, customFrom: '', customTo: '' })),
+          },
+        ]
       : []),
   ];
 
   return (
-    <div className={isEmbedded ? "w-full" : "max-w-4xl mx-auto py-6 px-4 md:px-6"}>
-      <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl overflow-hidden">
-
+    <div className={isEmbedded ? 'w-full' : 'max-w-4xl mx-auto py-6 px-4 md:px-6'}>
+      <div className="bg-surface-primary border border-border-primary rounded-xl overflow-hidden">
         {/* ── Header ── */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-[#27272A] bg-[#141313]">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono leading-none">
-            {title}
-          </h2>
-          <div className="flex items-center gap-2">
-            {/* Expand / Collapse all — only shown when grouped */}
-            {!isSimpleView && groupByProject && (
-              <button
-                onClick={toggleAllGroups}
-                title={allExpanded ? 'Collapse all groups' : 'Expand all groups'}
-                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border transition-all ${
-                  allExpanded
-                    ? 'bg-white/10 border-white/20 text-white'
-                    : 'bg-transparent border-[#27272A] text-[#8E9192] hover:text-white hover:border-white/30'
-                }`}
-              >
-                <ChevronsUpDown className="w-3 h-3" />
-                {allExpanded ? 'Collapse All' : 'Expand All'}
-              </button>
-            )}
-            {/* Group toggle */}
-            {!isSimpleView && (
-              <button
-                onClick={() => setGroupByProject(g => !g)}
-                title={groupByProject ? 'Switch to flat list' : 'Group by project'}
-                className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded border transition-all ${
-                  groupByProject
-                    ? 'bg-white/10 border-white/20 text-white'
-                    : 'bg-transparent border-[#27272A] text-[#8E9192] hover:text-white hover:border-white/30'
-                }`}
-              >
-                <Folder className="w-3 h-3" />
-                {groupByProject ? 'Grouped' : 'Flat'}
-              </button>
-            )}
-            <span className="text-[10px] font-mono font-bold bg-[#1a1a1a] border border-[#27272A] text-[#8E9192] px-2 py-0.5 rounded">
-              {filteredTasks.length} / {tasks.length} Tasks
-            </span>
-          </div>
-        </div>
+        <TaskListHeader
+          title={title}
+          isSimpleView={isSimpleView}
+          groupByProject={groupByProject}
+          allExpanded={allExpanded}
+          filteredTasksCount={filteredTasks.length}
+          totalTasksCount={tasks.length}
+          toggleAllGroups={toggleAllGroups}
+          setGroupByProject={setGroupByProject}
+        />
 
         {/* ── Filter / Sort Toolbar ── */}
-        <div className="px-4 py-3 border-b border-[#27272A]/60 bg-[#0D0D0D] space-y-2">
+        <div className="px-4 py-3 border-b border-border-primary/60 bg-surface-secondary space-y-2">
           {/* Row 1: buttons */}
           <div className="flex items-center gap-2 flex-wrap">
             {/* Sort button */}
             <button
               onClick={cycleSortBy}
-              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all ${
+              className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-semibold transition-all cursor-pointer ${
                 sortBy !== 'none'
                   ? 'bg-white/10 text-white border-white/20'
-                  : 'bg-[#141313] text-[#A1A1AA] border-[#27272A] hover:border-white/40 hover:text-white'
+                  : 'bg-surface-secondary text-text-muted border-border-primary hover:border-white/40 hover:text-white'
               }`}
             >
-              {sortBy === 'none' ? <ArrowUpDown className="w-3 h-3" /> : <SortAsc className="w-3 h-3" />}
+              {sortBy === 'none' ? (
+                <ArrowUpDown className="w-3 h-3" />
+              ) : (
+                <SortAsc className="w-3 h-3" />
+              )}
               Sort: {sortLabel}
             </button>
 
             {/* Priority filter */}
-            <FilterPopover
-              label="Priority"
-              icon={AlertCircle}
-              active={filters.priority.length > 0}
-            >
+            <FilterPopover label="Priority" icon={AlertCircle} active={filters.priority.length > 0}>
               <div className="p-1.5 space-y-0.5">
-                {PRIORITIES.map(p => {
+                {PRIORITIES.map((p) => {
                   const c = PRIORITY_COLORS[p];
                   const on = filters.priority.includes(p);
                   return (
                     <button
                       key={p}
                       onClick={() => togglePriority(p)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
-                        on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
+                        on
+                          ? 'bg-white/10 text-white'
+                          : 'text-text-muted hover:bg-surface-hover hover:text-white'
                       }`}
                     >
                       <span className={`w-2 h-2 rounded-full ${c.dot}`} />
@@ -525,27 +345,29 @@ export default function TaskListView({
             </FilterPopover>
 
             {/* Status filter */}
-            <FilterPopover
-              label="Status"
-              icon={Filter}
-              active={filters.status.length > 0}
-            >
+            <FilterPopover label="Status" icon={Filter} active={filters.status.length > 0}>
               <div className="p-1.5 space-y-0.5">
-                {STATUSES.map(s => {
+                {STATUSES.map((s) => {
                   const on = filters.status.includes(s);
                   return (
                     <button
                       key={s}
                       onClick={() => toggleStatus(s)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
-                        on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
+                        on
+                          ? 'bg-white/10 text-white'
+                          : 'text-text-muted hover:bg-surface-hover hover:text-white'
                       }`}
                     >
-                      <span className={`w-2 h-2 rounded-full border ${
-                        s === 'Done' ? 'bg-green-500 border-green-400' :
-                        s === 'In Progress' ? 'bg-blue-500 border-blue-400' :
-                        'bg-[#27272A] border-[#3f3f3f]'
-                      }`} />
+                      <span
+                        className={`w-2 h-2 rounded-full border ${
+                          s === 'Done'
+                            ? 'bg-green-500 border-green-400'
+                            : s === 'In Progress'
+                              ? 'bg-blue-500 border-blue-400'
+                              : 'bg-surface-secondary border-border-primary'
+                        }`}
+                      />
                       {s}
                       {on && <Check className="w-3 h-3 ml-auto text-white" />}
                     </button>
@@ -556,30 +378,28 @@ export default function TaskListView({
 
             {/* Project filter */}
             {!isSimpleView && (
-              <FilterPopover
-                label="Project"
-                icon={Folder}
-                active={filters.projectIds.length > 0}
-              >
+              <FilterPopover label="Project" icon={Folder} active={filters.projectIds.length > 0}>
                 <div className="p-1.5 space-y-0.5 max-h-48 overflow-y-auto">
-                  {projects.map(proj => {
+                  {projects.map((proj) => {
                     const on = filters.projectIds.includes(proj.id);
                     return (
                       <button
                         key={proj.id}
                         onClick={() => toggleProject(proj.id)}
-                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
-                          on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
+                          on
+                            ? 'bg-white/10 text-white'
+                            : 'text-text-muted hover:bg-surface-hover hover:text-white'
                         }`}
                       >
-                        <span className="w-2 h-2 rounded-sm bg-[#27272A] border border-[#3f3f3f]" />
+                        <span className="w-2 h-2 rounded-sm bg-surface-secondary border border-border-primary" />
                         <span className="truncate max-w-[140px]">{proj.name}</span>
                         {on && <Check className="w-3 h-3 ml-auto shrink-0 text-white" />}
                       </button>
                     );
                   })}
                   {projects.length === 0 && (
-                    <div className="px-2.5 py-2 text-[10px] text-[#8E9192]">No projects yet</div>
+                    <div className="px-2.5 py-2 text-[10px] text-text-muted">No projects yet</div>
                   )}
                 </div>
               </FilterPopover>
@@ -593,14 +413,16 @@ export default function TaskListView({
                 active={filters.dueDateRange !== null}
               >
                 <div className="p-1.5 space-y-0.5">
-                  {DUE_DATE_OPTIONS.map(opt => {
+                  {DUE_DATE_OPTIONS.map((opt) => {
                     const on = filters.dueDateRange === opt.key;
                     return (
                       <button
                         key={opt.key}
                         onClick={() => setDueDateRange(opt.key)}
-                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left ${
-                          on ? 'bg-white/10 text-white' : 'text-[#A1A1AA] hover:bg-[#141313] hover:text-white'
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
+                          on
+                            ? 'bg-white/10 text-white'
+                            : 'text-text-muted hover:bg-surface-hover hover:text-white'
                         }`}
                       >
                         {opt.label}
@@ -614,14 +436,14 @@ export default function TaskListView({
                       <input
                         type="date"
                         value={filters.customFrom}
-                        onChange={e => setFilters(f => ({ ...f, customFrom: e.target.value }))}
-                        className="w-full bg-[#141313] border border-[#27272A] text-[10px] text-white rounded px-2 py-1 focus:outline-none focus:border-white/40"
+                        onChange={(e) => setFilters((f) => ({ ...f, customFrom: e.target.value }))}
+                        className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-white/40"
                       />
                       <input
                         type="date"
                         value={filters.customTo}
-                        onChange={e => setFilters(f => ({ ...f, customTo: e.target.value }))}
-                        className="w-full bg-[#141313] border border-[#27272A] text-[10px] text-white rounded px-2 py-1 focus:outline-none focus:border-white/40"
+                        onChange={(e) => setFilters((f) => ({ ...f, customTo: e.target.value }))}
+                        className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-white/40"
                       />
                     </div>
                   )}
@@ -644,7 +466,7 @@ export default function TaskListView({
                 ))}
                 <button
                   onClick={clearAllFilters}
-                  className="text-[10px] text-[#8E9192] hover:text-white transition-colors font-semibold ml-1 underline underline-offset-2"
+                  className="text-[10px] text-text-muted hover:text-text-primary transition-colors font-semibold ml-1 underline underline-offset-2 cursor-pointer"
                 >
                   Clear all
                 </button>
@@ -657,24 +479,13 @@ export default function TaskListView({
         <div className="p-3">
           <AnimatePresence mode="wait">
             {filteredTasks.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="py-16 text-center text-xs text-[#8E9192]"
-              >
-                {hasActiveFilters(filters)
-                  ? 'No tasks match the current filters.'
-                  : 'No records match current parameters.'
-                }
-              </motion.div>
+              <TaskEmptyState hasActiveFilters={hasActiveFilters(filters)} />
             ) : groupByProject && groups ? (
               <motion.div key="grouped" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-                {groups.map(group => {
+                {groups.map((group) => {
                   const gid = group.projectId ?? '__unassigned__';
                   return (
-                    <TaskGroup
+                    <TaskListGroup
                       key={gid}
                       groupName={group.projectName}
                       tasks={group.tasks}
@@ -688,81 +499,43 @@ export default function TaskListView({
                 })}
               </motion.div>
             ) : (
-              <motion.div key="flat" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="divide-y divide-[#27272A]/40">
+              <motion.div
+                key="flat"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="divide-y divide-border-primary/40"
+              >
                 <AnimatePresence>
                   {filteredTasks.map((task, index) => (
-                    <motion.div
+                    <TaskListItem
                       key={task.id}
-                      layout
-                      initial={{ opacity: 0, y: 8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, x: 40 }}
-                      transition={{ delay: index * 0.03 }}
-                      className="py-3 flex items-center justify-between group hover:bg-[#141313]/50 px-2 rounded-lg transition-colors cursor-pointer"
-                      onClick={() => onSelectTask(task)}
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
-                          aria-label="Toggle Complete"
-                          className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center shrink-0 hover:border-white transition-colors"
-                        >
-                          <Check className={`w-2.5 h-2.5 text-white transition-opacity ${task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'}`} />
-                        </button>
-                        <div className="min-w-0">
-                          <span className={`text-xs font-semibold truncate block max-w-sm ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
-                            {task.title}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <PriorityBadge priority={task.priority} />
-                            <DueDateBadge dueDate={task.dueDate} />
-                            <RecurrenceBadge recurrence={task.recurrence} />
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-[9px] font-mono text-[#8E9192] bg-[#141313] border border-[#27272A]/40 px-1.5 py-0.5 rounded hidden group-hover:inline-flex">
-                          {task.duration || '25m'}
-                        </span>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
-                          aria-label="Delete Task"
-                          className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </motion.div>
+                      task={task}
+                      index={index}
+                      onToggleTask={onToggleTask}
+                      onDeleteTask={onDeleteTask}
+                      onSelectTask={onSelectTask}
+                    />
                   ))}
                 </AnimatePresence>
               </motion.div>
             )}
           </AnimatePresence>
 
-          {/* Inline Input Field for Adding New Task */}
+          {/* Add Task Input (if provided) */}
           {onAddTask && (
-            <form onSubmit={handleAddTaskSubmit} className="mt-4 px-1">
-              <div className="flex items-center gap-3 px-3 py-2 bg-[#141313] border border-[#27272A]/80 rounded-lg focus-within:border-white/30 transition-all">
-                <Plus className="w-4 h-4 text-[#8E9192] shrink-0" />
+            <div className="mt-2 pt-2 border-t border-border-primary/50">
+              <form onSubmit={handleAddTaskSubmit}>
                 <input
                   type="text"
-                  className="bg-transparent border-none focus:outline-none text-xs text-white placeholder:text-[#8E9192]/60 w-full"
                   placeholder={addTaskPlaceholder}
                   value={newTaskTitle}
                   onChange={(e) => setNewTaskTitle(e.target.value)}
+                  className="w-full bg-transparent text-sm text-text-primary placeholder:text-text-muted focus:outline-none px-3 py-2 rounded hover:bg-surface-secondary/50 transition-colors"
                 />
-                <button 
-                  type="submit" 
-                  disabled={!newTaskTitle.trim()}
-                  className="bg-zinc-800 text-white hover:bg-zinc-700 text-[10px] font-bold px-2.5 py-1 rounded disabled:opacity-40 transition-colors shrink-0 cursor-pointer"
-                >
-                  Create
-                </button>
-              </div>
-            </form>
+              </form>
+            </div>
           )}
         </div>
-
       </div>
     </div>
   );
