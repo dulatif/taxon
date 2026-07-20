@@ -1,60 +1,64 @@
-import '@testing-library/jest-dom/vitest';
-import { cleanup } from '@testing-library/react';
-import { afterEach, vi } from 'vitest';
+import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 
-// Automatically cleanup after each test
-afterEach(() => {
-  cleanup();
+// Mock matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: vi.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(), // deprecated
+    removeListener: vi.fn(), // deprecated
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  })),
 });
 
-// Mock Tauri APIs globally for tests
-vi.mock('@tauri-apps/api/window', () => ({
-  getCurrentWindow: vi.fn(() => ({
-    minimize: vi.fn(),
-    toggleMaximize: vi.fn(),
-    close: vi.fn(),
-    onResized: vi.fn(() => vi.fn()),
-    isMaximized: vi.fn(() => Promise.resolve(false)),
-  })),
-}));
-
-vi.mock('@tauri-apps/plugin-sql', () => ({
-  default: {
-    load: vi.fn(() =>
-      Promise.resolve({
-        execute: vi.fn(() => Promise.resolve()),
-        select: vi.fn(() => Promise.resolve([])),
-      }),
-    ),
-  },
+// Mock Tauri APIs
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@tauri-apps/plugin-dialog', () => ({
-  save: vi.fn(),
-  open: vi.fn(),
+  open: vi.fn().mockResolvedValue(null),
+  message: vi.fn().mockResolvedValue(true),
 }));
 
 vi.mock('@tauri-apps/plugin-fs', () => ({
-  writeTextFile: vi.fn(),
-  readTextFile: vi.fn(),
-  stat: vi.fn(),
-  readDir: vi.fn(() => Promise.resolve([])),
-  readFile: vi.fn(),
-  writeFile: vi.fn(),
-  remove: vi.fn(),
-}));
-
-vi.mock('@tauri-apps/plugin-shell', () => ({
-  open: vi.fn(),
-}));
-
-vi.mock('@tauri-apps/plugin-notification', () => ({
-  isPermissionGranted: vi.fn(() => Promise.resolve(true)),
-  requestPermission: vi.fn(() => Promise.resolve('granted')),
-  sendNotification: vi.fn(),
+  readTextFile: vi.fn().mockResolvedValue(''),
+  writeTextFile: vi.fn().mockResolvedValue(true),
+  exists: vi.fn().mockResolvedValue(true),
+  mkdir: vi.fn().mockResolvedValue(true),
+  remove: vi.fn().mockResolvedValue(true),
+  rename: vi.fn().mockResolvedValue(true),
+  readDir: vi.fn().mockResolvedValue([]),
+  stat: vi.fn().mockResolvedValue({ isFile: true, isDirectory: false }),
 }));
 
 vi.mock('@tauri-apps/plugin-global-shortcut', () => ({
-  register: vi.fn(),
-  unregisterAll: vi.fn(),
+  register: vi.fn().mockResolvedValue(true),
+  unregister: vi.fn().mockResolvedValue(true),
+  unregisterAll: vi.fn().mockResolvedValue(true),
 }));
+
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] || null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value.toString();
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+  };
+})();
+Object.defineProperty(window, 'localStorage', {
+  value: localStorageMock,
+});
