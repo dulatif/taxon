@@ -16,6 +16,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState, useMemo } from 'react';
 import { Project, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
+import logo from '../assets/logo.png';
 
 interface SidebarProps {
   currentView: string;
@@ -147,9 +148,12 @@ export default function Sidebar({
       {/* Main Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin py-6 px-4 min-h-0 flex flex-col">
         {/* Brand Header */}
-        <div className="mb-8 px-2 cursor-pointer shrink-0" onClick={() => onViewChange('dashboard')}>
-          <h1 className="text-xl font-black text-white tracking-tighter">Taxon</h1>
-          <p className="text-xs tracking-tight text-[#c4c7c8]/60 font-medium">Precision Tasking</p>
+        <div className="mb-8 px-2 cursor-pointer shrink-0 flex items-center gap-3" onClick={() => onViewChange('dashboard')}>
+          <img src={logo} alt="Taxon Logo" className="w-10 h-10 object-contain rounded-[10px]" />
+          <div>
+            <h1 className="text-xl font-black text-white tracking-tighter leading-tight">Taxon</h1>
+            <p className="text-[10px] tracking-tight text-[#c4c7c8]/60 font-medium uppercase mt-0.5">Precision Tasking</p>
+          </div>
         </div>
 
         {/* Main Nav */}
