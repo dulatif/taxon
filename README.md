@@ -1,20 +1,64 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://ai.google.dev/static/site-assets/images/share-ais-513315318.png" />
+  <img width="200" alt="Taxon Logo" src="src/assets/logo.png" />
+  <h1>Taxon</h1>
+  <p>A local-first, privacy-focused task and project manager with Pomodoro tracking and local vault integration.</p>
 </div>
 
-# Run and deploy your AI Studio app
+## ✨ Features
 
-This contains everything you need to run your app locally.
+- **Task & Sprint Management**: Organize your workflow with projects, sprints, and daily tasks.
+- **Pomodoro Tracking**: Built-in Pomodoro timer to help you stay focused and manage work sessions.
+- **Vault Integration**: Seamlessly connect and manage local file vaults (e.g., Obsidian vaults) within your projects.
+- **Local-First & Privacy-Focused**: Your data stays on your machine. No cloud sync required, ensuring complete privacy.
 
-View your app in AI Studio: https://ai.studio/apps/7041bff9-270f-4786-9e74-e7d48082f4cd
+## 🛠 Tech Stack
 
-## Run Locally
+- **Frontend**: [React](https://reactjs.org/) & [Vite](https://vitejs.dev/)
+- **Desktop Framework**: [Tauri](https://tauri.app/) (Rust)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Package Manager**: [pnpm](https://pnpm.io/)
 
-**Prerequisites:**  Node.js
+## 🚀 Getting Started
 
+### Prerequisites
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- [Node.js](https://nodejs.org/)
+- [pnpm](https://pnpm.io/installation)
+- [Rust & Cargo](https://rustup.rs/) (Required for Tauri desktop builds)
+- System dependencies for Tauri (see [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/))
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/dulatif/taxon.git
+   cd taxon
+   ```
+2. Install dependencies:
+   ```bash
+   pnpm install
+   ```
+
+### Local Development
+
+To start the local web development server using Vite:
+```bash
+pnpm dev
+```
+
+To start the Tauri desktop app in development mode:
+```bash
+pnpm tauri dev
+```
+
+### Building for Production
+
+To build the Tauri desktop application (for example, creating an RPM bundle):
+```bash
+pnpm tauri build --bundles rpm
+```
+*Note: Depending on your OS, you can specify different bundles (e.g., `deb`, `appimage`, `msi`, `app`).*
+
+## 🔒 Data Privacy
+
+Taxon is designed with privacy at its core. All your tasks, projects, and settings are stored locally on your device. There is no external database or telemetry, giving you complete control over your data.
