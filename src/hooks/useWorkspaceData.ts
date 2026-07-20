@@ -220,8 +220,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         if (p.id === projId) {
           const updatedProj = {
             ...p,
-            progress: computedPercentage,
-            category: computedPercentage === 100 ? 'Completed' as const : p.category
+            progress: computedPercentage
           };
           saveProject(updatedProj);
           return updatedProj;
