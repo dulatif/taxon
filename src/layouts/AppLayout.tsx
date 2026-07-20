@@ -1,4 +1,3 @@
-import React from 'react';
 import { useWindowMaximize } from '../hooks/useWindowMaximize';
 
 interface AppLayoutProps {

@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface NotificationSettingsProps {
   soundAlerts: boolean;
   toggleSetting: (key: 'soundAlerts') => void;

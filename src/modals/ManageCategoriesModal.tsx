@@ -1,6 +1,6 @@
 import { AlertTriangle, Check, Edit2, Plus, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { CATEGORY_COLORS, PROJECT_CATEGORIES } from '../constants/categories';
 import { getCategoryColorId, getCategoryStyle } from '../services/category-color';
 import type { Project } from '../types';

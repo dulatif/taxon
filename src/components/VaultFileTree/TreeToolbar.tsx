@@ -1,6 +1,5 @@
 import { AlertTriangle, Edit2, FilePlus, FolderDot, Plus, RefreshCw, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React from 'react';
 
 interface TreeToolbarProps {
   vaultPath: string;

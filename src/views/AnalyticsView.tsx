@@ -1,5 +1,5 @@
 import { Calendar, CheckCircle2, Clock, Flame, Info } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { aggregateActivityData } from '../services/activityLogger';
 import type { ActivityLogEntry, DailyActivity, Task } from '../types';
 

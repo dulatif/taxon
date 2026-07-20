@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import TaskEmptyState from '../sections/TaskList/TaskEmptyState';
 import TaskListGroup from '../sections/TaskList/TaskListGroup';
 import TaskListHeader from '../sections/TaskList/TaskListHeader';

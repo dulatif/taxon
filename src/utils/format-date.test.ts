@@ -105,13 +105,10 @@ describe('getPresetDates', () => {
 
   it('first preset is "Today"', () => {
     const presets = getPresetDates();
-    expect(presets[0].label).toBe('Today');
-    expect(presets[0].date).toBe('2026-01-15');
-  });
+    expect(presets[0]!.label).toBe('Today');
+    expect(presets[0]!.date).toBe('2026-01-15');
 
-  it('second preset is "Tomorrow"', () => {
-    const presets = getPresetDates();
-    expect(presets[1].label).toBe('Tomorrow');
-    expect(presets[1].date).toBe('2026-01-16');
+    expect(presets[1]!.label).toBe('Tomorrow');
+    expect(presets[1]!.date).toBe('2026-01-16');
   });
 });

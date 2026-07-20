@@ -1,7 +1,7 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { CheckSquare, Plus, Square, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { SubTask } from '../../types';
 
 interface SubtaskListProps {

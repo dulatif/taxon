@@ -1,4 +1,3 @@
-import React from 'react';
 import type { SettingsState } from '../../types';
 
 interface GeneralSettingsProps {
@@ -122,7 +121,9 @@ export default function GeneralSettings({
         <select
           className="bg-surface-primary border border-border-primary text-[10px] uppercase font-bold text-[#C4C7C8] rounded px-3 py-1.5 focus:outline-none focus:border-white cursor-pointer tracking-wider font-mono"
           value={backupFrequency}
-          onChange={(e) => updateSetting('backupFrequency', e.target.value)}
+          onChange={(e) =>
+            updateSetting('backupFrequency', e.target.value as 'Daily' | 'Weekly' | 'Never')
+          }
         >
           <option value="Daily">Daily</option>
           <option value="Weekly">Weekly</option>

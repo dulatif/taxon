@@ -1,7 +1,7 @@
 import { addMonths, format } from 'date-fns';
 import { ArrowLeft, CalendarIcon, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { PROJECT_CATEGORIES } from '../constants/categories';
 import type { Project } from '../types';

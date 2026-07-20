@@ -1,7 +1,7 @@
 'use client';
 
 import type { PropsWithChildren, ReactNode } from 'react';
-import React, { Children, isValidElement } from 'react';
+import { Children, isValidElement } from 'react';
 
 // # entity
 interface IRenderProps extends PropsWithChildren {

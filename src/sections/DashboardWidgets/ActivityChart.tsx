@@ -1,4 +1,3 @@
-import React from 'react';
 import type { DailyActivity } from '../../types';
 
 interface ActivityChartProps {

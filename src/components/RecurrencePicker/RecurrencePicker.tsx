@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { RecurrenceFrequency, RecurrenceRule } from '../../types';
 
 interface RecurrencePickerProps {

@@ -1,7 +1,7 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { CheckCircle, MoreHorizontal, MoveLeft, MoveRight, Plus } from 'lucide-react';
-import React, { useState } from 'react';
+import { Fragment, useState } from 'react';
 import type { Project, Sprint, Task } from '../types';
 
 interface KanbanViewProps {
@@ -180,7 +180,7 @@ export default function KanbanView({
             const countVal = colTasks.length;
 
             return (
-              <React.Fragment key={colName}>
+              <Fragment key={colName}>
                 <Droppable droppableId={colName}>
                   {(provided, snapshot) => (
                     <div
@@ -345,7 +345,7 @@ export default function KanbanView({
                     </div>
                   )}
                 </Droppable>
-              </React.Fragment>
+              </Fragment>
             );
           })}
 

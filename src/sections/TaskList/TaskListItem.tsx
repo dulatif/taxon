@@ -1,6 +1,5 @@
 import { Calendar, Check, Repeat, Tag, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
-import React from 'react';
 import type { RecurrenceRule, Task } from '../../types';
 import { getDueDateLabel, PRIORITY_COLORS } from '../../utils/taskFilters';
 

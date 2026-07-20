@@ -1,6 +1,5 @@
 import { Edit3, Sparkles, X } from 'lucide-react';
 import { motion } from 'motion/react';
-import React from 'react';
 import type { Sprint } from '../../types';
 import SprintDatePicker from './SprintDatePicker';
 

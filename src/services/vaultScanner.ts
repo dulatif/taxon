@@ -104,7 +104,7 @@ export async function createDocument(vaultPath: string, filename: string): Promi
   } catch (error: unknown) {
     console.error(`Failed to create document "${filename}" inside "${vaultPath}":`, error);
     throw new Error(
-      error.message ||
+      (error as Error).message ||
         `Could not create document "${filename}". Please check file system permissions.`,
       { cause: error },
     );

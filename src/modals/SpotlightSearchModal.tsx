@@ -15,7 +15,7 @@ import {
   Timer,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Project, Task } from '../types';
 
 interface SpotlightSearchModalProps {

@@ -1,6 +1,6 @@
 import { addMonths, format } from 'date-fns';
 import { ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { formatDateStr, getPresetDates } from '../../utils/format-date';
 

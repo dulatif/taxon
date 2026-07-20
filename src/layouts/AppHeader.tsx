@@ -1,5 +1,4 @@
 import { Moon, Search, Sun, Timer } from 'lucide-react';
-import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 
 interface AppHeaderProps {

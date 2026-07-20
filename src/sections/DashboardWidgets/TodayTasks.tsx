@@ -12,7 +12,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { Project, Task } from '../../types';
 import { PRIORITY_COLORS } from '../../utils/taskFilters';
 

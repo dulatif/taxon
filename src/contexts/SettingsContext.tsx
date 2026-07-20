@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS } from '../constants/initial-data';
 import type { SettingsState } from '../types';
 

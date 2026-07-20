@@ -1,5 +1,4 @@
 import { ChevronDown, ChevronUp, Plus, Rocket } from 'lucide-react';
-import React from 'react';
 import type { Sprint } from '../../types';
 
 interface SprintHeaderProps {

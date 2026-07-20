@@ -9,7 +9,6 @@ import {
   Repeat,
   Settings,
 } from 'lucide-react';
-import React from 'react';
 
 interface NavigationListProps {
   currentView: string;

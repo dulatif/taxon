@@ -1,5 +1,4 @@
 import { Calendar, CheckCircle2, Edit3, Target } from 'lucide-react';
-import React from 'react';
 import type { Sprint } from '../../types';
 import { formatDateRange } from '../../utils/format-date';
 

@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useRef, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import type { VaultEntry } from '../types';
@@ -77,11 +77,12 @@ const markdownComponents: Record<string, unknown> = {
     />
   ),
   code: ({ node: _node, className, children, ...props }: Record<string, unknown>) => {
-    const isBlock = /language-(\w+)/.exec(className || '') || String(children).includes('\n');
+    const isBlock =
+      /language-(\w+)/.exec((className as string) || '') || String(children).includes('\n');
     if (isBlock) {
       return (
-        <code className={className} {...props}>
-          {children}
+        <code className={className as string} {...props}>
+          {children as ReactNode}
         </code>
       );
     }
@@ -90,7 +91,7 @@ const markdownComponents: Record<string, unknown> = {
         className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono"
         {...props}
       >
-        {children}
+        {children as ReactNode}
       </code>
     );
   },

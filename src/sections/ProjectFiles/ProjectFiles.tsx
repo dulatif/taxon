@@ -1,6 +1,5 @@
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
 import { ExternalLink, FileCode, FileImage, FileText, FolderOpen, Trash2 } from 'lucide-react';
-import React from 'react';
 import VaultFileTree from '../../components/VaultFileTree';
 import type { DocumentFile, Project, VaultEntry } from '../../types';
 

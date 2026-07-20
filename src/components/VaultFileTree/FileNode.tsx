@@ -7,7 +7,7 @@ import {
   FolderOpen,
   Trash2,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { VaultEntry } from '../../types';
 
 interface FileNodeProps {

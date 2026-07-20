@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import AppearanceSettings from '../sections/Settings/AppearanceSettings';
 import GeneralSettings from '../sections/Settings/GeneralSettings';
@@ -38,7 +38,9 @@ export default function SettingsView({ onExportData, onImportDataTrigger }: Sett
             <AppearanceSettings
               theme={settings.theme}
               oledBlackMode={settings.oledBlackMode}
-              updateSetting={updateSetting}
+              updateSetting={
+                updateSetting as (key: string, value: string | boolean | number) => void
+              }
               toggleSetting={toggleSetting}
             />
           )}

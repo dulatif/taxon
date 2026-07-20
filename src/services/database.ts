@@ -221,7 +221,7 @@ export const getTasks = async (): Promise<Task[]> => {
       t.timeEffort !== null && t.timeEffort !== undefined && !isNaN(Number(t.timeEffort))
         ? Number(t.timeEffort)
         : t.duration
-          ? parseDurationToMinutes(t.duration)
+          ? parseDurationToMinutes(t.duration as string)
           : 0;
     const timeSpentNum =
       t.timeSpent !== null && t.timeSpent !== undefined && !isNaN(Number(t.timeSpent))
@@ -239,7 +239,7 @@ export const getTasks = async (): Promise<Task[]> => {
       timeSpent: timeSpentNum,
       archived: !!t.archived,
       archivedAt: t.archivedAt || undefined,
-    };
+    } as unknown as Task;
   });
 };
 
@@ -360,7 +360,7 @@ export const getActivity = async (): Promise<DailyActivity[]> => {
   return raw.map((a) => ({
     ...a,
     isToday: !!a.isToday,
-  }));
+  })) as unknown as DailyActivity[];
 };
 
 export const saveActivity = async (a: DailyActivity) => {

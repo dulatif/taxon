@@ -1,6 +1,6 @@
 import { addMonths, format } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 
 interface SprintDatePickerProps {

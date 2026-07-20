@@ -1,6 +1,4 @@
 import { BellRing, Palette, Settings2 } from 'lucide-react';
-import React from 'react';
-
 export type SettingsTab = 'general' | 'appearance' | 'notifications';
 
 interface SettingsSidebarProps {

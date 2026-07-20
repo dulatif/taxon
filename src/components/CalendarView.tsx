@@ -10,7 +10,7 @@ import {
   subWeeks,
 } from 'date-fns';
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import type { Project, Task } from '../types';
 

@@ -1,6 +1,5 @@
 import { Circle, Minimize2, Pause, Play, SkipForward, StopCircle, Unlink } from 'lucide-react';
 import { motion } from 'motion/react';
-import React from 'react';
 import type { Project, Task } from '../types';
 
 interface FocusModeViewProps {

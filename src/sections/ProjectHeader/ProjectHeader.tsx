@@ -1,5 +1,5 @@
 import { CalendarIcon, CheckCircle, Edit, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
 import { formatDisplayDate } from '../../utils/format-date';

@@ -19,7 +19,7 @@ describe('task filtering', () => {
   it('filters inbox tasks (no project, no due date, not completed)', () => {
     const inbox = tasks.filter((t) => !t.projectId && !t.dueDate && !t.completed && !t.archived);
     expect(inbox).toHaveLength(1);
-    expect(inbox[0].title).toBe('Inbox task');
+    expect(inbox[0]!.title).toBe('Inbox task');
   });
 
   it('filters active (non-completed, non-archived) tasks', () => {
@@ -30,7 +30,7 @@ describe('task filtering', () => {
   it('filters archived tasks', () => {
     const archived = tasks.filter((t) => t.archived);
     expect(archived).toHaveLength(1);
-    expect(archived[0].title).toBe('Archived task');
+    expect(archived[0]!.title).toBe('Archived task');
   });
 });
 
@@ -56,9 +56,9 @@ describe('task sorting', () => {
       (a, b) => (weights[b.priority || 'Medium'] || 2) - (weights[a.priority || 'Medium'] || 2),
     );
 
-    expect(sorted[0].priority).toBe('Critical');
-    expect(sorted[1].priority).toBe('Medium');
-    expect(sorted[2].priority).toBe('Low');
+    expect(sorted[0]!.priority).toBe('Critical');
+    expect(sorted[1]!.priority).toBe('Medium');
+    expect(sorted[2]!.priority).toBe('Low');
   });
 
   it('sorts by due date (earliest first, no date last)', () => {
@@ -74,8 +74,8 @@ describe('task sorting', () => {
       return a.dueDate.localeCompare(b.dueDate);
     });
 
-    expect(sorted[0].dueDate).toBe('2026-01-10');
-    expect(sorted[1].dueDate).toBe('2026-01-20');
-    expect(sorted[2].dueDate).toBe('');
+    expect(sorted[0]!.dueDate).toBe('2026-01-10');
+    expect(sorted[1]!.dueDate).toBe('2026-01-20');
+    expect(sorted[2]!.dueDate).toBe('');
   });
 });

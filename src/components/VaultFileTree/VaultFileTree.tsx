@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import type { VaultEntry } from '../../types';
 import FileNode from './FileNode';
 import TreeToolbar from './TreeToolbar';
@@ -65,7 +65,7 @@ export default function VaultFileTree({
       setNewDocName('');
       setIsCreating(false);
     } catch (err: unknown) {
-      setCreateError(err.message || 'Failed to create document');
+      setCreateError((err as Error).message || 'Failed to create document');
     }
   };
 

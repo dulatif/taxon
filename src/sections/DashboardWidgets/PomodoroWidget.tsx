@@ -1,5 +1,4 @@
 import { Pause, Play, RotateCcw, SkipForward, Timer } from 'lucide-react';
-import React from 'react';
 import type { Task } from '../../types';
 
 interface PomodoroWidgetProps {

@@ -1,6 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { Pause } from 'lucide-react';
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import logo from '../assets/logo.png';
 import { PROJECT_CATEGORIES } from '../constants/categories';
 import NavigationList, { FOOTER_NAV_ITEMS } from '../sections/NavigationList/NavigationList';

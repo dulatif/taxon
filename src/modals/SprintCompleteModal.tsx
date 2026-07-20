@@ -8,7 +8,7 @@ import {
   Target,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { Sprint, Task } from '../types';
 
 interface SprintCompleteModalProps {

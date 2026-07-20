@@ -1,6 +1,4 @@
 import { Archive, SortAsc } from 'lucide-react';
-import React from 'react';
-
 export type TaskTabType = 'todo' | 'completed' | 'archived';
 export type TaskSortType = 'custom' | 'priority' | 'dueDate';
 

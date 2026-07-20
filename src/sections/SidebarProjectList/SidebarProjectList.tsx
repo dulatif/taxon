@@ -2,7 +2,7 @@ import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ChevronRight, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
 

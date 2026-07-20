@@ -1,6 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { ArrowRight, PlusCircle } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import ActivityChart from '../sections/DashboardWidgets/ActivityChart';
 import PomodoroWidget from '../sections/DashboardWidgets/PomodoroWidget';
 import StatsBar from '../sections/DashboardWidgets/StatsBar';

@@ -1,7 +1,7 @@
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { AlertTriangle, Archive, ArrowLeft, Plus } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import SprintCompleteModal from '../modals/SprintCompleteModal';
 import ProjectFiles from '../sections/ProjectFiles/ProjectFiles';
 import ProjectHeader from '../sections/ProjectHeader/ProjectHeader';

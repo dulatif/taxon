@@ -1,5 +1,5 @@
 import { ArrowUpRight, CheckCircle, Clock, Grid2X2, Kanban, Plus, Settings } from 'lucide-react';
-import React, { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { PROJECT_CATEGORIES } from '../constants/categories';
 import { getCategoryStyle } from '../services/category-color';
 import type { Project, Sprint, Task } from '../types';

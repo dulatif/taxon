@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import SprintFormModal from '../sections/Sprint/SprintFormModal';
 import SprintHeader from '../sections/Sprint/SprintHeader';
 import SprintList from '../sections/Sprint/SprintList';

@@ -1,5 +1,4 @@
 import { CheckCircle2, Clock, Edit3, Play, Trash2 } from 'lucide-react';
-import React from 'react';
 import type { Sprint } from '../../types';
 import { formatDateRange } from '../../utils/format-date';
 

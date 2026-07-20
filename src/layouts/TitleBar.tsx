@@ -1,7 +1,5 @@
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { Minus, Square, X } from 'lucide-react';
-import React from 'react';
-
 export default function TitleBar() {
   return (
     <div

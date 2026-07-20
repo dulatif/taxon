@@ -1,7 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { Archive, CheckSquare, RotateCcw, Square, Trash2 } from 'lucide-react';
-import React from 'react';
 import type { Project, Sprint, Task } from '../../types';
 
 import type { TaskSortType, TaskTabType } from '../ProjectTabs/ProjectTabs';

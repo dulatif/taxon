@@ -1,5 +1,4 @@
 import { ChevronsUpDown, Folder } from 'lucide-react';
-import React from 'react';
 
 interface TaskListHeaderProps {
   title: string;

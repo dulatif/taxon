@@ -1,6 +1,4 @@
 import { HelpCircle } from 'lucide-react';
-import React from 'react';
-
 export default function HelpView() {
   return (
     <div className="max-w-2xl mx-auto py-8 px-6">

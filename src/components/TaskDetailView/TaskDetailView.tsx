@@ -1,6 +1,6 @@
 import { AlertTriangle, Maximize2, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import TaskPropertyGrid from '../../sections/TaskPropertyGrid/TaskPropertyGrid';
 import type { Project, Sprint, SubTask, Task } from '../../types';
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';

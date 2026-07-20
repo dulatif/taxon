@@ -9,7 +9,7 @@ import {
   Rocket,
   Tag,
 } from 'lucide-react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DatePicker from '../../components/DatePicker/DatePicker';
 import RecurrencePicker from '../../components/RecurrencePicker/RecurrencePicker';
 import PropertyCard from '../../elements/PropertyCard';
