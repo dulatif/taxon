@@ -1,5 +1,5 @@
-import { motion, AnimatePresence } from 'motion/react';
 import { AlertTriangle, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import type { ReactNode } from 'react';
 
 interface ConfirmDialogProps {
@@ -68,7 +68,10 @@ export default function ConfirmDialog({
               <h3 className="text-text-primary font-bold text-sm">{title}</h3>
               <div className="text-text-muted text-xs mt-1 leading-relaxed">{description}</div>
             </div>
-            <button onClick={onClose} className="text-text-muted hover:text-text-primary p-1 cursor-pointer">
+            <button
+              onClick={onClose}
+              className="text-text-muted hover:text-text-primary p-1 cursor-pointer"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -81,7 +84,10 @@ export default function ConfirmDialog({
               {cancelLabel}
             </button>
             <button
-              onClick={() => { onConfirm(); onClose(); }}
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
               className={`text-xs font-bold px-4 py-1.5 rounded-lg transition-colors cursor-pointer ${styles.button}`}
             >
               {confirmLabel}

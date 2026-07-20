@@ -1,44 +1,51 @@
-import React, { useState, useEffect } from 'react';
+import { addMonths, format } from 'date-fns';
 import {
+  AlertTriangle,
+  Archive,
+  ArrowLeft,
+  CalendarIcon,
   CheckCircle,
+  CheckSquare,
+  ChevronLeft,
+  ChevronRight,
   Clock,
+  Download,
   Edit,
-  FolderOpen,
+  ExternalLink,
   FileCode,
   FileImage,
   FileText,
+  FolderOpen,
   Plus,
-  ArrowLeft,
-  SortAsc,
-  Download,
-  Trash2,
-  Square,
-  CheckSquare,
-  ExternalLink,
-  AlertTriangle,
-  X,
-  ChevronRight,
-  Archive,
   RotateCcw,
-  CalendarIcon,
-  ChevronLeft
+  SortAsc,
+  Square,
+  Trash2,
+  X,
 } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
-import { format, addMonths } from 'date-fns';
-import { Project, Task, DocumentFile, Sprint } from '../types';
 import { PROJECT_CATEGORIES } from '../constants/categories';
-import { getCategoryStyle } from '../services/category-color';;
+import { getCategoryStyle } from '../services/category-color';
+import { DocumentFile, Project, Sprint, Task } from '../types';
+
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { motion, AnimatePresence } from 'motion/react';
-import VaultFileTree from './VaultFileTree';
+import { AnimatePresence, motion } from 'motion/react';
+import SprintCompleteModal from '../modals/SprintCompleteModal';
+import {
+  createDocument,
+  deleteDocument,
+  readDocument,
+  scanVault,
+  writeDocument,
+} from '../services/vaultScanner';
+import { VaultEntry } from '../types';
 import DocumentPanel from './DocumentPanel';
 import SprintPanel from './SprintPanel';
-import SprintCompleteModal from '../modals/SprintCompleteModal';
-import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
-import { VaultEntry } from '../types';;
+import VaultFileTree from './VaultFileTree';
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -46,17 +53,35 @@ interface ProjectDetailViewProps {
   files: DocumentFile[];
   availableCategories?: string[];
   sprints?: Sprint[];
-  onCreateSprint?: (projectId: string, name: string, startDate: string, endDate: string, goal?: string) => void;
+  onCreateSprint?: (
+    projectId: string,
+    name: string,
+    startDate: string,
+    endDate: string,
+    goal?: string,
+  ) => void;
   onEditSprint?: (sprintId: string, updates: Partial<Sprint>) => void;
   onCompleteSprint?: (sprintId: string) => void;
   onDeleteSprint?: (sprintId: string) => void;
   onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
   onSprintRollover?: (sprintId: string, targetSprintId: string | null) => void;
   onToggleTask: (id: string) => void;
-  onAddTask: (title: string, projectId: string, dueDate?: string, recurrence?: any, sprintId?: string | null) => Task | void;
+  onAddTask: (
+    title: string,
+    projectId: string,
+    dueDate?: string,
+    recurrence?: any,
+    sprintId?: string | null,
+  ) => Task | void;
   onDeleteTask: (id: string) => void;
   onCompleteProject: (projectId: string) => void;
-  onEditProject: (projectId: string, name: string, description: string, category?: string, dueDate?: string) => void;
+  onEditProject: (
+    projectId: string,
+    name: string,
+    description: string,
+    category?: string,
+    dueDate?: string,
+  ) => void;
   onDeleteProject: (projectId: string) => void;
   onAddFile: (projectId: string, name: string, size: string, type: DocumentFile['type']) => void;
   onDeleteFile: (id: string) => void;
@@ -95,13 +120,13 @@ export default function ProjectDetailView({
   onCompleteSprint,
   onDeleteSprint,
   onAssignTaskToSprint,
-  onSprintRollover
+  onSprintRollover,
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
   const [taskTab, setTaskTab] = useState<'todo' | 'completed' | 'archived'>('todo');
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
-    const activeSprint = sprints?.find(s => s.projectId === project.id && s.status === 'Active');
+    const activeSprint = sprints?.find((s) => s.projectId === project.id && s.status === 'Active');
     return activeSprint ? activeSprint.id : 'all';
   });
   const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
@@ -163,7 +188,7 @@ export default function ProjectDetailView({
     try {
       const selected = await openDialog({
         directory: true,
-        multiple: false
+        multiple: false,
       });
       if (selected && typeof selected === 'string' && onSetVaultPath) {
         onSetVaultPath(project.id, selected);
@@ -177,13 +202,15 @@ export default function ProjectDetailView({
     if (!project.vaultPath) return;
     const newPath = await createDocument(project.vaultPath, filename);
     await refreshVault();
-    const cleanName = filename.trim().toLowerCase().endsWith('.md') || filename.trim().toLowerCase().endsWith('.txt')
-      ? filename.trim()
-      : `${filename.trim()}.md`;
+    const cleanName =
+      filename.trim().toLowerCase().endsWith('.md') ||
+      filename.trim().toLowerCase().endsWith('.txt')
+        ? filename.trim()
+        : `${filename.trim()}.md`;
     setSelectedDocument({
       name: cleanName,
       path: newPath,
-      isDirectory: false
+      isDirectory: false,
     });
     setIsDocumentPanelOpen(true);
   };
@@ -209,27 +236,32 @@ export default function ProjectDetailView({
   };
 
   // Filters tasks for this project
-  const projectTasksAll = tasks.filter(t => t.projectId === project.id);
-  const projectTasks = projectTasksAll.filter(t => {
+  const projectTasksAll = tasks.filter((t) => t.projectId === project.id);
+  const projectTasks = projectTasksAll.filter((t) => {
     if (selectedSprintId === 'all') return true;
     if (selectedSprintId === 'backlog') return !t.sprintId;
     return t.sprintId === selectedSprintId;
   });
-  const unarchivedProjectTasks = projectTasks.filter(t => !t.archived);
-  const projectFiles = files.filter(f => f.projectId === project.id);
+  const unarchivedProjectTasks = projectTasks.filter((t) => !t.archived);
+  const projectFiles = files.filter((f) => f.projectId === project.id);
 
-  const completedCount = unarchivedProjectTasks.filter(t => t.completed).length;
+  const completedCount = unarchivedProjectTasks.filter((t) => t.completed).length;
   const totalTasksCount = unarchivedProjectTasks.length;
-  const calculatedProgress = totalTasksCount > 0
-    ? Math.round((completedCount / totalTasksCount) * 100)
-    : project.progress;
+  const calculatedProgress =
+    totalTasksCount > 0 ? Math.round((completedCount / totalTasksCount) * 100) : project.progress;
 
   const handleAddTaskSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newTaskTitle.trim()) return;
-    const targetSprintId = (selectedSprintId !== 'all' && selectedSprintId !== 'backlog') ? selectedSprintId : null;
+    const targetSprintId =
+      selectedSprintId !== 'all' && selectedSprintId !== 'backlog' ? selectedSprintId : null;
     const createdTask = onAddTask(newTaskTitle, project.id, '', undefined, targetSprintId);
-    if (createdTask && targetSprintId && (!createdTask.sprintId || createdTask.sprintId !== targetSprintId) && onAssignTaskToSprint) {
+    if (
+      createdTask &&
+      targetSprintId &&
+      (!createdTask.sprintId || createdTask.sprintId !== targetSprintId) &&
+      onAssignTaskToSprint
+    ) {
       onAssignTaskToSprint(createdTask.id, targetSprintId);
     }
     setNewTaskTitle('');
@@ -246,7 +278,10 @@ export default function ProjectDetailView({
         try {
           const fileStat = await stat(selected);
           const size = fileStat.size;
-          sizeStr = size > 1024 * 1024 ? `${(size / (1024 * 1024)).toFixed(1)} MB` : `${Math.round(size / 1024)} KB`;
+          sizeStr =
+            size > 1024 * 1024
+              ? `${(size / (1024 * 1024)).toFixed(1)} MB`
+              : `${Math.round(size / 1024)} KB`;
         } catch (e) {
           console.error('Stat error', e);
         }
@@ -271,9 +306,9 @@ export default function ProjectDetailView({
   };
 
   // Sort logic for tasks
-  const activeTasks = projectTasks.filter(t => !t.completed && !t.archived);
-  const completedTasks = projectTasks.filter(t => t.completed && !t.archived);
-  const archivedTasks = projectTasks.filter(t => t.archived);
+  const activeTasks = projectTasks.filter((t) => !t.completed && !t.archived);
+  const completedTasks = projectTasks.filter((t) => t.completed && !t.archived);
+  const archivedTasks = projectTasks.filter((t) => t.archived);
 
   const sortTasksHelper = (list: Task[]) => {
     return [...list].sort((a, b) => {
@@ -297,29 +332,30 @@ export default function ProjectDetailView({
   const handleDragEnd = (result: any) => {
     const { source, destination, draggableId } = result;
     if (!destination || !onReorderTasks) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index)
+      return;
 
     const isSourceCompleted = source.droppableId === 'completed-tasks';
     const isDestCompleted = destination.droppableId === 'completed-tasks';
 
-    const draggedTask = projectTasks.find(t => t.id === draggableId);
+    const draggedTask = projectTasks.find((t) => t.id === draggableId);
     if (!draggedTask) return;
 
     const currentActive = [...sortedActiveTasks];
     const currentCompleted = [...sortedCompletedTasks];
 
     if (isSourceCompleted) {
-      const idx = currentCompleted.findIndex(t => t.id === draggableId);
+      const idx = currentCompleted.findIndex((t) => t.id === draggableId);
       if (idx !== -1) currentCompleted.splice(idx, 1);
     } else {
-      const idx = currentActive.findIndex(t => t.id === draggableId);
+      const idx = currentActive.findIndex((t) => t.id === draggableId);
       if (idx !== -1) currentActive.splice(idx, 1);
     }
 
     const updatedTask = {
       ...draggedTask,
       completed: isDestCompleted,
-      status: isDestCompleted ? ('Done' as const) : ('To Do' as const)
+      status: isDestCompleted ? ('Done' as const) : ('To Do' as const),
     };
 
     if (isSourceCompleted !== isDestCompleted) {
@@ -333,7 +369,7 @@ export default function ProjectDetailView({
     }
 
     const reorderedProjectTasks = [...currentActive, ...currentCompleted];
-    const otherTasks = tasks.filter(t => t.projectId !== project.id);
+    const otherTasks = tasks.filter((t) => t.projectId !== project.id);
     onReorderTasks([...reorderedProjectTasks, ...otherTasks]);
   };
 
@@ -350,7 +386,6 @@ export default function ProjectDetailView({
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 md:px-8 py-6 space-y-6">
-
       {/* Back button */}
       <button
         onClick={onBackToProjects}
@@ -396,9 +431,9 @@ export default function ProjectDetailView({
 
                 {isDatePickerOpen && (
                   <>
-                    <div 
-                      className="fixed inset-0 z-[9998]" 
-                      onClick={() => setIsDatePickerOpen(false)} 
+                    <div
+                      className="fixed inset-0 z-[9998]"
+                      onClick={() => setIsDatePickerOpen(false)}
                     />
                     <div className="absolute left-0 top-[calc(100%+8px)] w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-[9999] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                       <div className="flex items-center justify-between mb-2 px-1">
@@ -408,14 +443,14 @@ export default function ProjectDetailView({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                            onClick={() => setPickerMonth((prev) => addMonths(prev, -1))}
                             className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <ChevronLeft className="w-3.5 h-3.5" />
                           </button>
                           <button
                             type="button"
-                            onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                            onClick={() => setPickerMonth((prev) => addMonths(prev, 1))}
                             className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                           >
                             <ChevronRight className="w-3.5 h-3.5" />
@@ -494,7 +529,11 @@ export default function ProjectDetailView({
                   )}
                 </div>
                 {(() => {
-                  const pooled = Array.from(new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)).filter(Boolean);
+                  const pooled = Array.from(
+                    new Set(
+                      availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES,
+                    ),
+                  ).filter(Boolean);
                   if (isCustomCategoryMode) {
                     return (
                       <input
@@ -521,9 +560,13 @@ export default function ProjectDetailView({
                       className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded p-2 w-full focus:outline-none focus:border-white cursor-pointer"
                     >
                       {pooled.map((cat) => (
-                        <option key={cat} value={cat}>{cat}</option>
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
                       ))}
-                      <option disabled value="">───</option>
+                      <option disabled value="">
+                        ───
+                      </option>
                       <option value="__custom__">+ Add Custom Category...</option>
                     </select>
                   );
@@ -553,15 +596,23 @@ export default function ProjectDetailView({
                 {(() => {
                   const style = getCategoryStyle(project.category);
                   return (
-                    <span className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider leading-tight border ${style.border} ${style.bg} ${style.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${style.dot}`}></span>
+                    <span
+                      className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider leading-tight border ${style.border} ${style.bg} ${style.text}`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${style.dot}`}
+                      ></span>
                       <span className="self-center">{project.category}</span>
                     </span>
                   );
                 })()}
               </div>
-              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">{project.name}</h1>
-              <p className="text-[#C4C7C8] text-sm mt-2 max-w-2xl leading-relaxed">{project.description}</p>
+              <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">
+                {project.name}
+              </h1>
+              <p className="text-[#C4C7C8] text-sm mt-2 max-w-2xl leading-relaxed">
+                {project.description}
+              </p>
             </div>
 
             <div className="flex gap-3 shrink-0">
@@ -599,7 +650,9 @@ export default function ProjectDetailView({
         <div className="pt-4 border-t border-[#27272A]/50">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] text-[#8E9192] uppercase tracking-wider font-mono font-bold">Progress</span>
+              <span className="text-[10px] text-[#8E9192] uppercase tracking-wider font-mono font-bold">
+                Progress
+              </span>
               <span className="text-lg font-bold text-white font-mono">{calculatedProgress}%</span>
             </div>
             <div className="flex-1 max-w-md">
@@ -612,7 +665,12 @@ export default function ProjectDetailView({
             </div>
             {project.dueDate && (
               <div className="text-[10px] text-[#8E9192] uppercase tracking-widest font-mono shrink-0 font-bold bg-[#141313] px-2.5 py-1 rounded inline-block border border-[#27272A]/50">
-                Due on {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                Due on{' '}
+                {new Date(project.dueDate).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'short',
+                  day: 'numeric',
+                })}
               </div>
             )}
           </div>
@@ -621,7 +679,6 @@ export default function ProjectDetailView({
 
       {/* Grid Content: Tasks & Documents */}
       <div className="grid grid-cols-12 gap-8">
-
         {/* Task List Section */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
           {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (
@@ -650,11 +707,13 @@ export default function ProjectDetailView({
                   >
                     <option value="all">All Tasks</option>
                     <option value="backlog">Backlog (Unassigned)</option>
-                    {sprints.filter(s => s.projectId === project.id).map(s => (
-                      <option key={s.id} value={s.id}>
-                        {s.name} ({s.status})
-                      </option>
-                    ))}
+                    {sprints
+                      .filter((s) => s.projectId === project.id)
+                      .map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name} ({s.status})
+                        </option>
+                      ))}
                   </select>
                 </div>
                 {selectedSprintId !== 'all' && (
@@ -685,9 +744,11 @@ export default function ProjectDetailView({
                     }`}
                   >
                     <span className="translate-y-[1px]">To Do</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      taskTab === 'todo' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
-                    }`}>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        taskTab === 'todo' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
+                      }`}
+                    >
                       {sortedActiveTasks.length}
                     </span>
                   </button>
@@ -702,9 +763,13 @@ export default function ProjectDetailView({
                     }`}
                   >
                     <span className="translate-y-[1px]">Completed</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      taskTab === 'completed' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
-                    }`}>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        taskTab === 'completed'
+                          ? 'bg-black text-white'
+                          : 'bg-[#1C1B1B] text-[#8E9192]'
+                      }`}
+                    >
                       {sortedCompletedTasks.length}
                     </span>
                   </button>
@@ -720,9 +785,13 @@ export default function ProjectDetailView({
                   >
                     <Archive className="w-3 h-3 translate-y-[1px]" />
                     <span className="translate-y-[1px]">Archived</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
-                      taskTab === 'archived' ? 'bg-black text-white' : 'bg-[#1C1B1B] text-[#8E9192]'
-                    }`}>
+                    <span
+                      className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                        taskTab === 'archived'
+                          ? 'bg-black text-white'
+                          : 'bg-[#1C1B1B] text-[#8E9192]'
+                      }`}
+                    >
                       {sortedArchivedTasks.length}
                     </span>
                   </button>
@@ -732,7 +801,11 @@ export default function ProjectDetailView({
               {taskTab !== 'archived' && (
                 <button
                   onClick={() => {
-                    const seq: ('custom' | 'priority' | 'dueDate')[] = ['custom', 'priority', 'dueDate'];
+                    const seq: ('custom' | 'priority' | 'dueDate')[] = [
+                      'custom',
+                      'priority',
+                      'dueDate',
+                    ];
                     const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
                     setSelectedSort(seq[nextIdx]);
                   }}
@@ -754,7 +827,9 @@ export default function ProjectDetailView({
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
-                          snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                          snapshot.isDraggingOver
+                            ? 'bg-[#141313]/50 border border-white/20 p-1.5'
+                            : ''
                         }`}
                       >
                         {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
@@ -764,7 +839,12 @@ export default function ProjectDetailView({
                         ) : (
                           sortedActiveTasks.map((task, index) => (
                             // @ts-ignore
-                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                            <Draggable
+                              key={task.id}
+                              draggableId={task.id}
+                              index={index}
+                              isDragDisabled={selectedSort !== 'custom'}
+                            >
                               {(provided, snapshot) => (
                                 <li
                                   ref={provided.innerRef}
@@ -782,7 +862,10 @@ export default function ProjectDetailView({
                                 >
                                   <div className="flex items-start gap-4 flex-1 mr-4">
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleTask(task.id);
+                                      }}
                                       className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                                     >
                                       <Square className="w-4 h-4" />
@@ -800,16 +883,20 @@ export default function ProjectDetailView({
                                       <div onClick={(e) => e.stopPropagation()}>
                                         <select
                                           value={task.sprintId || ''}
-                                          onChange={(e) => onAssignTaskToSprint?.(task.id, e.target.value || null)}
+                                          onChange={(e) =>
+                                            onAssignTaskToSprint?.(task.id, e.target.value || null)
+                                          }
                                           className="text-[9px] font-mono bg-[#141313] hover:bg-[#201F1F] text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 cursor-pointer focus:outline-none transition-colors"
                                           title="Assign or change sprint"
                                         >
                                           <option value="">Backlog</option>
-                                          {sprints.filter(s => s.projectId === project.id).map(s => (
-                                            <option key={s.id} value={s.id}>
-                                              {s.name}
-                                            </option>
-                                          ))}
+                                          {sprints
+                                            .filter((s) => s.projectId === project.id)
+                                            .map((s) => (
+                                              <option key={s.id} value={s.id}>
+                                                {s.name}
+                                              </option>
+                                            ))}
                                         </select>
                                       </div>
                                     )}
@@ -819,14 +906,20 @@ export default function ProjectDetailView({
                                       </span>
                                     )}
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onArchiveTask?.(task.id); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onArchiveTask?.(task.id);
+                                      }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Archive task"
                                     >
                                       <Archive className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTaskToDelete(task);
+                                      }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Delete task item"
                                     >
@@ -869,13 +962,18 @@ export default function ProjectDetailView({
               {/* Completed Tab */}
               {taskTab === 'completed' && (
                 <div>
-                  <Droppable droppableId="completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                  <Droppable
+                    droppableId="completed-tasks"
+                    isDropDisabled={selectedSort !== 'custom'}
+                  >
                     {(provided, snapshot) => (
                       <ul
                         ref={provided.innerRef}
                         {...provided.droppableProps}
                         className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
-                          snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                          snapshot.isDraggingOver
+                            ? 'bg-[#141313]/50 border border-white/20 p-1.5'
+                            : ''
                         }`}
                       >
                         {sortedCompletedTasks.length === 0 && !snapshot.isDraggingOver ? (
@@ -885,7 +983,12 @@ export default function ProjectDetailView({
                         ) : (
                           sortedCompletedTasks.map((task, index) => (
                             // @ts-ignore
-                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                            <Draggable
+                              key={task.id}
+                              draggableId={task.id}
+                              index={index}
+                              isDragDisabled={selectedSort !== 'custom'}
+                            >
                               {(provided, snapshot) => (
                                 <li
                                   ref={provided.innerRef}
@@ -903,7 +1006,10 @@ export default function ProjectDetailView({
                                 >
                                   <div className="flex items-start gap-4 flex-1 mr-4">
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleTask(task.id);
+                                      }}
                                       className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                                     >
                                       <CheckSquare className="w-4 h-4 text-white" />
@@ -921,16 +1027,20 @@ export default function ProjectDetailView({
                                       <div onClick={(e) => e.stopPropagation()}>
                                         <select
                                           value={task.sprintId || ''}
-                                          onChange={(e) => onAssignTaskToSprint?.(task.id, e.target.value || null)}
+                                          onChange={(e) =>
+                                            onAssignTaskToSprint?.(task.id, e.target.value || null)
+                                          }
                                           className="text-[9px] font-mono bg-[#141313] hover:bg-[#201F1F] text-[#60A5FA] px-1.5 py-0.5 rounded border border-[#3B82F6]/30 cursor-pointer focus:outline-none transition-colors"
                                           title="Assign or change sprint"
                                         >
                                           <option value="">Backlog</option>
-                                          {sprints.filter(s => s.projectId === project.id).map(s => (
-                                            <option key={s.id} value={s.id}>
-                                              {s.name}
-                                            </option>
-                                          ))}
+                                          {sprints
+                                            .filter((s) => s.projectId === project.id)
+                                            .map((s) => (
+                                              <option key={s.id} value={s.id}>
+                                                {s.name}
+                                              </option>
+                                            ))}
                                         </select>
                                       </div>
                                     )}
@@ -940,14 +1050,20 @@ export default function ProjectDetailView({
                                       </span>
                                     )}
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onArchiveTask?.(task.id); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onArchiveTask?.(task.id);
+                                      }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Archive task"
                                     >
                                       <Archive className="w-3.5 h-3.5" />
                                     </button>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); setTaskToDelete(task); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setTaskToDelete(task);
+                                      }}
                                       className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                       title="Delete task item"
                                     >
@@ -968,7 +1084,12 @@ export default function ProjectDetailView({
                     <div className="mt-4 pt-3 border-t border-[#27272A]/60 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => onArchiveAllCompleted?.(project.id, sortedCompletedTasks.map(t => t.id))}
+                        onClick={() =>
+                          onArchiveAllCompleted?.(
+                            project.id,
+                            sortedCompletedTasks.map((t) => t.id),
+                          )
+                        }
                         className="bg-black text-white border border-[#27272A] font-medium text-xs px-4 py-2 rounded-lg hover:bg-[#201F1F] transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
                       >
                         <Archive className="w-3.5 h-3.5" />
@@ -998,7 +1119,11 @@ export default function ProjectDetailView({
                   ) : (
                     sortedArchivedTasks.map((task) => {
                       const archivedDateStr = task.archivedAt
-                        ? new Date(task.archivedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })
+                        ? new Date(task.archivedAt).toLocaleDateString(undefined, {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })
                         : undefined;
                       return (
                         <li
@@ -1088,7 +1213,8 @@ export default function ProjectDetailView({
                     No Project Vault Set
                   </h4>
                   <p className="text-[11px] text-[#8E9192] mt-1 leading-relaxed max-w-xs mx-auto">
-                    Connect a local directory to scan for .md / .txt documents with live preview & editing.
+                    Connect a local directory to scan for .md / .txt documents with live preview &
+                    editing.
                   </p>
                 </div>
                 <button
@@ -1106,7 +1232,9 @@ export default function ProjectDetailView({
               <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2 text-[#8E9192]/80">
                   <FolderOpen className="w-3.5 h-3.5" />
-                  <span className="text-xs font-semibold font-mono tracking-tight text-white">Manual Attachments</span>
+                  <span className="text-xs font-semibold font-mono tracking-tight text-white">
+                    Manual Attachments
+                  </span>
                 </div>
                 <button
                   onClick={handleNativeAddFile}
@@ -1130,7 +1258,10 @@ export default function ProjectDetailView({
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {getFileIcon(file.type)}
                         <div className="min-w-0">
-                          <p className="text-xs font-semibold text-white truncate max-w-[150px]" title={file.name}>
+                          <p
+                            className="text-xs font-semibold text-white truncate max-w-[150px]"
+                            title={file.name}
+                          >
                             {file.name.split(/[/\\]/).pop()}
                           </p>
                           <p className="text-[10px] text-[#8E9192] font-mono mt-0.5">{file.size}</p>
@@ -1166,7 +1297,6 @@ export default function ProjectDetailView({
             </div>
           </div>
         </div>
-
       </div>
 
       {/* Custom Modal Confirmation for Deleting Project */}
@@ -1191,7 +1321,10 @@ export default function ProjectDetailView({
             </div>
 
             <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
-              Are you sure you want to permanently delete <strong className="text-white font-semibold">"{project.name}"</strong>? All associated tasks, files, and progress metrics will be removed immediately. This action cannot be undone.
+              Are you sure you want to permanently delete{' '}
+              <strong className="text-white font-semibold">"{project.name}"</strong>? All associated
+              tasks, files, and progress metrics will be removed immediately. This action cannot be
+              undone.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -1240,7 +1373,9 @@ export default function ProjectDetailView({
             </div>
 
             <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
-              Are you sure you want to permanently delete <strong className="text-white font-semibold font-mono">"{taskToDelete.title}"</strong>? This task will be removed immediately. This action cannot be undone.
+              Are you sure you want to permanently delete{' '}
+              <strong className="text-white font-semibold font-mono">"{taskToDelete.title}"</strong>
+              ? This task will be removed immediately. This action cannot be undone.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -1290,7 +1425,11 @@ export default function ProjectDetailView({
             </div>
 
             <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6">
-              Are you sure you want to permanently delete <strong className="text-white font-semibold font-mono">"{docToDelete.name}"</strong> from disk? This file will be removed from <span className="font-mono text-[#8E9192] break-all">{docToDelete.path}</span>. This action cannot be undone.
+              Are you sure you want to permanently delete{' '}
+              <strong className="text-white font-semibold font-mono">"{docToDelete.name}"</strong>{' '}
+              from disk? This file will be removed from{' '}
+              <span className="font-mono text-[#8E9192] break-all">{docToDelete.path}</span>. This
+              action cannot be undone.
             </p>
 
             <div className="flex items-center justify-end gap-3 pt-2">
@@ -1330,7 +1469,10 @@ export default function ProjectDetailView({
           isOpen={!!sprintToComplete}
           sprint={sprintToComplete}
           tasks={tasks}
-          plannedSprints={sprints.filter(s => s.projectId === project.id && s.status === 'Planned' && s.id !== sprintToComplete?.id)}
+          plannedSprints={sprints.filter(
+            (s) =>
+              s.projectId === project.id && s.status === 'Planned' && s.id !== sprintToComplete?.id,
+          )}
           onCancel={() => setSprintToComplete(null)}
           onConfirm={(rolloverAction, targetSprintId) => {
             if (sprintToComplete) {

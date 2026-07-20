@@ -1,12 +1,27 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { DayPicker } from 'react-day-picker';
-import { format, addMonths } from 'date-fns';
-import { 
-  Rocket, ChevronDown, ChevronUp, Plus, Calendar, Target, CheckCircle2, 
-  Play, Edit3, Trash2, X, Check, Clock, Layers, Sparkles, ChevronLeft, ChevronRight 
+import { addMonths, format } from 'date-fns';
+import {
+  Calendar,
+  Check,
+  CheckCircle2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Clock,
+  Edit3,
+  Layers,
+  Play,
+  Plus,
+  Rocket,
+  Sparkles,
+  Target,
+  Trash2,
+  X,
 } from 'lucide-react';
-import { Sprint, Task } from '../types';;
+import { AnimatePresence, motion } from 'motion/react';
+import React, { useState } from 'react';
+import { DayPicker } from 'react-day-picker';
+import { Sprint, Task } from '../types';
 
 interface SprintDatePickerProps {
   label: string;
@@ -61,11 +76,8 @@ const SprintDatePicker: React.FC<SprintDatePickerProps> = ({ label, value, onCha
 
       {isOpen && (
         <>
-          <div 
-            className="fixed inset-0 z-[9998] cursor-default" 
-            onClick={() => setIsOpen(false)} 
-          />
-          <div 
+          <div className="fixed inset-0 z-[9998] cursor-default" onClick={() => setIsOpen(false)} />
+          <div
             role="dialog"
             aria-label={label}
             onClick={(e) => e.stopPropagation()}
@@ -78,14 +90,14 @@ const SprintDatePicker: React.FC<SprintDatePickerProps> = ({ label, value, onCha
               <div className="flex items-center gap-1">
                 <button
                   type="button"
-                  onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                  onClick={() => setPickerMonth((prev) => addMonths(prev, -1))}
                   className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                  onClick={() => setPickerMonth((prev) => addMonths(prev, 1))}
                   className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <ChevronRight className="w-3.5 h-3.5" />
@@ -106,39 +118,39 @@ const SprintDatePicker: React.FC<SprintDatePickerProps> = ({ label, value, onCha
               month={pickerMonth}
               onMonthChange={setPickerMonth}
               hideNavigation={true}
-            classNames={{
-              root: 'taxon-calendar',
-              months: 'taxon-months',
-              month: 'taxon-month',
-              month_caption: 'taxon-caption',
-              nav: 'taxon-nav',
-              button_previous: 'taxon-nav-button',
-              button_next: 'taxon-nav-button',
-              month_grid: 'taxon-table',
-              weekdays: 'taxon-head-row',
-              weekday: 'taxon-head-cell',
-              week: 'taxon-row',
-              day: 'taxon-cell',
-              day_button: 'taxon-day',
-              selected: 'taxon-day-selected',
-              today: 'taxon-day-today',
-              outside: 'taxon-day-outside',
-            }}
-          />
+              classNames={{
+                root: 'taxon-calendar',
+                months: 'taxon-months',
+                month: 'taxon-month',
+                month_caption: 'taxon-caption',
+                nav: 'taxon-nav',
+                button_previous: 'taxon-nav-button',
+                button_next: 'taxon-nav-button',
+                month_grid: 'taxon-table',
+                weekdays: 'taxon-head-row',
+                weekday: 'taxon-head-cell',
+                week: 'taxon-row',
+                day: 'taxon-cell',
+                day_button: 'taxon-day',
+                selected: 'taxon-day-selected',
+                today: 'taxon-day-today',
+                outside: 'taxon-day-outside',
+              }}
+            />
 
-          <div className="flex justify-end border-t border-[#27272A] pt-2 mt-2">
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="text-[11px] font-mono text-[#8E9192] hover:text-white px-2 py-0.5 rounded hover:bg-white/5 transition-colors cursor-pointer"
-            >
-              Close
-            </button>
+            <div className="flex justify-end border-t border-[#27272A] pt-2 mt-2">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-[11px] font-mono text-[#8E9192] hover:text-white px-2 py-0.5 rounded hover:bg-white/5 transition-colors cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
           </div>
-        </div>
-      </>
-    )}
-  </div>
+        </>
+      )}
+    </div>
   );
 };
 
@@ -146,7 +158,13 @@ interface SprintPanelProps {
   projectId: string;
   sprints: Sprint[];
   tasks: Task[];
-  onCreateSprint: (projectId: string, name: string, startDate: string, endDate: string, goal?: string) => void;
+  onCreateSprint: (
+    projectId: string,
+    name: string,
+    startDate: string,
+    endDate: string,
+    goal?: string,
+  ) => void;
   onEditSprint: (sprintId: string, updates: Partial<Sprint>) => void;
   onCompleteSprintTrigger: (sprint: Sprint) => void;
   onDeleteSprint: (sprintId: string) => void;
@@ -177,7 +195,7 @@ export default function SprintPanel({
     return d.toISOString().split('T')[0];
   };
 
-  const projectSprints = sprints.filter(s => s.projectId === projectId);
+  const projectSprints = sprints.filter((s) => s.projectId === projectId);
   const [newName, setNewName] = useState(`Sprint ${projectSprints.length + 1}`);
   const [newStartDate, setNewStartDate] = useState(getTodayStr());
   const [newEndDate, setNewEndDate] = useState(getTwoWeeksStr());
@@ -190,13 +208,13 @@ export default function SprintPanel({
   const [editGoal, setEditGoal] = useState('');
   const [editStatus, setEditStatus] = useState<Sprint['status']>('Planned');
 
-  const activeSprint = projectSprints.find(s => s.status === 'Active');
-  const plannedSprints = projectSprints.filter(s => s.status === 'Planned');
-  const completedSprints = projectSprints.filter(s => s.status === 'Completed');
+  const activeSprint = projectSprints.find((s) => s.status === 'Active');
+  const plannedSprints = projectSprints.filter((s) => s.status === 'Planned');
+  const completedSprints = projectSprints.filter((s) => s.status === 'Completed');
 
   const getSprintStats = (sprintId: string) => {
-    const sTasks = tasks.filter(t => t.sprintId === sprintId);
-    const completed = sTasks.filter(t => t.completed).length;
+    const sTasks = tasks.filter((t) => t.sprintId === sprintId);
+    const completed = sTasks.filter((t) => t.completed).length;
     const total = sTasks.length;
     const percentage = total > 0 ? Math.round((completed / total) * 100) : 0;
     return { total, completed, percentage };
@@ -251,9 +269,13 @@ export default function SprintPanel({
   };
 
   return (
-    <div className={`mb-6 bg-[#0A0A0A] border border-[#27272A] rounded-xl shadow-sm transition-all relative ${isExpanded ? 'z-40 overflow-visible' : 'overflow-hidden'}`}>
+    <div
+      className={`mb-6 bg-[#0A0A0A] border border-[#27272A] rounded-xl shadow-sm transition-all relative ${isExpanded ? 'z-40 overflow-visible' : 'overflow-hidden'}`}
+    >
       {/* Header Bar */}
-      <div className={`flex items-center justify-between px-4 py-3 bg-[#141313]/60 border-b border-[#27272A]/80 transition-all ${isExpanded ? 'rounded-t-xl' : 'rounded-xl border-b-0'}`}>
+      <div
+        className={`flex items-center justify-between px-4 py-3 bg-[#141313]/60 border-b border-[#27272A]/80 transition-all ${isExpanded ? 'rounded-t-xl' : 'rounded-xl border-b-0'}`}
+      >
         <button
           onClick={() => setIsExpanded(!isExpanded)}
           className="flex items-center gap-2.5 text-xs font-mono font-bold uppercase tracking-wider text-[#8E9192] hover:text-white transition-colors cursor-pointer group"
@@ -265,7 +287,11 @@ export default function SprintPanel({
           <span className="ml-1 px-2 py-0.5 rounded text-[10px] bg-[#27272A] text-white">
             {activeSprint ? `Active: ${activeSprint.name}` : `${projectSprints.length} Sprints`}
           </span>
-          {isExpanded ? <ChevronUp className="w-4 h-4 ml-1 text-[#8E9192]" /> : <ChevronDown className="w-4 h-4 ml-1 text-[#8E9192]" />}
+          {isExpanded ? (
+            <ChevronUp className="w-4 h-4 ml-1 text-[#8E9192]" />
+          ) : (
+            <ChevronDown className="w-4 h-4 ml-1 text-[#8E9192]" />
+          )}
         </button>
 
         <div className="flex items-center gap-2">
@@ -316,11 +342,13 @@ export default function SprintPanel({
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                     <div>
-                      <label className="block text-[11px] font-mono text-[#8E9192] mb-1">Sprint Name</label>
+                      <label className="block text-[11px] font-mono text-[#8E9192] mb-1">
+                        Sprint Name
+                      </label>
                       <input
                         type="text"
                         value={newName}
-                        onChange={e => setNewName(e.target.value)}
+                        onChange={(e) => setNewName(e.target.value)}
                         placeholder="e.g. Sprint 1"
                         className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#3B82F6]"
                         required
@@ -339,11 +367,13 @@ export default function SprintPanel({
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-mono text-[#8E9192] mb-1">Sprint Goal (Optional)</label>
+                    <label className="block text-[11px] font-mono text-[#8E9192] mb-1">
+                      Sprint Goal (Optional)
+                    </label>
                     <input
                       type="text"
                       value={newGoal}
-                      onChange={e => setNewGoal(e.target.value)}
+                      onChange={(e) => setNewGoal(e.target.value)}
                       placeholder="What is the main objective of this sprint?"
                       className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-[#3B82F6]"
                     />
@@ -374,7 +404,7 @@ export default function SprintPanel({
                 const stats = getSprintStats(activeSprint.id);
                 const isSelected = selectedSprintId === activeSprint.id;
                 return (
-                  <div 
+                  <div
                     onClick={() => onSelectSprint(isSelected ? 'all' : activeSprint.id)}
                     className={`relative rounded-xl border p-4 transition-all cursor-pointer ${isSelected ? 'bg-[#141313] border-[#3B82F6] shadow-lg shadow-[#3B82F6]/10' : 'bg-[#141313] border-[#3B82F6]/40 hover:border-[#3B82F6]/60'}`}
                   >
@@ -433,19 +463,24 @@ export default function SprintPanel({
                     {activeSprint.goal && (
                       <div className="flex items-start gap-2 text-xs text-[#E4E4E7] bg-[#0A0A0A]/80 border border-[#27272A] rounded-lg p-2.5 mb-3">
                         <Target className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                        <span><strong className="text-amber-400/90 font-mono">Sprint Goal:</strong> {activeSprint.goal}</span>
+                        <span>
+                          <strong className="text-amber-400/90 font-mono">Sprint Goal:</strong>{' '}
+                          {activeSprint.goal}
+                        </span>
                       </div>
                     )}
 
                     {/* Progress Bar */}
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-xs font-mono">
-                        <span className="text-[#8E9192]">Progress ({stats.completed}/{stats.total} Tasks)</span>
+                        <span className="text-[#8E9192]">
+                          Progress ({stats.completed}/{stats.total} Tasks)
+                        </span>
                         <span className="text-[#60A5FA] font-bold">{stats.percentage}%</span>
                       </div>
                       <div className="w-full h-2 bg-[#27272A] rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-gradient-to-r from-[#3B82F6] to-cyan-400 transition-all duration-500" 
+                        <div
+                          className="h-full bg-gradient-to-r from-[#3B82F6] to-cyan-400 transition-all duration-500"
                           style={{ width: `${stats.percentage}%` }}
                         />
                       </div>
@@ -469,7 +504,10 @@ export default function SprintPanel({
                     <Edit3 className="w-3.5 h-3.5 text-[#3B82F6]" />
                     Edit Sprint
                   </span>
-                  <button onClick={() => setEditingSprintId(null)} className="text-[#8E9192] hover:text-white">
+                  <button
+                    onClick={() => setEditingSprintId(null)}
+                    className="text-[#8E9192] hover:text-white"
+                  >
                     <X className="w-4 h-4" />
                   </button>
                 </div>
@@ -480,15 +518,17 @@ export default function SprintPanel({
                     <input
                       type="text"
                       value={editName}
-                      onChange={e => setEditName(e.target.value)}
+                      onChange={(e) => setEditName(e.target.value)}
                       className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white"
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-mono text-[#8E9192] mb-1">Status</label>
+                    <label className="block text-[11px] font-mono text-[#8E9192] mb-1">
+                      Status
+                    </label>
                     <select
                       value={editStatus}
-                      onChange={e => setEditStatus(e.target.value as Sprint['status'])}
+                      onChange={(e) => setEditStatus(e.target.value as Sprint['status'])}
                       className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white"
                     >
                       <option value="Planned">Planned</option>
@@ -513,7 +553,7 @@ export default function SprintPanel({
                   <input
                     type="text"
                     value={editGoal}
-                    onChange={e => setEditGoal(e.target.value)}
+                    onChange={(e) => setEditGoal(e.target.value)}
                     className="w-full bg-[#0A0A0A] border border-[#27272A] rounded px-2.5 py-1.5 text-xs text-white"
                   />
                 </div>
@@ -546,7 +586,7 @@ export default function SprintPanel({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   {/* Planned Sprints */}
-                  {plannedSprints.map(sprint => {
+                  {plannedSprints.map((sprint) => {
                     const stats = getSprintStats(sprint.id);
                     const isSelected = selectedSprintId === sprint.id;
                     return (
@@ -554,14 +594,19 @@ export default function SprintPanel({
                         key={sprint.id}
                         className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-mono transition-all ${isSelected ? 'bg-[#141313] border-[#3B82F6]' : 'bg-[#141313]/50 border-[#27272A] hover:border-[#8E9192]'}`}
                       >
-                        <div 
+                        <div
                           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                           onClick={() => onSelectSprint(isSelected ? 'all' : sprint.id)}
                         >
                           <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                           <div className="truncate">
-                            <span className="font-bold text-white block truncate">{sprint.name}</span>
-                            <span className="text-[10px] text-[#8E9192]">{formatDateRange(sprint.startDate, sprint.endDate)} • {stats.total} tasks</span>
+                            <span className="font-bold text-white block truncate">
+                              {sprint.name}
+                            </span>
+                            <span className="text-[10px] text-[#8E9192]">
+                              {formatDateRange(sprint.startDate, sprint.endDate)} • {stats.total}{' '}
+                              tasks
+                            </span>
                           </div>
                         </div>
 
@@ -594,7 +639,7 @@ export default function SprintPanel({
                   })}
 
                   {/* Completed Sprints */}
-                  {completedSprints.map(sprint => {
+                  {completedSprints.map((sprint) => {
                     const stats = getSprintStats(sprint.id);
                     const isSelected = selectedSprintId === sprint.id;
                     return (
@@ -602,14 +647,19 @@ export default function SprintPanel({
                         key={sprint.id}
                         className={`flex items-center justify-between p-2.5 rounded-lg border text-xs font-mono opacity-75 hover:opacity-100 transition-all ${isSelected ? 'bg-[#141313] border-[#3B82F6] opacity-100' : 'bg-[#0A0A0A] border-[#27272A] hover:border-[#8E9192]'}`}
                       >
-                        <div 
+                        <div
                           className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                           onClick={() => onSelectSprint(isSelected ? 'all' : sprint.id)}
                         >
                           <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
                           <div className="truncate">
-                            <span className="font-semibold text-[#8E9192] line-through block truncate">{sprint.name}</span>
-                            <span className="text-[10px] text-[#8E9192]">{formatDateRange(sprint.startDate, sprint.endDate)} • {stats.completed}/{stats.total} done</span>
+                            <span className="font-semibold text-[#8E9192] line-through block truncate">
+                              {sprint.name}
+                            </span>
+                            <span className="text-[10px] text-[#8E9192]">
+                              {formatDateRange(sprint.startDate, sprint.endDate)} •{' '}
+                              {stats.completed}/{stats.total} done
+                            </span>
                           </div>
                         </div>
 

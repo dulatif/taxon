@@ -1,52 +1,49 @@
-import React, { useState } from 'react';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import {
-  Plus,
-  Search,
-  Timer,
+  Award,
   Check,
-  X,
-  Settings as SettingsIcon,
-  Sparkles,
-  Smartphone,
   CheckCircle2,
   Lock,
-  Award,
   Minus,
+  Moon,
+  Plus,
+  Search,
+  Settings as SettingsIcon,
+  Smartphone,
+  Sparkles,
   Square,
   Sun,
-  Moon
+  Timer,
+  X,
 } from 'lucide-react';
-import Sidebar from './components/Sidebar';
+import { AnimatePresence, motion } from 'motion/react';
+import React, { useState } from 'react';
+import CalendarView from './components/CalendarView';
 import DashboardView from './components/DashboardView';
-import ProjectsView from './components/ProjectsView';
-import ProjectDetailView from './components/ProjectDetailView';
 import FocusModeView from './components/FocusModeView';
 import KanbanView from './components/KanbanView';
-import CalendarView from './components/CalendarView';
-import TaskDetailPanel from './components/TaskDetailPanel';
-import TaskListView from './views/TaskListView';
-import AnalyticsView from './views/AnalyticsView';
-import SettingsView from './views/SettingsView';
-import HelpView from './views/HelpView';
+import ProjectDetailView from './components/ProjectDetailView';
+import ProjectsView from './components/ProjectsView';
+import Sidebar from './components/Sidebar';
+import TaskDetailView from './components/TaskDetailView/TaskDetailView';
+import { useSettings } from './contexts/SettingsContext';
+import { useFocusTimer } from './hooks/useFocusTimer';
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
+import { useSystemTray } from './hooks/useSystemTray';
+import { useWindowMaximize } from './hooks/useWindowMaximize';
+import { useWorkspaceData } from './hooks/useWorkspaceData';
 import AddProjectModal from './modals/AddProjectModal';
-import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
 import ManageCategoriesModal from './modals/ManageCategoriesModal';
+import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import SpotlightSearchModal from './modals/SpotlightSearchModal';
-import { Project } from './types';;
+import { getCompletionsToday, getFocusedHoursToday } from './services/activityLogger';
+import { Project } from './types';
 import { getTodayStr } from './utils/taskFilters';
-import { useFocusTimer } from './hooks/useFocusTimer';
-import { useWindowMaximize } from './hooks/useWindowMaximize';
-import { useSystemTray } from './hooks/useSystemTray';
-import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
-import { useWorkspaceData } from './hooks/useWorkspaceData';
-import { useSettings } from './contexts/SettingsContext';
-import {
-  getCompletionsToday,
-  getFocusedHoursToday,
-} from './services/activityLogger';
-import { getCurrentWindow } from '@tauri-apps/api/window';
-import { motion, AnimatePresence } from 'motion/react';
+import AnalyticsView from './views/AnalyticsView';
+import HelpView from './views/HelpView';
+import SettingsView from './views/SettingsView';
+import TaskListView from './views/TaskListView';
 
 export default function App() {
   // --- UI Navigation/Layout States ---
@@ -111,7 +108,7 @@ export default function App() {
     handleCompleteSprint,
     handleDeleteSprint,
     handleAssignTaskToSprint,
-    handleSprintRollover
+    handleSprintRollover,
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -120,17 +117,17 @@ export default function App() {
     onProjectDeleted: () => {
       setSelectedProjectId(null);
       setCurrentView('projects');
-    }
+    },
   });
 
-  const selectedDetailTask = tasks.find(t => t.id === selectedDetailTaskId) || null;
+  const selectedDetailTask = tasks.find((t) => t.id === selectedDetailTaskId) || null;
 
   useSystemTray({
     onQuickAdd: () => {
-      const title = prompt("Quick Add Task:");
+      const title = prompt('Quick Add Task:');
       if (title) handleAddTask(title);
     },
-    onStartFocus: () => setCurrentView('todo')
+    onStartFocus: () => setCurrentView('todo'),
   });
 
   useGlobalShortcuts({
@@ -199,7 +196,7 @@ export default function App() {
       case 'help':
         return 'Onyx Help Desk';
       case 'project-details':
-        const p = projects.find(pr => pr.id === selectedProjectId);
+        const p = projects.find((pr) => pr.id === selectedProjectId);
         return p ? `${p.name} Details` : 'Project Management';
       default:
         return 'Taxon Tasking';
@@ -209,34 +206,42 @@ export default function App() {
   // Filtered Task views based on navbar selected page
   const getFilteredViewTasks = () => {
     if (currentView === 'inbox') {
-      return tasks.filter(t => !t.projectId && !t.dueDate && !t.completed && !t.archived);
+      return tasks.filter((t) => !t.projectId && !t.dueDate && !t.completed && !t.archived);
     }
     if (currentView === 'todo') {
-      return tasks.filter(t => !t.completed && !t.archived);
+      return tasks.filter((t) => !t.completed && !t.archived);
     }
     if (currentView === 'recurring') {
-      return tasks.filter(t => !t.completed && t.recurrence !== undefined && !t.archived);
+      return tasks.filter((t) => !t.completed && t.recurrence !== undefined && !t.archived);
     }
     if (currentView === 'scheduled') {
-      return tasks.filter(t => !t.archived);
+      return tasks.filter((t) => !t.archived);
     }
-    return tasks.filter(t => !t.archived);
+    return tasks.filter((t) => !t.archived);
   };
 
   if (!isDataLoaded) {
-    return <div className="flex items-center justify-center h-screen bg-black text-white">Loading database...</div>;
+    return (
+      <div className="flex items-center justify-center h-screen bg-black text-white">
+        Loading database...
+      </div>
+    );
   }
 
   return (
-    <div className={`flex flex-col h-screen overflow-hidden bg-black text-white font-sans antialiased selection:bg-white/10 selection:text-white ${isMaximized ? '' : 'rounded-xl border border-[#27272A] shadow-2xl'}`}>
-
+    <div
+      className={`flex flex-col h-screen overflow-hidden bg-black text-white font-sans antialiased selection:bg-white/10 selection:text-white ${isMaximized ? '' : 'rounded-xl border border-[#27272A] shadow-2xl'}`}
+    >
       {/* Custom Title Bar (macOS Style) */}
       <div
         data-tauri-drag-region
         className="relative z-[9999] shrink-0 h-10 flex items-center justify-end select-none bg-[#0A0A0A] border-b border-[#27272A] w-full px-4"
       >
         {/* Title (Center) */}
-        <div data-tauri-drag-region className="absolute inset-0 flex items-center justify-center pointer-events-none">
+        <div
+          data-tauri-drag-region
+          className="absolute inset-0 flex items-center justify-center pointer-events-none"
+        >
           <span className="text-xs font-semibold text-[#8E9192]">Taxon</span>
         </div>
 
@@ -246,19 +251,29 @@ export default function App() {
             onClick={() => getCurrentWindow().minimize()}
             className="w-4 h-4 rounded-full bg-[#FFBD2E] border border-[#DEA123] flex items-center justify-center group"
           >
-            <Minus className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity" strokeWidth={3} />
+            <Minus
+              className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity"
+              strokeWidth={3}
+            />
           </button>
           <button
             onClick={() => getCurrentWindow().toggleMaximize()}
             className="w-4 h-4 rounded-full bg-[#27C93F] border border-[#1AAB29] flex items-center justify-center group"
           >
-            <Square className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity" strokeWidth={3} fill="currentColor" />
+            <Square
+              className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity"
+              strokeWidth={3}
+              fill="currentColor"
+            />
           </button>
           <button
             onClick={() => getCurrentWindow().close()}
             className="w-4 h-4 rounded-full bg-[#FF5F56] border border-[#E0443E] flex items-center justify-center group"
           >
-            <X className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity" strokeWidth={3} />
+            <X
+              className="w-2 h-2 text-black opacity-0 group-hover:opacity-60 transition-opacity"
+              strokeWidth={3}
+            />
           </button>
         </div>
       </div>
@@ -276,8 +291,8 @@ export default function App() {
             focusTimer.phase === 'work'
               ? (settings.pomodoroWorkDuration || 25) * 60
               : focusTimer.phase === 'shortBreak'
-              ? (settings.pomodoroShortBreak || 5) * 60
-              : (settings.pomodoroLongBreak || 15) * 60
+                ? (settings.pomodoroShortBreak || 5) * 60
+                : (settings.pomodoroLongBreak || 15) * 60
           }
           onToggleTimer={focusTimer.toggleTimer}
           onSkipTimer={focusTimer.skipTimer}
@@ -289,7 +304,7 @@ export default function App() {
       )}
 
       {/* Task Detail Side Panel */}
-      <TaskDetailPanel
+      <TaskDetailView
         task={selectedDetailTask}
         projects={projects}
         sprints={sprints}
@@ -328,7 +343,6 @@ export default function App() {
 
         {/* Main Application Core viewport container */}
         <div className="flex-1 flex flex-col overflow-hidden">
-
           {/* Universal Top Header Menu */}
           <header className="flex justify-between items-center h-16 border-b border-[#27272A] px-8 bg-black sticky top-0 z-40 shrink-0">
             <div className="flex items-center gap-4">
@@ -339,7 +353,6 @@ export default function App() {
 
             {/* Quick global utility actions */}
             <div className="flex items-center gap-6">
-
               {/* Global Search Trigger Button */}
               <button
                 id="global-search-input"
@@ -380,7 +393,6 @@ export default function App() {
 
           {/* Inner Scrollable Frame Canvas Area */}
           <main className="flex-1 overflow-y-auto bg-black bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-[#0A0A0A] via-[#000000] to-[#000000] focus:outline-none scrollbar-thin">
-
             {/* Main Content Router */}
             {currentView === 'dashboard' && (
               <DashboardView
@@ -416,14 +428,16 @@ export default function App() {
                 onAddProjectClick={() => setIsAddProjectOpen(true)}
                 onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
                 onMoveTaskStatus={handleMoveTaskStatus}
-                onAddTaskToProject={(title, projId, sprintId) => handleAddTask(title, projId, undefined, undefined, sprintId)}
+                onAddTaskToProject={(title, projId, sprintId) =>
+                  handleAddTask(title, projId, undefined, undefined, sprintId)
+                }
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
               />
             )}
 
             {currentView === 'project-details' && selectedProjectId && (
               <ProjectDetailView
-                project={projects.find(p => p.id === selectedProjectId)!}
+                project={projects.find((p) => p.id === selectedProjectId)!}
                 tasks={tasks}
                 files={files}
                 availableCategories={categories}
@@ -465,8 +479,26 @@ export default function App() {
                 defaultGrouped={currentView !== 'inbox' && currentView !== 'recurring'}
                 isInboxView={currentView === 'inbox'}
                 isRecurringView={currentView === 'recurring'}
-                onAddTask={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring' ? ((title: string) => handleAddTask(title, undefined, currentView === 'recurring' ? getTodayStr() : '', currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined)) : undefined}
-                addTaskPlaceholder={currentView === 'inbox' ? 'Add a new task to Inbox...' : currentView === 'recurring' ? 'Add a new recurring task (defaults to daily)...' : 'Add a new task...'}
+                onAddTask={
+                  currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring'
+                    ? (title: string) =>
+                        handleAddTask(
+                          title,
+                          undefined,
+                          currentView === 'recurring' ? getTodayStr() : '',
+                          currentView === 'recurring'
+                            ? { frequency: 'daily', interval: 1 }
+                            : undefined,
+                        )
+                    : undefined
+                }
+                addTaskPlaceholder={
+                  currentView === 'inbox'
+                    ? 'Add a new task to Inbox...'
+                    : currentView === 'recurring'
+                      ? 'Add a new recurring task (defaults to daily)...'
+                      : 'Add a new task...'
+                }
                 onToggleTask={handleToggleTask}
                 onDeleteTask={handleDeleteTask}
                 onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
@@ -504,7 +536,6 @@ export default function App() {
 
             {/* Simple modular help and support */}
             {currentView === 'help' && <HelpView />}
-
           </main>
         </div>
       </div>
@@ -578,7 +609,6 @@ export default function App() {
           document.getElementById('header-focus-mode')?.click();
         }}
       />
-
     </div>
   );
 }

@@ -1,23 +1,23 @@
-import React, { useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import {
-  Folder,
-  FolderOpen,
-  FileText,
+  AlertTriangle,
+  ChevronDown,
+  ChevronRight,
+  Edit2,
   FileCode,
-  Search,
+  FilePlus,
+  FileText,
+  Folder,
+  FolderDot,
+  FolderOpen,
   Plus,
   RefreshCw,
+  Search,
   Trash2,
-  ChevronRight,
-  ChevronDown,
-  Edit2,
-  FolderDot,
-  FilePlus,
-  AlertTriangle,
-  X
+  X,
 } from 'lucide-react';
-import { VaultEntry } from '../types';;
+import { AnimatePresence, motion } from 'motion/react';
+import React, { useState } from 'react';
+import { VaultEntry } from '../types';
 
 interface VaultFileTreeProps {
   entries: VaultEntry[];
@@ -41,7 +41,8 @@ function filterEntries(entries: VaultEntry[], query: string): VaultEntry[] {
       if (matchesSelf || filteredChildren.length > 0) {
         acc.push({
           ...entry,
-          children: matchesSelf && filteredChildren.length === 0 ? entry.children : filteredChildren
+          children:
+            matchesSelf && filteredChildren.length === 0 ? entry.children : filteredChildren,
         });
       }
     } else {
@@ -68,7 +69,7 @@ const TreeNode: React.FC<TreeNodeProps> = ({
   onSelectFile,
   onDeleteFile,
   depth,
-  isSearching
+  isSearching,
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -174,7 +175,7 @@ export default function VaultFileTree({
   onDeleteFile,
   onCreateDocument,
   onRefresh,
-  onChangeVaultPath
+  onChangeVaultPath,
 }: VaultFileTreeProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -209,8 +210,10 @@ export default function VaultFileTree({
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="text-xs font-semibold text-white tracking-tight">Project Vault</span>
-                <span 
+                <span className="text-xs font-semibold text-white tracking-tight">
+                  Project Vault
+                </span>
+                <span
                   className="text-[11px] font-mono text-[#A1A1A6] bg-[#161618] px-2 py-0.5 rounded-md border border-[#2A2A2E] truncate block max-w-[200px] sm:max-w-xs md:max-w-sm"
                   title={vaultPath}
                 >

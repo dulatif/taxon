@@ -1,19 +1,19 @@
-import React, { useEffect } from 'react';
-import { 
-  Play, 
-  Pause, 
-  StopCircle, 
-  SkipForward, 
-  Circle, 
-  CheckSquare, 
-  Square,
-  Sparkles,
+import {
   Award,
+  CheckSquare,
+  Circle,
+  Minimize2,
+  Pause,
+  Play,
+  SkipForward,
+  Sparkles,
+  Square,
+  StopCircle,
   Unlink,
-  Minimize2
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Task, Project } from '../types';;
+import React, { useEffect } from 'react';
+import { Project, Task } from '../types';
 
 interface FocusModeViewProps {
   activeTask: Task | null;
@@ -46,15 +46,17 @@ export default function FocusModeView({
   onUnlinkTask,
   onMinimizeFocusMode,
 }: FocusModeViewProps) {
-  
-  const currentProject = activeTask 
-    ? projects.find(p => p.id === activeTask.projectId) 
-    : null;
+  const currentProject = activeTask ? projects.find((p) => p.id === activeTask.projectId) : null;
 
   // Up Next Queue contains other uncompleted tasks for this active project
   const upNextTasks = activeTask
-    ? tasks.filter(t => t.id !== activeTask.id && !t.completed && (t.projectId === activeTask.projectId || (!t.projectId && !activeTask.projectId)))
-    : tasks.filter(t => !t.completed);
+    ? tasks.filter(
+        (t) =>
+          t.id !== activeTask.id &&
+          !t.completed &&
+          (t.projectId === activeTask.projectId || (!t.projectId && !activeTask.projectId)),
+      )
+    : tasks.filter((t) => !t.completed);
 
   const formattedTime = () => {
     const mins = Math.floor(timerSeconds / 60);
@@ -66,17 +68,16 @@ export default function FocusModeView({
     const rawFrac = timerSeconds / totalDuration;
     const fraction = Math.max(0, Math.min(rawFrac, 1));
     const circumference = 2 * Math.PI * 140; // Approx 879.64
-    return circumference - (fraction * circumference);
+    return circumference - fraction * circumference;
   };
 
   return (
-    <motion.div 
+    <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-[#000000] text-white z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none"
     >
-      
       {/* Hide / Minimize button to close full screen without stopping timer */}
       <button
         onClick={onMinimizeFocusMode}
@@ -93,12 +94,18 @@ export default function FocusModeView({
       {/* Top Header details */}
       <div className="text-center w-full max-w-xl animate-fade-in z-10">
         <div className="mb-2 flex items-center justify-center gap-2">
-          <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${
-            phase === 'work' 
-              ? 'bg-red-500/10 text-red-400 border-red-500/30' 
-              : 'bg-green-500/10 text-green-400 border-green-500/30'
-          }`}>
-            {phase === 'work' ? '🔥 Focus Sprint' : phase === 'shortBreak' ? '☕ Short Break' : '🌴 Long Break'}
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase tracking-wider border ${
+              phase === 'work'
+                ? 'bg-red-500/10 text-red-400 border-red-500/30'
+                : 'bg-green-500/10 text-green-400 border-green-500/30'
+            }`}
+          >
+            {phase === 'work'
+              ? '🔥 Focus Sprint'
+              : phase === 'shortBreak'
+                ? '☕ Short Break'
+                : '🌴 Long Break'}
           </span>
         </div>
         <span className="font-mono text-[10px] font-semibold text-[#8E9192] uppercase tracking-[0.2em] mb-1 block">
@@ -107,7 +114,7 @@ export default function FocusModeView({
         <h2 className="text-2xl md:text-3xl font-black text-white tracking-tight px-4 leading-normal truncate">
           {activeTask ? activeTask.title : 'Standalone Focus'}
         </h2>
-        
+
         {/* Priority tags metadata indicators */}
         <div className="mt-4 flex items-center justify-center space-x-2 text-[#8E9192] text-xs flex-wrap gap-y-2">
           <span className="font-mono uppercase px-2 py-0.5 rounded border border-[#27272A]/80 bg-[#121212]/50">
@@ -134,33 +141,36 @@ export default function FocusModeView({
       </div>
 
       {/* Large central progress circle ring with monolithic clock */}
-      <div 
+      <div
         onClick={onToggleTimer}
         className="relative flex items-center justify-center my-6 group cursor-pointer z-10 select-none hover:scale-[1.02] transition-transform duration-300"
       >
-        <svg className="w-72 h-72 md:w-[350px] md:h-[350px] rotate-[-90deg] drop-shadow-[0_0_20px_rgba(255,255,255,0.03)]" viewBox="0 0 300 300">
+        <svg
+          className="w-72 h-72 md:w-[350px] md:h-[350px] rotate-[-90deg] drop-shadow-[0_0_20px_rgba(255,255,255,0.03)]"
+          viewBox="0 0 300 300"
+        >
           {/* Background track circle */}
-          <circle 
-            className="text-[#121212]" 
-            stroke="currentColor" 
-            strokeWidth="4" 
-            fill="transparent" 
-            r="140" 
-            cx="150" 
-            cy="150" 
+          <circle
+            className="text-[#121212]"
+            stroke="currentColor"
+            strokeWidth="4"
+            fill="transparent"
+            r="140"
+            cx="150"
+            cy="150"
           />
           {/* Active progress meter stroke with transition and correct timing coordinates */}
-          <circle 
-            className="text-white transition-[stroke-dashoffset] duration-1000 ease-linear" 
-            stroke="currentColor" 
-            strokeWidth="4" 
+          <circle
+            className="text-white transition-[stroke-dashoffset] duration-1000 ease-linear"
+            stroke="currentColor"
+            strokeWidth="4"
             strokeDasharray={2 * Math.PI * 140}
             strokeDashoffset={strokeOffset()}
             strokeLinecap="round"
-            fill="transparent" 
-            r="140" 
-            cx="150" 
-            cy="150" 
+            fill="transparent"
+            r="140"
+            cx="150"
+            cy="150"
           />
         </svg>
 
@@ -173,12 +183,16 @@ export default function FocusModeView({
             {timerIsRunning ? (
               <>
                 <Pause className="w-4 h-4 fill-current" />
-                <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Pause</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider font-mono">
+                  Pause
+                </span>
               </>
             ) : (
               <>
                 <Play className="w-4 h-4 fill-current" />
-                <span className="text-[10px] uppercase font-bold tracking-wider font-mono">Resume</span>
+                <span className="text-[10px] uppercase font-bold tracking-wider font-mono">
+                  Resume
+                </span>
               </>
             )}
           </div>
@@ -187,17 +201,19 @@ export default function FocusModeView({
 
       {/* Control console row */}
       <div className="flex items-center space-x-8 z-10 pb-4">
-        <button 
+        <button
           onClick={onEndFocusMode}
           className="flex flex-col items-center justify-center text-[#8E9192] hover:text-white transition-colors group cursor-pointer"
         >
           <div className="w-12 h-12 rounded-full border border-[#27272A] flex items-center justify-center mb-2 group-hover:border-white transition-colors">
             <StopCircle className="w-5 h-5 text-red-500 fill-current" />
           </div>
-          <span className="text-[10px] uppercase font-bold tracking-widest font-mono">End Focus</span>
+          <span className="text-[10px] uppercase font-bold tracking-widest font-mono">
+            End Focus
+          </span>
         </button>
 
-        <button 
+        <button
           onClick={onSkipTimer}
           className="flex flex-col items-center justify-center text-[#8E9192] hover:text-white transition-colors group cursor-pointer"
         >
@@ -211,9 +227,11 @@ export default function FocusModeView({
       {/* Up Next pending tasks footer queue */}
       <div className="w-full max-w-lg pb-4 border-t border-[#121212] pt-6 relative z-10 bg-black">
         <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-black px-4 whitespace-nowrap">
-          <span className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.2em]">Up Next Queue</span>
+          <span className="text-[10px] font-bold text-[#8E9192] uppercase tracking-[0.2em]">
+            Up Next Queue
+          </span>
         </div>
-        
+
         <div className="flex flex-col space-y-3.5 max-h-[140px] overflow-y-auto scrollbar-none px-2">
           {upNextTasks.length === 0 ? (
             <div className="text-center py-2 text-xs text-[#8E9192]/50 italic">
@@ -221,16 +239,14 @@ export default function FocusModeView({
             </div>
           ) : (
             upNextTasks.slice(0, 3).map((task) => (
-              <div 
+              <div
                 key={task.id}
                 onClick={() => onSelectTaskToFocus(task)}
                 className="flex items-center justify-between text-[#8E9192] hover:text-white transition-colors cursor-pointer group"
               >
                 <div className="flex items-center space-x-3 truncate">
                   <Circle className="w-2.5 h-2.5 fill-transparent text-[#27272A]/80 group-hover:text-white transition-colors shrink-0" />
-                  <span className="text-xs font-semibold truncate max-w-[280px]">
-                    {task.title}
-                  </span>
+                  <span className="text-xs font-semibold truncate max-w-[280px]">{task.title}</span>
                 </div>
                 <span className="font-mono text-[10px] text-[#27272A] group-hover:text-[#8E9192] font-semibold transition-colors shrink-0 bg-[#0E0E0E] px-2 py-0.5 rounded border border-[#27272A]/50">
                   {task.duration || '25m'}
@@ -240,7 +256,6 @@ export default function FocusModeView({
           )}
         </div>
       </div>
-
     </motion.div>
   );
 }

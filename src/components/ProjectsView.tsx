@@ -1,16 +1,9 @@
-import React, { useState, useMemo, useEffect } from 'react';
-import { 
-  ArrowUpRight, 
-  CheckCircle,
-  Clock, 
-  Grid2X2, 
-  Kanban,
-  Plus,
-  Settings
-} from 'lucide-react';
-import { Project, Task, Sprint } from '../types';
+import { ArrowUpRight, CheckCircle, Clock, Grid2X2, Kanban, Plus, Settings } from 'lucide-react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { PROJECT_CATEGORIES } from '../constants/categories';
-import { getCategoryStyle } from '../services/category-color';;
+import { getCategoryStyle } from '../services/category-color';
+import { Project, Sprint, Task } from '../types';
+
 import KanbanView from './KanbanView';
 
 interface ProjectsViewProps {
@@ -24,7 +17,11 @@ interface ProjectsViewProps {
   onAddProjectClick: () => void;
   onManageCategoriesClick?: () => void;
   onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
-  onAddTaskToProject: (taskTitle: string, projectId: string, sprintId?: string | null) => Task | void;
+  onAddTaskToProject: (
+    taskTitle: string,
+    projectId: string,
+    sprintId?: string | null,
+  ) => Task | void;
   onSelectTask?: (task: Task) => void;
 }
 
@@ -44,13 +41,13 @@ export default function ProjectsView({
 }: ProjectsViewProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'kanban'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  
+
   // Local active count calculator
-  const activeProjectsCount = projects.filter(p => p.category !== 'Completed').length;
+  const activeProjectsCount = projects.filter((p) => p.category !== 'Completed').length;
 
   // Available category tabs dynamically built strictly from projects that exist (hiding empty tags)
   const availableCategories = useMemo(() => {
-    const cats = Array.from(new Set(projects.map(p => p.category))).filter(Boolean);
+    const cats = Array.from(new Set(projects.map((p) => p.category))).filter(Boolean);
     cats.sort((a, b) => {
       const idxA = (PROJECT_CATEGORIES as readonly string[]).indexOf(a);
       const idxB = (PROJECT_CATEGORIES as readonly string[]).indexOf(b);
@@ -72,7 +69,7 @@ export default function ProjectsView({
   const filteredProjects = useMemo(() => {
     let list = projects;
     if (selectedCategory !== 'All') {
-      list = projects.filter(p => p.category === selectedCategory);
+      list = projects.filter((p) => p.category === selectedCategory);
     }
     // Sort projects based on assigned project category tag, then project name
     return [...list].sort((a, b) => {
@@ -83,7 +80,7 @@ export default function ProjectsView({
       else if (idxA !== -1) catComp = -1;
       else if (idxB !== -1) catComp = 1;
       else catComp = a.category.localeCompare(b.category);
-      
+
       if (catComp !== 0) return catComp;
       return a.name.localeCompare(b.name);
     });
@@ -96,7 +93,6 @@ export default function ProjectsView({
 
   return (
     <div className="p-6 md:p-8 max-w-7xl w-full mx-auto flex flex-col h-full overflow-hidden">
-      
       {/* View Mode & Header Row */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         <div>
@@ -150,9 +146,10 @@ export default function ProjectsView({
       <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-4 no-scrollbar border-b border-[#27272A]/40 shrink-0">
         {availableCategories.map((cat) => {
           const isSelected = selectedCategory === cat;
-          const count = cat === 'All' ? projects.length : projects.filter(p => p.category === cat).length;
+          const count =
+            cat === 'All' ? projects.length : projects.filter((p) => p.category === cat).length;
           const style = cat === 'All' ? null : getCategoryStyle(cat);
-          
+
           return (
             <button
               key={cat}
@@ -163,9 +160,15 @@ export default function ProjectsView({
                   : 'bg-[#0A0A0A] text-[#8E9192] hover:text-white border border-[#27272A]/80 hover:border-white/20'
               }`}
             >
-              {style && <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${isSelected ? 'bg-black' : style.dot}`} />}
+              {style && (
+                <span
+                  className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${isSelected ? 'bg-black' : style.dot}`}
+                />
+              )}
               <span className="self-center leading-tight">{cat}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono self-center leading-tight ${isSelected ? 'bg-black/10 text-black' : 'bg-[#141313] text-[#8E9192]'}`}>
+              <span
+                className={`text-[10px] px-1.5 py-0.5 rounded-full font-mono self-center leading-tight ${isSelected ? 'bg-black/10 text-black' : 'bg-[#141313] text-[#8E9192]'}`}
+              >
                 {count}
               </span>
             </button>
@@ -188,11 +191,12 @@ export default function ProjectsView({
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 overflow-y-auto pr-1">
           {filteredProjects.map((project) => {
             const isCompleted = project.category === 'Completed';
-            const projectTasks = tasks.filter(t => t.projectId === project.id);
-            const completedCount = projectTasks.filter(t => t.completed).length;
-            const progressValue = projectTasks.length > 0 
-              ? Math.round((completedCount / projectTasks.length) * 100)
-              : project.progress;
+            const projectTasks = tasks.filter((t) => t.projectId === project.id);
+            const completedCount = projectTasks.filter((t) => t.completed).length;
+            const progressValue =
+              projectTasks.length > 0
+                ? Math.round((completedCount / projectTasks.length) * 100)
+                : project.progress;
             const catStyle = getCategoryStyle(project.category);
 
             return (
@@ -206,8 +210,12 @@ export default function ProjectsView({
               >
                 <div>
                   <div className="flex justify-between items-start mb-4">
-                    <span className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider leading-tight font-mono border ${catStyle.border} ${catStyle.bg} ${catStyle.text}`}>
-                      <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${catStyle.dot}`} />
+                    <span
+                      className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider leading-tight font-mono border ${catStyle.border} ${catStyle.bg} ${catStyle.text}`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${catStyle.dot}`}
+                      />
                       <span className="self-center">{project.category}</span>
                     </span>
                     {isCompleted ? (
@@ -217,7 +225,9 @@ export default function ProjectsView({
                     )}
                   </div>
 
-                  <h2 className={`text-lg font-bold text-white mb-2 tracking-tight ${isCompleted ? 'line-through decoration-[#8E9192]' : ''}`}>
+                  <h2
+                    className={`text-lg font-bold text-white mb-2 tracking-tight ${isCompleted ? 'line-through decoration-[#8E9192]' : ''}`}
+                  >
                     {project.name}
                   </h2>
                   <p className="text-xs text-[#C4C7C8] leading-relaxed mb-6 block truncate">
@@ -231,7 +241,7 @@ export default function ProjectsView({
                     <span className="text-white font-bold">{progressValue}%</span>
                   </div>
                   <div className="w-full bg-[#121212] h-1.5 rounded-full overflow-hidden border border-[#27272A]/30">
-                    <div 
+                    <div
                       className={`h-full rounded-full transition-all duration-500 ${isCompleted ? 'bg-white/60' : 'bg-white'}`}
                       style={{ width: `${progressValue}%` }}
                     ></div>
@@ -239,7 +249,14 @@ export default function ProjectsView({
                   {!isCompleted && project.dueDate && (
                     <div className="flex items-center gap-1 mt-3 text-[9px] text-[#8E9192] font-mono">
                       <Clock className="w-3 h-3" />
-                      <span>Due on {new Date(project.dueDate).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}</span>
+                      <span>
+                        Due on{' '}
+                        {new Date(project.dueDate).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -249,7 +266,7 @@ export default function ProjectsView({
         </div>
       ) : (
         <div className="flex-1 overflow-hidden">
-          <KanbanView 
+          <KanbanView
             projects={filteredProjects}
             tasks={tasks}
             sprints={sprints}

@@ -1,27 +1,28 @@
-import React, { useState } from 'react';
 import {
-  Play,
+  ArrowDownNarrowWide,
+  ArrowRight,
+  Check,
+  CheckCircle2,
+  CheckSquare,
+  ChevronRight,
+  Clock,
+  ListTodo,
   Pause,
+  Play,
+  PlusCircle,
   RotateCcw,
   SkipForward,
-  PlusCircle,
-  ArrowRight,
-  ListTodo,
-  Clock,
-  Check,
-  Timer,
-  CheckCircle2,
-  ArrowDownNarrowWide,
   SortAsc,
   Square,
-  CheckSquare,
+  Timer,
   Trash2,
-  ChevronRight,
 } from 'lucide-react';
+import React, { useState } from 'react';
+import { DailyActivity, Project, Task } from '../types';
 import { PRIORITY_COLORS } from '../utils/taskFilters';
-import { Task, Project, DailyActivity } from '../types';;
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { motion, AnimatePresence } from 'motion/react';
+
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { AnimatePresence, motion } from 'motion/react';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -97,9 +98,15 @@ export default function DashboardView({
   };
 
   const todayStr = getTodayStr();
-  const activeTodayTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.substring(0, 10) === todayStr);
-  const overdueTasks = tasks.filter(t => !t.completed && t.dueDate && t.dueDate.substring(0, 10) < todayStr && !t.archived);
-  const completedTodayTasks = tasks.filter(t => t.completed && t.dueDate && t.dueDate.substring(0, 10) === todayStr && !t.archived);
+  const activeTodayTasks = tasks.filter(
+    (t) => !t.completed && t.dueDate && t.dueDate.substring(0, 10) === todayStr,
+  );
+  const overdueTasks = tasks.filter(
+    (t) => !t.completed && t.dueDate && t.dueDate.substring(0, 10) < todayStr && !t.archived,
+  );
+  const completedTodayTasks = tasks.filter(
+    (t) => t.completed && t.dueDate && t.dueDate.substring(0, 10) === todayStr && !t.archived,
+  );
 
   const sortTasksHelper = (taskList: Task[]) => {
     return [...taskList].sort((a, b) => {
@@ -119,14 +126,15 @@ export default function DashboardView({
   const handleDragEnd = (result: any) => {
     const { source, destination, draggableId } = result;
     if (!destination || !onReorderTasks) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index) return;
+    if (source.droppableId === destination.droppableId && source.index === destination.index)
+      return;
 
     const isSourceCompleted = source.droppableId === 'today-completed-tasks';
     const isDestCompleted = destination.droppableId === 'today-completed-tasks';
     const isSourceOverdue = source.droppableId === 'today-overdue-tasks';
     const isDestOverdue = destination.droppableId === 'today-overdue-tasks';
 
-    const draggedTask = tasks.find(t => t.id === draggableId);
+    const draggedTask = tasks.find((t) => t.id === draggableId);
     if (!draggedTask) return;
 
     const currentActive = [...sortedActiveTasks];
@@ -134,20 +142,20 @@ export default function DashboardView({
     const currentCompleted = [...sortedCompletedTasks];
 
     if (isSourceCompleted) {
-      const idx = currentCompleted.findIndex(t => t.id === draggableId);
+      const idx = currentCompleted.findIndex((t) => t.id === draggableId);
       if (idx !== -1) currentCompleted.splice(idx, 1);
     } else if (isSourceOverdue) {
-      const idx = currentOverdue.findIndex(t => t.id === draggableId);
+      const idx = currentOverdue.findIndex((t) => t.id === draggableId);
       if (idx !== -1) currentOverdue.splice(idx, 1);
     } else {
-      const idx = currentActive.findIndex(t => t.id === draggableId);
+      const idx = currentActive.findIndex((t) => t.id === draggableId);
       if (idx !== -1) currentActive.splice(idx, 1);
     }
 
     const updatedTask = {
       ...draggedTask,
       completed: isDestCompleted,
-      status: isDestCompleted ? ('Done' as const) : ('To Do' as const)
+      status: isDestCompleted ? ('Done' as const) : ('To Do' as const),
     };
 
     // If moved from overdue to today active, reschedule it
@@ -168,7 +176,7 @@ export default function DashboardView({
     }
 
     const reorderedTodayTasks = [...currentActive, ...currentOverdue, ...currentCompleted];
-    const otherTasks = tasks.filter(t => !reorderedTodayTasks.some(rt => rt.id === t.id));
+    const otherTasks = tasks.filter((t) => !reorderedTodayTasks.some((rt) => rt.id === t.id));
     onReorderTasks([...reorderedTodayTasks, ...otherTasks]);
   };
 
@@ -191,7 +199,6 @@ export default function DashboardView({
       <div className="grid grid-cols-12 gap-8 items-start">
         {/* Left Column: Tasks & Quick Add */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
-
           {/* Quick task capture with brand styling */}
           <form
             onSubmit={handleQuickAddSubmit}
@@ -212,9 +219,13 @@ export default function DashboardView({
                 className="bg-[#141313] border border-[#27272A] text-xs text-[#C4C7C8] rounded px-2 py-1 mr-2 focus:ring-1 focus:ring-white shrink-0"
               >
                 <option value="">No Project</option>
-                {projects.filter(p => p.category !== 'Completed').map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
+                {projects
+                  .filter((p) => p.category !== 'Completed')
+                  .map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
               </select>
             )}
             <button
@@ -236,9 +247,13 @@ export default function DashboardView({
               <div className="flex items-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setSelectedSort(s => s === 'custom' ? 'priority' : 'custom')}
+                  onClick={() => setSelectedSort((s) => (s === 'custom' ? 'priority' : 'custom'))}
                   className="flex items-center gap-1.5 text-[#8E9192] hover:text-white transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-[#201F1F] px-2.5 py-1 rounded border border-[#27272A] hover:border-white/30"
-                  title={selectedSort === 'custom' ? 'Custom ordering enabled (click to sort by priority)' : 'Sorted by priority (click to enable custom drag & drop)'}
+                  title={
+                    selectedSort === 'custom'
+                      ? 'Custom ordering enabled (click to sort by priority)'
+                      : 'Sorted by priority (click to enable custom drag & drop)'
+                  }
                 >
                   <SortAsc className="w-3.5 h-3.5" />
                   <span>Sort: {selectedSort}</span>
@@ -250,16 +265,21 @@ export default function DashboardView({
             </div>
 
             <DragDropContext onDragEnd={handleDragEnd}>
-
               {/* Active Tasks Container */}
               <div className="p-4">
-                <Droppable droppableId="today-active-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                <Droppable
+                  droppableId="today-active-tasks"
+                  isDropDisabled={selectedSort !== 'custom'}
+                >
                   {(provided, snapshot) => (
                     <ul
                       ref={provided.innerRef}
                       {...provided.droppableProps}
-                      className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
-                        }`}
+                      className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
+                        snapshot.isDraggingOver
+                          ? 'bg-[#141313]/50 border border-white/20 p-1.5'
+                          : ''
+                      }`}
                     >
                       {sortedActiveTasks.length === 0 && !snapshot.isDraggingOver ? (
                         <div className="py-12 text-center text-[#8E9192] text-sm">
@@ -267,10 +287,15 @@ export default function DashboardView({
                         </div>
                       ) : (
                         sortedActiveTasks.map((task, index) => {
-                          const proj = projects.find(p => p.id === task.projectId);
+                          const proj = projects.find((p) => p.id === task.projectId);
                           return (
                             // @ts-ignore
-                            <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                            <Draggable
+                              key={task.id}
+                              draggableId={task.id}
+                              index={index}
+                              isDragDisabled={selectedSort !== 'custom'}
+                            >
                               {(provided, snapshot) => (
                                 <li
                                   ref={provided.innerRef}
@@ -280,14 +305,18 @@ export default function DashboardView({
                                   role="button"
                                   tabIndex={0}
                                   onClick={() => onSelectTask?.(task)}
-                                  className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${snapshot.isDragging
-                                    ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                                    : 'hover:bg-[#141313]/50'
-                                    }`}
+                                  className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${
+                                    snapshot.isDragging
+                                      ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                      : 'hover:bg-[#141313]/50'
+                                  }`}
                                 >
                                   <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onToggleTask(task.id);
+                                      }}
                                       className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                                     >
                                       <Square className="w-4 h-4" />
@@ -298,7 +327,12 @@ export default function DashboardView({
                                       className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                     />
                                     <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
-                                      <h3 className="text-white font-medium text-sm truncate w-full block leading-tight" title={task.title}>{task.title}</h3>
+                                      <h3
+                                        className="text-white font-medium text-sm truncate w-full block leading-tight"
+                                        title={task.title}
+                                      >
+                                        {task.title}
+                                      </h3>
                                       {proj && (
                                         <span className="text-[10px] text-[#8E9192] bg-[#141313] px-1.5 py-0.5 rounded border border-[#27272A] inline-block max-w-[200px] truncate leading-none">
                                           {proj.name}
@@ -312,7 +346,10 @@ export default function DashboardView({
                                       <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                                     </span>
                                     <button
-                                      onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onStartFocus(task);
+                                      }}
                                       title="Start Focus Session"
                                       className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
                                     >
@@ -320,7 +357,10 @@ export default function DashboardView({
                                     </button>
                                     {onDeleteTask && (
                                       <button
-                                        onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          onDeleteTask(task.id);
+                                        }}
                                         className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                         title="Delete task item"
                                       >
@@ -350,8 +390,9 @@ export default function DashboardView({
                   >
                     <div className="flex items-center gap-2">
                       <ChevronRight
-                        className={`w-4 h-4 transition-transform duration-200 ${isOverdueExpanded ? 'rotate-90' : ''
-                          }`}
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          isOverdueExpanded ? 'rotate-90' : ''
+                        }`}
                       />
                       <span className="text-[11px] font-bold uppercase tracking-wider font-mono flex items-center gap-1.5">
                         <Timer className="w-3.5 h-3.5" />
@@ -372,19 +413,30 @@ export default function DashboardView({
                         transition={{ duration: 0.2, ease: 'easeInOut' }}
                         className="overflow-hidden mt-2"
                       >
-                        <Droppable droppableId="today-overdue-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                        <Droppable
+                          droppableId="today-overdue-tasks"
+                          isDropDisabled={selectedSort !== 'custom'}
+                        >
                           {(provided, snapshot) => (
                             <ul
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-red-500/10 border border-red-500/20 p-1.5' : ''
-                                }`}
+                              className={`space-y-1.5 min-h-[40px] rounded-lg transition-colors select-none ${
+                                snapshot.isDraggingOver
+                                  ? 'bg-red-500/10 border border-red-500/20 p-1.5'
+                                  : ''
+                              }`}
                             >
                               {sortedOverdueTasks.map((task, index) => {
-                                const proj = projects.find(p => p.id === task.projectId);
+                                const proj = projects.find((p) => p.id === task.projectId);
                                 return (
                                   // @ts-ignore
-                                  <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                                  <Draggable
+                                    key={task.id}
+                                    draggableId={task.id}
+                                    index={index}
+                                    isDragDisabled={selectedSort !== 'custom'}
+                                  >
                                     {(provided, snapshot) => (
                                       <li
                                         ref={provided.innerRef}
@@ -394,14 +446,18 @@ export default function DashboardView({
                                         role="button"
                                         tabIndex={0}
                                         onClick={() => onSelectTask?.(task)}
-                                        className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent bg-[#141313]/40 ${snapshot.isDragging
-                                          ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                                          : 'hover:bg-[#141313]'
-                                          }`}
+                                        className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent bg-[#141313]/40 ${
+                                          snapshot.isDragging
+                                            ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                                            : 'hover:bg-[#141313]'
+                                        }`}
                                       >
                                         <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
                                           <button
-                                            onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onToggleTask(task.id);
+                                            }}
                                             className="shrink-0 mt-0.5 text-red-400/70 hover:text-red-400 transition-colors cursor-pointer"
                                           >
                                             <Square className="w-4 h-4" />
@@ -411,7 +467,12 @@ export default function DashboardView({
                                             className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                           />
                                           <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
-                                            <h3 className="text-red-200/90 font-medium text-sm truncate w-full block leading-tight" title={task.title}>{task.title}</h3>
+                                            <h3
+                                              className="text-red-200/90 font-medium text-sm truncate w-full block leading-tight"
+                                              title={task.title}
+                                            >
+                                              {task.title}
+                                            </h3>
                                             {proj && (
                                               <span className="text-[10px] text-red-400/70 bg-red-500/10 px-1.5 py-0.5 rounded border border-red-500/20 inline-block max-w-[200px] truncate leading-none">
                                                 {proj.name}
@@ -424,7 +485,10 @@ export default function DashboardView({
                                             <Clock className="w-3 h-3" /> {getTaskTimeBadge(task)}
                                           </span>
                                           <button
-                                            onClick={(e) => { e.stopPropagation(); onStartFocus(task); }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onStartFocus(task);
+                                            }}
                                             title="Start Focus Session"
                                             className="p-1 text-[#8E9192] hover:text-white hover:bg-[#201F1F] rounded transition-all"
                                           >
@@ -432,7 +496,10 @@ export default function DashboardView({
                                           </button>
                                           {onDeleteTask && (
                                             <button
-                                              onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteTask(task.id);
+                                              }}
                                               className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                               title="Delete task item"
                                             >
@@ -465,8 +532,11 @@ export default function DashboardView({
                   >
                     <div className="flex items-center gap-2">
                       <ChevronRight
-                        className={`w-4 h-4 transition-transform duration-200 ${isCompletedExpanded ? 'rotate-90 text-white' : 'text-[#8E9192] group-hover:text-white'
-                          }`}
+                        className={`w-4 h-4 transition-transform duration-200 ${
+                          isCompletedExpanded
+                            ? 'rotate-90 text-white'
+                            : 'text-[#8E9192] group-hover:text-white'
+                        }`}
                       />
                       <span className="text-[11px] font-bold uppercase tracking-wider font-mono">
                         Completed Tasks
@@ -486,19 +556,30 @@ export default function DashboardView({
                         transition={{ duration: 0.2, ease: 'easeInOut' }}
                         className="overflow-hidden mt-2"
                       >
-                        <Droppable droppableId="today-completed-tasks" isDropDisabled={selectedSort !== 'custom'}>
+                        <Droppable
+                          droppableId="today-completed-tasks"
+                          isDropDisabled={selectedSort !== 'custom'}
+                        >
                           {(provided, snapshot) => (
                             <ul
                               ref={provided.innerRef}
                               {...provided.droppableProps}
-                              className={`space-y-1.5 min-h-[30px] rounded-lg transition-colors select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
-                                }`}
+                              className={`space-y-1.5 min-h-[30px] rounded-lg transition-colors select-none ${
+                                snapshot.isDraggingOver
+                                  ? 'bg-[#141313]/50 border border-white/20 p-1.5'
+                                  : ''
+                              }`}
                             >
                               {sortedCompletedTasks.map((task, index) => {
-                                const proj = projects.find(p => p.id === task.projectId);
+                                const proj = projects.find((p) => p.id === task.projectId);
                                 return (
                                   // @ts-ignore
-                                  <Draggable key={task.id} draggableId={task.id} index={index} isDragDisabled={selectedSort !== 'custom'}>
+                                  <Draggable
+                                    key={task.id}
+                                    draggableId={task.id}
+                                    index={index}
+                                    isDragDisabled={selectedSort !== 'custom'}
+                                  >
                                     {(provided, snapshot) => (
                                       <li
                                         ref={provided.innerRef}
@@ -508,14 +589,18 @@ export default function DashboardView({
                                         role="button"
                                         tabIndex={0}
                                         onClick={() => onSelectTask?.(task)}
-                                        className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${snapshot.isDragging
-                                          ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
-                                          : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
-                                          }`}
+                                        className={`py-3 px-4 flex items-center justify-between rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent opacity-75 ${
+                                          snapshot.isDragging
+                                            ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50 opacity-100 border-white/20'
+                                            : 'hover:bg-[#141313]/40 hover:border-[#27272A]/30'
+                                        }`}
                                       >
                                         <div className="flex items-start gap-3 min-w-0 flex-1 mr-4 py-0.5">
                                           <button
-                                            onClick={(e) => { e.stopPropagation(); onToggleTask(task.id); }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              onToggleTask(task.id);
+                                            }}
                                             className="shrink-0 mt-0.5 text-[#8E9192] hover:text-white transition-colors cursor-pointer"
                                           >
                                             <CheckSquare className="w-4 h-4 text-white" />
@@ -526,7 +611,10 @@ export default function DashboardView({
                                             className={`w-1.5 h-1.5 rounded-full shrink-0 mt-1.5 ${PRIORITY_COLORS[task.priority].dot}`}
                                           />
                                           <div className="min-w-0 flex-1 w-full flex flex-col gap-1 overflow-hidden">
-                                            <span className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate w-full block leading-tight" title={task.title}>
+                                            <span
+                                              className="text-xs font-semibold text-white group-hover:underline line-through text-[#8E9192]/80 decoration-[#27272A] truncate w-full block leading-tight"
+                                              title={task.title}
+                                            >
                                               {task.title}
                                             </span>
                                             {proj && (
@@ -543,7 +631,10 @@ export default function DashboardView({
                                           </span>
                                           {onDeleteTask && (
                                             <button
-                                              onClick={(e) => { e.stopPropagation(); onDeleteTask(task.id); }}
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                onDeleteTask(task.id);
+                                              }}
                                               className="p-1 hover:bg-[#201F1F] rounded text-[#8E9192] hover:text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                                               title="Delete task item"
                                             >
@@ -582,7 +673,6 @@ export default function DashboardView({
 
         {/* Right Column: Pomodoro & Statistics */}
         <div className="col-span-12 lg:col-span-4 space-y-6">
-
           {/* Integrated Pomodoro Widget */}
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl flex flex-col items-center text-center relative overflow-hidden px-6 py-8">
             <div className="absolute inset-0 opacity-5 pointer-events-none">
@@ -601,7 +691,8 @@ export default function DashboardView({
 
               {activeFocusTask && (
                 <div className="mb-4 text-xs font-medium text-[#C4C7C8]/90 max-w-[220px] truncate">
-                  Working on: <span className="text-white hover:underline">{activeFocusTask.title}</span>
+                  Working on:{' '}
+                  <span className="text-white hover:underline">{activeFocusTask.title}</span>
                 </div>
               )}
 
@@ -619,7 +710,11 @@ export default function DashboardView({
                   title={timerIsRunning ? 'Pause Session' : 'Start Session'}
                   className="w-14 h-14 rounded-full bg-white text-black flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all"
                 >
-                  {timerIsRunning ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current ml-0.5" />}
+                  {timerIsRunning ? (
+                    <Pause className="w-5 h-5 fill-current" />
+                  ) : (
+                    <Play className="w-5 h-5 fill-current ml-0.5" />
+                  )}
                 </button>
                 <button
                   onClick={onSkipTimer}
@@ -632,7 +727,9 @@ export default function DashboardView({
 
               {/* Session Progress Indicators */}
               <div className="flex gap-2 justify-center mt-6">
-                <div className={`w-2 h-2 rounded-full transition-colors duration-300 ${timerIsRunning ? 'bg-white animate-pulse' : 'bg-white/40'}`}></div>
+                <div
+                  className={`w-2 h-2 rounded-full transition-colors duration-300 ${timerIsRunning ? 'bg-white animate-pulse' : 'bg-white/40'}`}
+                ></div>
                 <div className="w-2 h-2 rounded-full bg-[#201F1F] border border-[#27272A]"></div>
                 <div className="w-2 h-2 rounded-full bg-[#201F1F] border border-[#27272A]"></div>
                 <div className="w-2 h-2 rounded-full bg-[#201F1F] border border-[#27272A]"></div>
@@ -643,8 +740,12 @@ export default function DashboardView({
           {/* Daily Progress Visualizations */}
           <div className="bg-[#0A0A0A] border border-[#27272A] rounded-xl p-6 space-y-6">
             <div className="flex justify-between items-center">
-              <h3 className="text-xs font-bold text-[#A1A1AA] uppercase tracking-widest">Daily Progress</h3>
-              <span className="text-white text-[10px] font-bold tracking-wide">+12% over last week</span>
+              <h3 className="text-xs font-bold text-[#A1A1AA] uppercase tracking-widest">
+                Daily Progress
+              </h3>
+              <span className="text-white text-[10px] font-bold tracking-wide">
+                +12% over last week
+              </span>
             </div>
 
             {/* Custom high contrast bar graphs */}
@@ -653,20 +754,26 @@ export default function DashboardView({
                 // Max hours for scale is 6 hours
                 const percentage = Math.min((act.hours / 6) * 100, 100);
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group cursor-pointer">
+                  <div
+                    key={i}
+                    className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group cursor-pointer"
+                  >
                     <div className="text-[9px] font-mono font-medium text-[#8E9192] opacity-0 group-hover:opacity-100 transition-opacity mb-0.5">
                       {act.hours}h
                     </div>
                     <div className="w-full relative rounded-t-sm h-full flex items-end">
                       <div
                         style={{ height: `${percentage}%` }}
-                        className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-150 ${act.isToday
-                          ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]'
-                          : 'bg-[#201F1F] group-hover:bg-white/50'
-                          }`}
+                        className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-150 ${
+                          act.isToday
+                            ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]'
+                            : 'bg-[#201F1F] group-hover:bg-white/50'
+                        }`}
                       ></div>
                     </div>
-                    <span className={`text-[10px] font-medium ${act.isToday ? 'text-white font-bold' : 'text-[#8E9192]/80'}`}>
+                    <span
+                      className={`text-[10px] font-medium ${act.isToday ? 'text-white font-bold' : 'text-[#8E9192]/80'}`}
+                    >
                       {act.day}
                     </span>
                   </div>
@@ -677,16 +784,21 @@ export default function DashboardView({
             {/* Micro counters */}
             <div className="grid grid-cols-2 gap-3 pt-2">
               <div className="p-4 bg-[#141313] border border-[#27272A] rounded-lg">
-                <div className="text-xl font-bold font-mono text-white">{totalFocusedHours.toFixed(1)}h</div>
-                <div className="text-[10px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-1">Time Focused</div>
+                <div className="text-xl font-bold font-mono text-white">
+                  {totalFocusedHours.toFixed(1)}h
+                </div>
+                <div className="text-[10px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-1">
+                  Time Focused
+                </div>
               </div>
               <div className="p-4 bg-[#141313] border border-[#27272A] rounded-lg">
                 <div className="text-xl font-bold font-mono text-white">{totalCompletedCount}</div>
-                <div className="text-[10px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-1">Tasks Done</div>
+                <div className="text-[10px] text-[#A1A1AA] uppercase font-bold tracking-wide mt-1">
+                  Tasks Done
+                </div>
               </div>
             </div>
           </div>
-
         </div>
       </div>
     </div>

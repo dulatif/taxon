@@ -1,4 +1,4 @@
-import { DragDropContext, Draggable, DropResult, Droppable } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
 import {
   BarChart3,
   Calendar,
@@ -10,14 +10,15 @@ import {
   LayoutDashboard,
   Pause,
   Plus,
+  Repeat,
   Settings,
-  Repeat
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect, useState, useMemo } from 'react';
-import { Project } from '../types';
+import { useEffect, useMemo, useState } from 'react';
 import { PROJECT_CATEGORIES } from '../constants/categories';
-import { getCategoryStyle } from '../services/category-color';;
+import { getCategoryStyle } from '../services/category-color';
+import { Project } from '../types';
+
 import logo from '../assets/logo.png';
 
 interface SidebarProps {
@@ -103,7 +104,9 @@ export default function Sidebar({
       projectsByCategory[c] = activeProjects.filter((p) => p.category === c);
     });
 
-    projectsByCategory[sourceCat] = projectsByCategory[sourceCat].filter((p) => p.id !== draggableId);
+    projectsByCategory[sourceCat] = projectsByCategory[sourceCat].filter(
+      (p) => p.id !== draggableId,
+    );
 
     const updatedProject = { ...draggedProject, category: destCat };
 
@@ -139,10 +142,11 @@ export default function Sidebar({
   // Active styles helper
   const getItemClass = (id: string) => {
     const isPrimary = currentView === id && selectedProjectId === null;
-    return `w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${isPrimary
-      ? 'text-white font-bold bg-[#201F1F]'
-      : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-      }`;
+    return `w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
+      isPrimary
+        ? 'text-white font-bold bg-[#201F1F]'
+        : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+    }`;
   };
 
   return (
@@ -150,11 +154,16 @@ export default function Sidebar({
       {/* Main Scrollable Content Area */}
       <div className="flex-1 overflow-y-auto scrollbar-thin py-6 px-4 min-h-0 flex flex-col">
         {/* Brand Header */}
-        <div className="mb-8 px-2 cursor-pointer shrink-0 flex items-center gap-3" onClick={() => onViewChange('dashboard')}>
+        <div
+          className="mb-8 px-2 cursor-pointer shrink-0 flex items-center gap-3"
+          onClick={() => onViewChange('dashboard')}
+        >
           <img src={logo} alt="Taxon Logo" className="w-10 h-10 object-contain rounded-[10px]" />
           <div>
             <h1 className="text-xl font-black text-white tracking-tighter leading-tight">Taxon</h1>
-            <p className="text-[10px] tracking-tight text-[#c4c7c8]/60 font-medium uppercase mt-0.5">Precision Tasking</p>
+            <p className="text-[10px] tracking-tight text-[#c4c7c8]/60 font-medium uppercase mt-0.5">
+              Precision Tasking
+            </p>
           </div>
         </div>
 
@@ -184,7 +193,9 @@ export default function Sidebar({
           <DragDropContext onDragEnd={onDragEnd}>
             <div className="space-y-3">
               {categories.map((cat) => {
-                const catProjects = activeProjects.filter((p) => p.category === cat).sort((a, b) => a.name.localeCompare(b.name));
+                const catProjects = activeProjects
+                  .filter((p) => p.category === cat)
+                  .sort((a, b) => a.name.localeCompare(b.name));
                 if (catProjects.length === 0) return null;
 
                 const isExpanded = expandedCategories[cat] !== false;
@@ -199,8 +210,9 @@ export default function Sidebar({
                     >
                       <div className="flex items-center gap-2 overflow-hidden">
                         <ChevronRight
-                          className={`w-3.5 h-3.5 text-[#8E9192] shrink-0 group-hover:text-white transition-transform duration-200 ${isExpanded ? 'rotate-90 text-white' : ''
-                            }`}
+                          className={`w-3.5 h-3.5 text-[#8E9192] shrink-0 group-hover:text-white transition-transform duration-200 ${
+                            isExpanded ? 'rotate-90 text-white' : ''
+                          }`}
                         />
                         <span className="text-xs font-semibold text-[#C4C7C8] group-hover:text-white truncate">
                           {cat}
@@ -241,15 +253,20 @@ export default function Sidebar({
                               <div
                                 ref={provided.innerRef}
                                 {...provided.droppableProps}
-                                className={`space-y-1 pl-2 border-l border-[#27272A]/40 ml-4 py-1 rounded transition-colors min-h-[10px] select-none ${snapshot.isDraggingOver ? 'bg-[#141313]/50 border-white/30' : ''
-                                  }`}
+                                className={`space-y-1 pl-2 border-l border-[#27272A]/40 ml-4 py-1 rounded transition-colors min-h-[10px] select-none ${
+                                  snapshot.isDraggingOver ? 'bg-[#141313]/50 border-white/30' : ''
+                                }`}
                               >
                                 {catProjects.map((project, index) => {
                                   const isSelected = selectedProjectId === project.id;
                                   const style = getCategoryStyle(project.category);
                                   return (
                                     // @ts-ignore
-                                    <Draggable key={project.id} draggableId={project.id} index={index}>
+                                    <Draggable
+                                      key={project.id}
+                                      draggableId={project.id}
+                                      index={index}
+                                    >
                                       {(provided, snapshot) => (
                                         <div
                                           ref={provided.innerRef}
@@ -259,15 +276,18 @@ export default function Sidebar({
                                           role="button"
                                           tabIndex={0}
                                           onClick={() => onProjectSelect(project.id)}
-                                          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis cursor-grab active:cursor-grabbing select-none ${snapshot.isDragging
-                                            ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50'
-                                            : isSelected
-                                              ? 'text-white font-semibold bg-[#201F1F]'
-                                              : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-                                            }`}
+                                          className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis cursor-grab active:cursor-grabbing select-none ${
+                                            snapshot.isDragging
+                                              ? 'bg-[#201F1F] text-white ring-1 ring-white/30 shadow-lg z-50'
+                                              : isSelected
+                                                ? 'text-white font-semibold bg-[#201F1F]'
+                                                : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+                                          }`}
                                           title={`${project.name} (${project.category})`}
                                         >
-                                          <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+                                          <span
+                                            className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`}
+                                          />
                                           <span className="truncate">{project.name}</span>
                                         </div>
                                       )}
@@ -324,7 +344,10 @@ export default function Sidebar({
               </button>
             </div>
             <div className="text-xl font-bold font-mono text-white tracking-tight leading-none my-1.5">
-              {Math.floor(timerSeconds / 60).toString().padStart(2, '0')}:{(timerSeconds % 60).toString().padStart(2, '0')}
+              {Math.floor(timerSeconds / 60)
+                .toString()
+                .padStart(2, '0')}
+              :{(timerSeconds % 60).toString().padStart(2, '0')}
             </div>
             <div className="text-xs text-[#8E9192] truncate mt-0.5">
               {activeFocusTaskTitle || 'Standalone Focus'}
@@ -337,10 +360,11 @@ export default function Sidebar({
           <button
             onClick={() => onViewChange('settings')}
             id="nav-settings"
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${currentView === 'settings'
-              ? 'text-white font-bold bg-[#201F1F]'
-              : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-              }`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
+              currentView === 'settings'
+                ? 'text-white font-bold bg-[#201F1F]'
+                : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+            }`}
           >
             <Settings className="w-4 h-4" />
             <span>Settings</span>
@@ -348,10 +372,11 @@ export default function Sidebar({
           <button
             onClick={() => onViewChange('help')}
             id="nav-help"
-            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${currentView === 'help'
-              ? 'text-white font-bold bg-[#201F1F]'
-              : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
-              }`}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
+              currentView === 'help'
+                ? 'text-white font-bold bg-[#201F1F]'
+                : 'text-[#C4C7C8] hover:text-white hover:bg-[#141313]'
+            }`}
           >
             <HelpCircle className="w-4 h-4" />
             <span>Help &amp; Support</span>
