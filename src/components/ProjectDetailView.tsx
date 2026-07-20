@@ -98,7 +98,10 @@ export default function ProjectDetailView({
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<'custom' | 'priority' | 'dueDate'>('custom');
   const [taskTab, setTaskTab] = useState<'todo' | 'completed' | 'archived'>('todo');
-  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>('all');
+  const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
+    const activeSprint = sprints?.find(s => s.projectId === project.id && s.status === 'Active');
+    return activeSprint ? activeSprint.id : 'all';
+  });
   const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
 
   // File addition triggers
