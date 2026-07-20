@@ -16,7 +16,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
-import { Task, Project } from '../types';
+import { Task, Project } from '../types';;
 import TaskListView from '../views/TaskListView';
 
 type DateFilterMode = 'all' | 'single' | 'today' | 'week' | 'next-week' | 'last-week' | 'month' | 'custom';

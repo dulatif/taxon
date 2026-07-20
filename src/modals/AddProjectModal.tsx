@@ -3,7 +3,8 @@ import { X, Plus, ArrowLeft, CalendarIcon, ChevronLeft, ChevronRight, Trash2 } f
 import { motion, AnimatePresence } from 'motion/react';
 import { DayPicker } from 'react-day-picker';
 import { format, addMonths } from 'date-fns';
-import { Project, PROJECT_CATEGORIES } from '../types';
+import { Project } from '../types';
+import { PROJECT_CATEGORIES } from '../constants/categories';;
 
 interface AddProjectModalProps {
   isOpen: boolean;

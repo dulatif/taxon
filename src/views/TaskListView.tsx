@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Check, Trash2, ChevronDown, ChevronRight, ArrowUpDown, SortAsc, X, Filter, Calendar, Tag, Folder, AlertCircle, ChevronsUpDown, Plus, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Task, Project, RecurrenceRule } from '../types';
+import { Task, Project, RecurrenceRule } from '../types';;
 import {
   TaskFilters,
   DEFAULT_FILTERS,

@@ -8,7 +8,9 @@ import {
   Plus,
   Settings
 } from 'lucide-react';
-import { Project, Task, Sprint, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
+import { Project, Task, Sprint } from '../types';
+import { PROJECT_CATEGORIES } from '../constants/categories';
+import { getCategoryStyle } from '../services/category-color';;
 import KanbanView from './KanbanView';
 
 interface ProjectsViewProps {

@@ -33,7 +33,7 @@ import QuickAddTaskModal from './modals/QuickAddTaskModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
 import ManageCategoriesModal from './modals/ManageCategoriesModal';
 import SpotlightSearchModal from './modals/SpotlightSearchModal';
-import { Project } from './types';
+import { Project } from './types';;
 import { getTodayStr } from './utils/taskFilters';
 import { useFocusTimer } from './hooks/useFocusTimer';
 import { useWindowMaximize } from './hooks/useWindowMaximize';

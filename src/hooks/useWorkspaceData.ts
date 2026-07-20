@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule, Sprint, PROJECT_CATEGORIES, getSavedCategories, saveCategories, setCategoryColor, removeCategoryColor, renameCategoryColor } from '../types';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, RecurrenceRule, Sprint } from '../types';
+import { PROJECT_CATEGORIES } from '../constants/categories';
+import { getSavedCategories, saveCategories, setCategoryColor, removeCategoryColor, renameCategoryColor } from '../services/category-color';;
 import {
   INITIAL_PROJECTS,
   INITIAL_TASKS,
   INITIAL_FILES,
   INITIAL_DAILY_ACTIVITY,
   INITIAL_SPRINTS
-} from '../data';
+} from '../constants/initial-data';
 import {
   createLogEntry,
   updateDailyActivityWithCompletion

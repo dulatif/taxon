@@ -17,7 +17,7 @@ import {
   AlertTriangle,
   X
 } from 'lucide-react';
-import { VaultEntry } from '../types';
+import { VaultEntry } from '../types';;
 
 interface VaultFileTreeProps {
   entries: VaultEntry[];

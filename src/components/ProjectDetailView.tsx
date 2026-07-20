@@ -25,7 +25,9 @@ import {
 } from 'lucide-react';
 import { DayPicker } from 'react-day-picker';
 import { format, addMonths } from 'date-fns';
-import { Project, Task, DocumentFile, Sprint, PROJECT_CATEGORIES, getCategoryStyle } from '../types';
+import { Project, Task, DocumentFile, Sprint } from '../types';
+import { PROJECT_CATEGORIES } from '../constants/categories';
+import { getCategoryStyle } from '../services/category-color';;
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
@@ -36,7 +38,7 @@ import DocumentPanel from './DocumentPanel';
 import SprintPanel from './SprintPanel';
 import SprintCompleteModal from '../modals/SprintCompleteModal';
 import { scanVault, readDocument, writeDocument, deleteDocument, createDocument } from '../services/vaultScanner';
-import { VaultEntry } from '../types';
+import { VaultEntry } from '../types';;
 
 interface ProjectDetailViewProps {
   project: Project;

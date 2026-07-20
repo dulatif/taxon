@@ -13,7 +13,7 @@ import {
   Minimize2
 } from 'lucide-react';
 import { motion } from 'motion/react';
-import { Task, Project } from '../types';
+import { Task, Project } from '../types';;
 
 interface FocusModeViewProps {
   activeTask: Task | null;

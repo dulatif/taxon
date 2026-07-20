@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Task } from '../types';
+import { Task } from '../types';;
 import { sendNotification } from '@tauri-apps/plugin-notification';
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';

@@ -1,5 +1,5 @@
 import Database from '@tauri-apps/plugin-sql';
-import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, Sprint } from '../types';
+import { Project, Task, DocumentFile, DailyActivity, ActivityLogEntry, Sprint } from '../types';;
 
 let dbPromise: Promise<Database> | null = null;
 

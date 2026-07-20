@@ -24,7 +24,7 @@ import {
   Rocket
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency, Sprint } from '../types';
+import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency, Sprint } from '../types';;
 
 const getRecurrenceLabel = (rule?: RecurrenceRule) => {
   if (!rule) return 'None';

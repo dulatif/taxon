@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { CheckCircle2, Calendar, Target, AlertCircle, ArrowRight, Layers, Archive } from 'lucide-react';
-import { Sprint, Task } from '../types';
+import { Sprint, Task } from '../types';;
 
 interface SprintCompleteModalProps {
   isOpen: boolean;

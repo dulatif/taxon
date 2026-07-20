@@ -16,7 +16,7 @@ import {
   Command
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Task, Project } from '../types';
+import { Task, Project } from '../types';;
 
 interface SpotlightSearchModalProps {
   isOpen: boolean;

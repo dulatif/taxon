@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { X, Edit2, Trash2, Check, AlertTriangle, Plus } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Project, PROJECT_CATEGORIES, getCategoryStyle, CATEGORY_COLORS, getCategoryColorId } from '../types';
+import { Project } from '../types';
+import { PROJECT_CATEGORIES, CATEGORY_COLORS } from '../constants/categories';
+import { getCategoryStyle, getCategoryColorId } from '../services/category-color';;
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;

@@ -6,7 +6,7 @@ import {
   Rocket, ChevronDown, ChevronUp, Plus, Calendar, Target, CheckCircle2, 
   Play, Edit3, Trash2, X, Check, Clock, Layers, Sparkles, ChevronLeft, ChevronRight 
 } from 'lucide-react';
-import { Sprint, Task } from '../types';
+import { Sprint, Task } from '../types';;
 
 interface SprintDatePickerProps {
   label: string;

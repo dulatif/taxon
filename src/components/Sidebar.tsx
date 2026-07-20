@@ -15,7 +15,9 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState, useMemo } from 'react';
-import { Project, getCategoryStyle, PROJECT_CATEGORIES } from '../types';
+import { Project } from '../types';
+import { PROJECT_CATEGORIES } from '../constants/categories';
+import { getCategoryStyle } from '../services/category-color';;
 import logo from '../assets/logo.png';
 
 interface SidebarProps {

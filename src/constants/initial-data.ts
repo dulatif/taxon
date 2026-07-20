@@ -1,4 +1,4 @@
-import { Project, Task, DocumentFile, DailyActivity, SettingsState, Sprint } from './types';
+import { Project, Task, DocumentFile, DailyActivity, SettingsState, Sprint } from '../types';;
 
 // Helper to format date as YYYY-MM-DD
 function formatDate(d: Date): string {

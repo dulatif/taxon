@@ -10,7 +10,7 @@ import {
   MoveLeft
 } from 'lucide-react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { Task, Project, Sprint } from '../types';
+import { Task, Project, Sprint } from '../types';;
 
 interface KanbanViewProps {
   projects: Project[];

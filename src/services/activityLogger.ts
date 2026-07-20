@@ -1,4 +1,4 @@
-import { ActivityLogEntry, DailyActivity } from '../types';
+import { ActivityLogEntry, DailyActivity } from '../types';;
 
 /**
  * TAXON-113: Log a task completion event.

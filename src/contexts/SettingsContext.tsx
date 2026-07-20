@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { SettingsState } from '../types';
-import { DEFAULT_SETTINGS } from '../data';
+import { SettingsState } from '../types';;
+import { DEFAULT_SETTINGS } from '../constants/initial-data';
 
 const STORAGE_KEY = 'axon_tasking_settings';
 

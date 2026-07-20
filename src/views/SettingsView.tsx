@@ -1,6 +1,6 @@
 import React from 'react';
 import { useSettings } from '../contexts/SettingsContext';
-import { Project } from '../types';
+import { Project } from '../types';;
 
 interface SettingsViewProps {
   onExportData: () => void;

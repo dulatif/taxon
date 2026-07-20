@@ -19,7 +19,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { PRIORITY_COLORS } from '../utils/taskFilters';
-import { Task, Project, DailyActivity } from '../types';
+import { Task, Project, DailyActivity } from '../types';;
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { motion, AnimatePresence } from 'motion/react';
 

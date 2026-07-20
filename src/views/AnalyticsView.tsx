@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Flame, Calendar, CheckCircle2, Clock, Info } from 'lucide-react';
-import { DailyActivity, ActivityLogEntry, Task } from '../types';
+import { DailyActivity, ActivityLogEntry, Task } from '../types';;
 import { aggregateActivityData } from '../services/activityLogger';
 
 interface AnalyticsViewProps {

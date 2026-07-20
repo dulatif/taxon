@@ -1,5 +1,5 @@
 import { readDir, readTextFile, writeTextFile, remove, exists } from '@tauri-apps/plugin-fs';
-import { VaultEntry } from '../types';
+import { VaultEntry } from '../types';;
 
 function joinPath(parent: string, child: string): string {
   const cleanedParent = parent.replace(/[/\\]+$/, '');

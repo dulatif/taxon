@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { VaultEntry } from '../types';
+import { VaultEntry } from '../types';;
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
 
 interface DocumentPanelProps {
