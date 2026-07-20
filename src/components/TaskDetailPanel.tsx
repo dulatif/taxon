@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   Rocket
 } from 'lucide-react';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { Task, Project, SubTask, RecurrenceRule, RecurrenceFrequency, Sprint } from '../types';
 
 const getRecurrenceLabel = (rule?: RecurrenceRule) => {
@@ -178,6 +179,20 @@ export default function TaskDetailPanel({
 
   const handleDeleteSubTask = (subId: string) => {
     const updatedSubtasks = (editedTask.subtasks || []).filter(st => st.id !== subId);
+    handleFieldChange('subtasks', updatedSubtasks);
+  };
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+    const sourceIndex = result.source.index;
+    const destinationIndex = result.destination.index;
+    
+    if (sourceIndex === destinationIndex) return;
+
+    const updatedSubtasks = Array.from(editedTask.subtasks || []);
+    const [reorderedItem] = updatedSubtasks.splice(sourceIndex, 1);
+    updatedSubtasks.splice(destinationIndex, 0, reorderedItem);
+
     handleFieldChange('subtasks', updatedSubtasks);
   };
 
@@ -1163,38 +1178,62 @@ export default function TaskDetailPanel({
               )}
 
               {/* Subtasks List */}
-              <div className="space-y-2">
-                {subtasksList.map((st) => (
-                  <div 
-                    key={st.id}
-                    className="flex items-center justify-between p-2.5 bg-[#141313] border border-[#27272A] rounded-lg group hover:border-white/20 transition-all"
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
-                      <button
-                        onClick={() => handleToggleSubTask(st.id)}
-                        className="text-[#8E9192] hover:text-white transition-colors shrink-0"
-                      >
-                        {st.completed ? (
-                          <CheckSquare className="w-4 h-4 text-white" />
-                        ) : (
-                          <Square className="w-4 h-4" />
-                        )}
-                      </button>
-                      <span className={`text-xs font-medium truncate ${st.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
-                        {st.title}
-                      </span>
-                    </div>
-
-                    <button
-                      onClick={() => handleDeleteSubTask(st.id)}
-                      className="text-[#8E9192] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1"
-                      title="Delete sub-task"
+              <DragDropContext onDragEnd={handleDragEnd}>
+                <Droppable droppableId="subtasks">
+                  {(provided, snapshot) => (
+                    <div 
+                      className={`space-y-2 min-h-[10px] rounded-lg transition-colors ${
+                        snapshot.isDraggingOver ? 'bg-[#141313]/50 border border-white/20 p-1.5' : ''
+                      }`}
+                      {...provided.droppableProps} 
+                      ref={provided.innerRef}
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      {subtasksList.map((st, index) => (
+                        // @ts-ignore
+                        <Draggable key={st.id} draggableId={st.id} index={index}>
+                          {(provided, snapshot) => (
+                            <div
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              {...provided.dragHandleProps}
+                              className={`flex items-center justify-between p-2.5 bg-[#141313] border rounded-lg group transition-all cursor-grab active:cursor-grabbing select-none ${
+                                snapshot.isDragging
+                                  ? 'ring-1 ring-white/30 shadow-lg z-50 border-white/20 !bg-[#201F1F]'
+                                  : 'border-[#27272A] hover:border-white/20'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 min-w-0 flex-1 mr-2">
+                                <button
+                                  onClick={() => handleToggleSubTask(st.id)}
+                                  className="text-[#8E9192] hover:text-white transition-colors shrink-0 cursor-pointer"
+                                >
+                                  {st.completed ? (
+                                    <CheckSquare className="w-4 h-4 text-white" />
+                                  ) : (
+                                    <Square className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <span className={`text-xs font-medium truncate ${st.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
+                                  {st.title}
+                                </span>
+                              </div>
+
+                              <button
+                                onClick={() => handleDeleteSubTask(st.id)}
+                                className="text-[#8E9192] hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity p-1 cursor-pointer"
+                                title="Delete sub-task"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  )}
+                </Droppable>
+              </DragDropContext>
 
               {/* Add Sub-task form */}
               <form onSubmit={handleAddSubTask} className="flex items-center gap-2 pt-1">
