@@ -27,6 +27,5 @@
     "noUncheckedIndexedAccess": true,
     "forceConsistentCasingInFileNames": true
   },
-  "include": ["src"],
-  "references": [{ "path": "./vitest.config.ts" }]
+  "include": ["src"]
 }

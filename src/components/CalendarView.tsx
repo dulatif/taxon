@@ -12,7 +12,7 @@ import {
 import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { DayPicker } from 'react-day-picker';
-import { Project, Task } from '../types';
+import type { Project, Task } from '../types';
 
 import TaskListView from '../views/TaskListView';
 
@@ -178,8 +178,8 @@ export default function CalendarView({
               selectedDateStr ? `Add task for ${selectedDateStr}...` : 'Add a scheduled task...'
             }
             onToggleTask={onToggleTask}
-            onDeleteTask={onDeleteTask}
-            onSelectTask={onSelectTask}
+            onDeleteTask={onDeleteTask ? (id) => onDeleteTask(id) : () => {}}
+            onSelectTask={onSelectTask ? (task) => onSelectTask(task) : () => {}}
           />
         </div>
 

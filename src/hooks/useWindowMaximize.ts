@@ -12,7 +12,7 @@ export function useWindowMaximize() {
     const unlistenPromise = listen('tauri://resize', async () => {
       try {
         setIsMaximized(await win.isMaximized());
-      } catch (e) {
+      } catch {
         // Ignore errors during window destruction
       }
     });

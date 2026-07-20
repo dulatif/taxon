@@ -1,3 +1,4 @@
+import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import {
   CheckSquare,
@@ -23,7 +24,7 @@ interface TodayTasksProps {
   remainingTodayCount: number;
   selectedSort: 'custom' | 'priority';
   setSelectedSort: React.Dispatch<React.SetStateAction<'custom' | 'priority'>>;
-  handleDragEnd: (result: any) => void;
+  handleDragEnd: (result: DropResult) => void;
   onToggleTask: (id: string) => void;
   onSelectTask?: (task: Task) => void;
   onStartFocus: (task: Task) => void;

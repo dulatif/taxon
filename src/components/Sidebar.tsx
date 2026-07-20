@@ -1,4 +1,4 @@
-import { DropResult } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
 import { Pause } from 'lucide-react';
 import React, { useMemo } from 'react';
 import logo from '../assets/logo.png';
@@ -70,9 +70,11 @@ export default function Sidebar({
       projectsByCategory[c] = activeProjects.filter((p) => p.category === c);
     });
 
-    projectsByCategory[sourceCat] = projectsByCategory[sourceCat].filter(
-      (p) => p.id !== draggableId,
-    );
+    if (projectsByCategory[sourceCat]) {
+      projectsByCategory[sourceCat] = projectsByCategory[sourceCat].filter(
+        (p) => p.id !== draggableId,
+      );
+    }
 
     const updatedProject = { ...draggedProject, category: destCat };
 

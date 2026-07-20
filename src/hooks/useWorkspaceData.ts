@@ -23,7 +23,7 @@ import {
   saveSprint,
   saveTask,
 } from '../services/database';
-import { ActivityLogEntry, DailyActivity, Task } from '../types';
+import type { ActivityLogEntry, DailyActivity, Task } from '../types';
 import { useCategoryActions } from './useCategoryActions';
 import { useDataExport } from './useDataExport';
 import { useProjectActions } from './useProjectActions';
@@ -36,7 +36,7 @@ const tryParseJSON = (str: string | null) => {
   if (!str) return null;
   try {
     return JSON.parse(str);
-  } catch (_) {
+  } catch {
     return null;
   }
 };
@@ -122,6 +122,25 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     },
   });
 
+  const logCompletion = useCallback((taskId: string, taskTitle: string) => {
+    const entry = createLogEntry(taskId, taskTitle);
+    setActivityLog((prev) => [...prev, entry]);
+    saveActivityLogEntry(entry);
+
+    setDailyActivity((prev) => {
+      const acts = updateDailyActivityWithCompletion(prev);
+      acts.forEach((a) => saveActivity(a));
+      return acts;
+    });
+  }, []);
+
+  const recalculateRef = useRef<(projId: string) => void>(() => {});
+
+  const taskActions = useTaskActions({
+    onTaskCompleted: logCompletion,
+    onProjectProgressChanged: (projId) => recalculateRef.current?.(projId),
+  });
+
   const recalculateProjectProgress = useCallback(
     (projId: string) => {
       taskActions.setTasks((latestTasks) => {
@@ -157,23 +176,9 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     },
     [projectActions, taskActions],
   );
-
-  const logCompletion = useCallback((taskId: string, taskTitle: string) => {
-    const entry = createLogEntry(taskId, taskTitle);
-    setActivityLog((prev) => [...prev, entry]);
-    saveActivityLogEntry(entry);
-
-    setDailyActivity((prev) => {
-      const acts = updateDailyActivityWithCompletion(prev);
-      acts.forEach((a) => saveActivity(a));
-      return acts;
-    });
-  }, []);
-
-  const taskActions = useTaskActions({
-    onTaskCompleted: logCompletion,
-    onProjectProgressChanged: recalculateProjectProgress,
-  });
+  useLayoutEffect(() => {
+    recalculateRef.current = recalculateProjectProgress;
+  }, [recalculateProjectProgress]);
 
   const dataExport = useDataExport();
 
@@ -272,6 +277,7 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       }
     };
     initData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const onTickFocusTime = useCallback(

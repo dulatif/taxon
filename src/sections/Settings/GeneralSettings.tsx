@@ -1,4 +1,5 @@
 import React from 'react';
+import type { SettingsState } from '../../types';
 
 interface GeneralSettingsProps {
   pomodoroWorkDuration: number;
@@ -6,7 +7,7 @@ interface GeneralSettingsProps {
   pomodoroLongBreak: number;
   pomodoroLongBreakInterval: number;
   backupFrequency: string;
-  updateSetting: (key: any, value: any) => void;
+  updateSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
   onExportData: () => void;
   onImportDataTrigger: () => void;
 }

@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
-import { Flame, Calendar, CheckCircle2, Clock, Info } from 'lucide-react';
-import { DailyActivity, ActivityLogEntry, Task } from '../types';;
+import { Calendar, CheckCircle2, Clock, Flame, Info } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import { aggregateActivityData } from '../services/activityLogger';
+import type { ActivityLogEntry, DailyActivity, Task } from '../types';
 
 interface AnalyticsViewProps {
   tasks: Task[];
@@ -24,10 +24,15 @@ interface HeatmapMonthLabel {
 }
 
 export default function AnalyticsView({ tasks, dailyActivity, activityLog }: AnalyticsViewProps) {
-  const [selectedMetric, setSelectedMetric] = useState<'combined' | 'completions' | 'hours'>('combined');
+  const [selectedMetric, setSelectedMetric] = useState<'combined' | 'completions' | 'hours'>(
+    'combined',
+  );
   const [hoveredDay, setHoveredDay] = useState<HeatmapDay | null>(null);
 
-  const analyticsData = useMemo(() => aggregateActivityData(activityLog, tasks.length), [activityLog, tasks.length]);
+  const analyticsData = useMemo(
+    () => aggregateActivityData(activityLog, tasks.length),
+    [activityLog, tasks.length],
+  );
 
   // Build 365-day contribution grid (arranged by 52 columns x 7 days)
   const { weeks, monthLabels, totalYearCompletions, totalYearHours } = useMemo(() => {
@@ -36,7 +41,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
     const logMap = new Map<string, number>();
     for (const entry of activityLog) {
-      const dateKey = entry.completedAt.split('T')[0];
+      const dateKey = entry.completedAt.substring(0, 10);
       logMap.set(dateKey, (logMap.get(dateKey) || 0) + 1);
     }
 
@@ -63,7 +68,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     let colIndex = 0;
 
     while (curDate <= today) {
-      const dateStr = curDate.toISOString().split('T')[0];
+      const dateStr = curDate.toISOString().substring(0, 10);
       const monthIndex = curDate.getMonth();
       const dayOfWeek = curDate.getDay();
 
@@ -96,7 +101,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
         if (!isWeekend && (hash * 17) % 5 === 0) {
           completions = ((hash * 7) % 4) + 1;
-          hours = Number((completions * 0.8 + ((hash % 3) * 0.4)).toFixed(1));
+          hours = Number((completions * 0.8 + (hash % 3) * 0.4).toFixed(1));
         } else if (isWeekend && (hash * 13) % 8 === 0) {
           completions = 1;
           hours = 1.0;
@@ -110,7 +115,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         weekday: 'short',
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
 
       currentWeek.push({
@@ -119,7 +124,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         completions,
         hours: Number(hours.toFixed(1)),
         isToday,
-        dayOfWeek
+        dayOfWeek,
       });
 
       curDate.setDate(curDate.getDate() + 1);
@@ -133,13 +138,13 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
       weeks: weeksArray,
       monthLabels: monthsArray,
       totalYearCompletions: totCompletions,
-      totalYearHours: Number(totHours.toFixed(1))
+      totalYearHours: Number(totHours.toFixed(1)),
     };
   }, [activityLog, dailyActivity]);
 
   // Calculate cell color based on metric
   const getCellColor = (day: HeatmapDay) => {
-    let score = 0;
+    let score: number;
     if (selectedMetric === 'combined') {
       score = day.completions * 2 + Math.round(day.hours);
     } else if (selectedMetric === 'completions') {
@@ -174,29 +179,32 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           <div className="flex items-center bg-[#141313] border border-[#27272A] rounded-lg p-1 gap-1">
             <button
               onClick={() => setSelectedMetric('combined')}
-              className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer ${selectedMetric === 'combined'
-                ? 'bg-white text-black font-bold shadow-sm'
-                : 'text-[#8E9192] hover:text-white'
-                }`}
+              className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer ${
+                selectedMetric === 'combined'
+                  ? 'bg-white text-black font-bold shadow-sm'
+                  : 'text-[#8E9192] hover:text-white'
+              }`}
             >
               Combined Activity
             </button>
             <button
               onClick={() => setSelectedMetric('completions')}
-              className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${selectedMetric === 'completions'
-                ? 'bg-white text-black font-bold shadow-sm'
-                : 'text-[#8E9192] hover:text-white'
-                }`}
+              className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                selectedMetric === 'completions'
+                  ? 'bg-white text-black font-bold shadow-sm'
+                  : 'text-[#8E9192] hover:text-white'
+              }`}
             >
               <CheckCircle2 className="w-3 h-3" />
               <span>Completions</span>
             </button>
             <button
               onClick={() => setSelectedMetric('hours')}
-              className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${selectedMetric === 'hours'
-                ? 'bg-white text-black font-bold shadow-sm'
-                : 'text-[#8E9192] hover:text-white'
-                }`}
+              className={`px-3 py-1 rounded text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1.5 ${
+                selectedMetric === 'hours'
+                  ? 'bg-white text-black font-bold shadow-sm'
+                  : 'text-[#8E9192] hover:text-white'
+              }`}
             >
               <Clock className="w-3 h-3" />
               <span>Focus Hours</span>
@@ -207,31 +215,54 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         {/* High Level Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 relative overflow-hidden group hover:border-white/20 transition-all">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Focus Velocity</span>
-            <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.focusVelocity}%</div>
-            <p className="text-[10px] text-[#8E9192] mt-1">Completion rate across all active sprint tasks</p>
+            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">
+              Focus Velocity
+            </span>
+            <div className="text-3xl font-bold font-mono text-white mt-2">
+              {analyticsData.focusVelocity}%
+            </div>
+            <p className="text-[10px] text-[#8E9192] mt-1">
+              Completion rate across all active sprint tasks
+            </p>
           </div>
           <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 group hover:border-white/20 transition-all">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">30-Day Accomplishments</span>
-            <div className="text-3xl font-bold font-mono text-white mt-2">{analyticsData.taskAccomplishments}</div>
-            <p className="text-[10px] text-[#8E9192] mt-1">Total tasks completed over the last 30 days</p>
+            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">
+              30-Day Accomplishments
+            </span>
+            <div className="text-3xl font-bold font-mono text-white mt-2">
+              {analyticsData.taskAccomplishments}
+            </div>
+            <p className="text-[10px] text-[#8E9192] mt-1">
+              Total tasks completed over the last 30 days
+            </p>
           </div>
           <div className="bg-[#141313] border border-[#27272A] rounded-xl p-5 group hover:border-white/20 transition-all">
-            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">Uninterrupted Streaks</span>
+            <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-[#8E9192]">
+              Uninterrupted Streaks
+            </span>
             <div className="text-3xl font-bold font-mono text-white mt-2 flex items-center gap-2">
               <Flame className="w-6 h-6 text-white fill-current animate-pulse" />
-              <span>{analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}</span>
+              <span>
+                {analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}
+              </span>
             </div>
-            <p className="text-[10px] text-[#8E9192] mt-1">Maintained daily completion focus sprint</p>
+            <p className="text-[10px] text-[#8E9192] mt-1">
+              Maintained daily completion focus sprint
+            </p>
           </div>
         </div>
 
         {/* Weekly Strategic Activity Bar Chart */}
         <div className="border-t border-[#27272A]/50 pt-6">
-          <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-4">Current Week Strategic Load</h3>
+          <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono mb-4">
+            Current Week Strategic Load
+          </h3>
           <div className="h-44 flex items-end justify-between gap-4">
             {dailyActivity.map((d, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center justify-end h-full gap-2 group">
+              <div
+                key={i}
+                className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"
+              >
                 <div className="text-xs text-white bg-[#141313] border border-[#27272A] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
                   {d.completions}t / {(d.hours * 60).toFixed(0)}m
                 </div>
@@ -239,7 +270,11 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
                   style={{ height: `${Math.max(4, (d.hours / 6) * 100)}%` }}
                   className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-[#1C1B1B] group-hover:bg-zinc-600'}`}
                 />
-                <span className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-white' : 'text-[#8E9192]'}`}>{d.day}</span>
+                <span
+                  className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-white' : 'text-[#8E9192]'}`}
+                >
+                  {d.day}
+                </span>
               </div>
             ))}
           </div>
@@ -249,11 +284,19 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         <div className="border-t border-[#27272A]/50 pt-6 space-y-4">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
             <div>
-              <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono">Annual Contribution Heatmap</h3>
+              <h3 className="text-xs font-bold text-[#8E9192] uppercase tracking-wider font-mono">
+                Annual Contribution Heatmap
+              </h3>
               <div className="flex items-center gap-3 text-xs font-mono mt-1">
-                <span className="text-white font-bold">{totalYearCompletions} <span className="text-[#8E9192] font-normal">tasks completed</span></span>
+                <span className="text-white font-bold">
+                  {totalYearCompletions}{' '}
+                  <span className="text-[#8E9192] font-normal">tasks completed</span>
+                </span>
                 <span className="text-[#27272A]">•</span>
-                <span className="text-white font-bold">{totalYearHours}h <span className="text-[#8E9192] font-normal">focused past year</span></span>
+                <span className="text-white font-bold">
+                  {totalYearHours}h{' '}
+                  <span className="text-[#8E9192] font-normal">focused past year</span>
+                </span>
               </div>
             </div>
 
@@ -311,8 +354,9 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
                           onMouseLeave={() => setHoveredDay(null)}
                           onClick={() => setHoveredDay(day)}
                           style={{ gridRowStart: day.dayOfWeek + 1 }}
-                          className={`w-3 h-3 rounded-[2px] border transition-all duration-150 cursor-pointer ${getCellColor(day)} ${day.isToday ? 'ring-1 ring-white ring-offset-1 ring-offset-black' : ''
-                            }`}
+                          className={`w-3 h-3 rounded-[2px] border transition-all duration-150 cursor-pointer ${getCellColor(day)} ${
+                            day.isToday ? 'ring-1 ring-white ring-offset-1 ring-offset-black' : ''
+                          }`}
                           title={`${day.formattedDate}: ${day.completions} tasks, ${day.hours}h focused`}
                         />
                       ))}

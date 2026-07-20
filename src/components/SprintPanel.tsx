@@ -40,11 +40,11 @@ export default function SprintPanel({
   const [editingSprintId, setEditingSprintId] = useState<string | null>(null);
 
   // Form states for creation
-  const getTodayStr = () => new Date().toISOString().split('T')[0];
+  const getTodayStr = () => new Date().toISOString().substring(0, 10);
   const getTwoWeeksStr = () => {
     const d = new Date();
     d.setDate(d.getDate() + 14);
-    return d.toISOString().split('T')[0];
+    return d.toISOString().substring(0, 10);
   };
 
   const projectSprints = sprints.filter((s) => s.projectId === projectId);
@@ -140,10 +140,10 @@ export default function SprintPanel({
                   startDate={newStartDate}
                   endDate={newEndDate}
                   goal={newGoal}
-                  setName={setNewName}
-                  setStartDate={setNewStartDate}
-                  setEndDate={setNewEndDate}
-                  setGoal={setNewGoal}
+                  setName={(v) => setNewName(v)}
+                  setStartDate={(v) => setNewStartDate(v)}
+                  setEndDate={(v) => setNewEndDate(v)}
+                  setGoal={(v) => setNewGoal(v)}
                   onClose={() => setIsCreating(false)}
                   onSubmit={handleSaveNewSprint}
                 />
@@ -177,11 +177,11 @@ export default function SprintPanel({
                 endDate={editEndDate}
                 goal={editGoal}
                 status={editStatus}
-                setName={setEditName}
-                setStartDate={setEditStartDate}
-                setEndDate={setEditEndDate}
-                setGoal={setEditGoal}
-                setStatus={setEditStatus}
+                setName={(v) => setEditName(v)}
+                setStartDate={(v) => setEditStartDate(v)}
+                setEndDate={(v) => setEditEndDate(v)}
+                setGoal={(v) => setEditGoal(v)}
+                setStatus={(v) => setEditStatus(v)}
                 onClose={() => setEditingSprintId(null)}
                 onSubmit={() => handleSaveEdit(editingSprintId)}
               />

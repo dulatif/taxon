@@ -8,7 +8,6 @@ import {
   Repeat,
   Rocket,
   Tag,
-  Trash2,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import DatePicker from '../../components/DatePicker/DatePicker';
@@ -37,7 +36,7 @@ interface TaskPropertyGridProps {
   task: Task;
   projects: Project[];
   sprints: Sprint[];
-  onChange: (field: keyof Task, value: any) => void;
+  onChange: <K extends keyof Task>(field: K, value: Task[K]) => void;
 }
 
 export default function TaskPropertyGrid({

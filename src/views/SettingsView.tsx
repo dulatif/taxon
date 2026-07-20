@@ -3,7 +3,8 @@ import { useSettings } from '../contexts/SettingsContext';
 import AppearanceSettings from '../sections/Settings/AppearanceSettings';
 import GeneralSettings from '../sections/Settings/GeneralSettings';
 import NotificationSettings from '../sections/Settings/NotificationSettings';
-import SettingsSidebar, { SettingsTab } from '../sections/Settings/SettingsSidebar';
+import type { SettingsTab } from '../sections/Settings/SettingsSidebar';
+import SettingsSidebar from '../sections/Settings/SettingsSidebar';
 
 interface SettingsViewProps {
   onExportData: () => void;

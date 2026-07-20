@@ -1,4 +1,5 @@
-import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { CheckSquare, Plus, Square, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 import type { SubTask } from '../../types';
@@ -45,10 +46,11 @@ export default function SubtaskList({ subtasks, onChange }: SubtaskListProps) {
     if (sourceIndex === destinationIndex) return;
 
     const updated = Array.from(subtasks);
-    const [reorderedItem] = updated.splice(sourceIndex, 1);
-    updated.splice(destinationIndex, 0, reorderedItem);
-
-    onChange(updated);
+    const reorderedItem = updated.splice(sourceIndex, 1)[0];
+    if (reorderedItem) {
+      updated.splice(destinationIndex, 0, reorderedItem);
+      onChange(updated);
+    }
   };
 
   return (

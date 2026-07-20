@@ -1,3 +1,4 @@
+import type { DropResult } from '@hello-pangea/dnd';
 import { ArrowRight, PlusCircle } from 'lucide-react';
 import React, { useState } from 'react';
 import ActivityChart from '../sections/DashboardWidgets/ActivityChart';
@@ -103,11 +104,12 @@ export default function DashboardView({
   const sortedCompletedTasks = sortTasksHelper(completedTodayTasks);
   const remainingTodayCount = sortedActiveTasks.length;
 
-  const handleDragEnd = (result: any) => {
+  const handleDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
     if (!destination || !onReorderTasks) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index)
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
+    }
 
     const isSourceCompleted = source.droppableId === 'today-completed-tasks';
     const isDestCompleted = destination.droppableId === 'today-completed-tasks';

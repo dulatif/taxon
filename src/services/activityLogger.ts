@@ -1,4 +1,4 @@
-import { ActivityLogEntry, DailyActivity } from '../types';;
+import type { ActivityLogEntry, DailyActivity } from '../types';
 
 /**
  * TAXON-113: Log a task completion event.
@@ -22,7 +22,7 @@ export function createLogEntry(taskId: string, taskTitle: string): ActivityLogEn
  */
 export function aggregateActivityData(
   log: ActivityLogEntry[],
-  totalTaskCount: number
+  totalTaskCount: number,
 ): {
   focusVelocity: number;
   taskAccomplishments: number;
@@ -33,7 +33,7 @@ export function aggregateActivityData(
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
   // Filter log entries from last 30 days
-  const recentEntries = log.filter(entry => {
+  const recentEntries = log.filter((entry) => {
     const entryDate = new Date(entry.completedAt);
     return entryDate >= thirtyDaysAgo && entryDate <= now;
   });
@@ -41,9 +41,10 @@ export function aggregateActivityData(
   const taskAccomplishments = recentEntries.length;
 
   // Focus velocity: ratio of completed tasks to total
-  const focusVelocity = totalTaskCount > 0
-    ? Math.min(100, Math.round((taskAccomplishments / Math.max(totalTaskCount, 1)) * 100))
-    : 0;
+  const focusVelocity =
+    totalTaskCount > 0
+      ? Math.min(100, Math.round((taskAccomplishments / Math.max(totalTaskCount, 1)) * 100))
+      : 0;
 
   // Calculate streak: consecutive days with at least one completion
   const streak = calculateStreak(log);
@@ -70,21 +71,21 @@ function calculateStreak(log: ActivityLogEntry[]): number {
   for (const entry of log) {
     const d = new Date(entry.completedAt);
     d.setHours(0, 0, 0, 0);
-    completionDates.add(d.toISOString().split('T')[0]);
+    completionDates.add(d.toISOString().substring(0, 10));
   }
 
   let streak = 0;
   const checkDate = new Date(today);
 
   // Check today first, if no completion today, start from yesterday
-  const todayStr = checkDate.toISOString().split('T')[0];
+  const todayStr = checkDate.toISOString().substring(0, 10);
   if (!completionDates.has(todayStr)) {
     checkDate.setDate(checkDate.getDate() - 1);
   }
 
   // Count consecutive days
   while (true) {
-    const dateStr = checkDate.toISOString().split('T')[0];
+    const dateStr = checkDate.toISOString().substring(0, 10);
     if (completionDates.has(dateStr)) {
       streak++;
       checkDate.setDate(checkDate.getDate() - 1);
@@ -102,9 +103,9 @@ function calculateStreak(log: ActivityLogEntry[]): number {
  */
 export function updateDailyActivityWithCompletion(
   activity: DailyActivity[],
-  hoursIncrement: number = 0
+  hoursIncrement: number = 0,
 ): DailyActivity[] {
-  return activity.map(act => {
+  return activity.map((act) => {
     if (act.isToday) {
       return {
         ...act,
@@ -121,9 +122,9 @@ export function updateDailyActivityWithCompletion(
  */
 export function getCompletionsToday(log: ActivityLogEntry[]): number {
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0];
+  const todayStr = today.toISOString().substring(0, 10);
 
-  return log.filter(entry => {
+  return log.filter((entry) => {
     return entry.completedAt.startsWith(todayStr);
   }).length;
 }
@@ -132,6 +133,6 @@ export function getCompletionsToday(log: ActivityLogEntry[]): number {
  * Calculate total focused hours from daily activity (recorded via Pomodoro timer).
  */
 export function getFocusedHoursToday(activity: DailyActivity[]): number {
-  const todayAct = activity.find(a => a.isToday);
+  const todayAct = activity.find((a) => a.isToday);
   return todayAct ? Number(todayAct.hours.toFixed(1)) : 0;
 }

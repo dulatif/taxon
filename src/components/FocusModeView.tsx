@@ -1,19 +1,7 @@
-import {
-  Award,
-  CheckSquare,
-  Circle,
-  Minimize2,
-  Pause,
-  Play,
-  SkipForward,
-  Sparkles,
-  Square,
-  StopCircle,
-  Unlink,
-} from 'lucide-react';
+import { Circle, Minimize2, Pause, Play, SkipForward, StopCircle, Unlink } from 'lucide-react';
 import { motion } from 'motion/react';
-import React, { useEffect } from 'react';
-import { Project, Task } from '../types';
+import React from 'react';
+import type { Project, Task } from '../types';
 
 interface FocusModeViewProps {
   activeTask: Task | null;

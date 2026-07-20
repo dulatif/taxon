@@ -2,7 +2,7 @@ import { ArrowUpRight, CheckCircle, Clock, Grid2X2, Kanban, Plus, Settings } fro
 import React, { useEffect, useMemo, useState } from 'react';
 import { PROJECT_CATEGORIES } from '../constants/categories';
 import { getCategoryStyle } from '../services/category-color';
-import { Project, Sprint, Task } from '../types';
+import type { Project, Sprint, Task } from '../types';
 
 import KanbanView from './KanbanView';
 
@@ -28,7 +28,7 @@ interface ProjectsViewProps {
 export default function ProjectsView({
   projects,
   tasks,
-  categories,
+
   onProjectSelect,
   onViewChange,
   onAddProjectClick,
@@ -62,6 +62,7 @@ export default function ProjectsView({
   // Reset selected category if its projects are all deleted/moved
   useEffect(() => {
     if (!availableCategories.includes(selectedCategory)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedCategory('All');
     }
   }, [availableCategories, selectedCategory]);
@@ -75,7 +76,7 @@ export default function ProjectsView({
     return [...list].sort((a, b) => {
       const idxA = (PROJECT_CATEGORIES as readonly string[]).indexOf(a.category);
       const idxB = (PROJECT_CATEGORIES as readonly string[]).indexOf(b.category);
-      let catComp = 0;
+      let catComp: number;
       if (idxA !== -1 && idxB !== -1) catComp = idxA - idxB;
       else if (idxA !== -1) catComp = -1;
       else if (idxB !== -1) catComp = 1;

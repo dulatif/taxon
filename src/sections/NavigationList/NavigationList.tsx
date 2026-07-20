@@ -17,6 +17,7 @@ interface NavigationListProps {
   onViewChange: (view: string) => void;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const MAIN_NAV_ITEMS = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'inbox', label: 'Inbox', icon: Inbox },
@@ -27,6 +28,7 @@ export const MAIN_NAV_ITEMS = [
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ];
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const FOOTER_NAV_ITEMS = [
   { id: 'settings', label: 'Settings', icon: Settings },
   { id: 'help', label: 'Help & Support', icon: HelpCircle },

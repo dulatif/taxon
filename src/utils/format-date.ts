@@ -81,7 +81,7 @@ export function formatDateRange(start: string, end: string) {
     const eDate = new Date(end + 'T00:00:00');
     const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
     return `${sDate.toLocaleDateString('en-US', options)} – ${eDate.toLocaleDateString('en-US', options)}`;
-  } catch (_) {
+  } catch {
     return `${start} — ${end}`;
   }
 }

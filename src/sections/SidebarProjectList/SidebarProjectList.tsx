@@ -1,4 +1,5 @@
-import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
+import type { DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ChevronRight, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useEffect, useState } from 'react';
@@ -27,6 +28,7 @@ export default function SidebarProjectList({
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setExpandedCategories((prev) => {
       const next = { ...prev };
       let changed = false;
@@ -38,7 +40,7 @@ export default function SidebarProjectList({
       });
       return changed ? next : prev;
     });
-  }, [categories.join(',')]);
+  }, [categories]);
 
   const toggleCategory = (cat: string) => {
     setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));

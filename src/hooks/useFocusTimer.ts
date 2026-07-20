@@ -1,6 +1,6 @@
 import { sendNotification } from '@tauri-apps/plugin-notification';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Task } from '../types';
+import type { Task } from '../types';
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 
@@ -53,36 +53,29 @@ export function useFocusTimer({
   const [activeFocusTask, setActiveFocusTask] = useState<Task | null>(null);
   const [isFocusModeActive, setIsFocusModeActive] = useState(false);
 
-  // Use ref to avoid stale closure for callbacks and configs
   const onTimerCompleteRef = useRef(onTimerComplete);
-  onTimerCompleteRef.current = onTimerComplete;
-
   const onTickFocusTimeRef = useRef(onTickFocusTime);
-  onTickFocusTimeRef.current = onTickFocusTime;
-
   const activeFocusTaskRef = useRef(activeFocusTask);
-  activeFocusTaskRef.current = activeFocusTask;
-
   const soundEnabledRef = useRef(soundEnabled);
-  soundEnabledRef.current = soundEnabled;
-
   const phaseRef = useRef(phase);
-  phaseRef.current = phase;
-
   const completedWorkSessionsRef = useRef(completedWorkSessions);
-  completedWorkSessionsRef.current = completedWorkSessions;
-
   const workDurationRef = useRef(workDuration);
-  workDurationRef.current = workDuration;
-
   const shortBreakRef = useRef(shortBreak);
-  shortBreakRef.current = shortBreak;
-
   const longBreakRef = useRef(longBreak);
-  longBreakRef.current = longBreak;
-
   const longBreakIntervalRef = useRef(longBreakInterval);
-  longBreakIntervalRef.current = longBreakInterval;
+
+  useEffect(() => {
+    onTimerCompleteRef.current = onTimerComplete;
+    onTickFocusTimeRef.current = onTickFocusTime;
+    activeFocusTaskRef.current = activeFocusTask;
+    soundEnabledRef.current = soundEnabled;
+    phaseRef.current = phase;
+    completedWorkSessionsRef.current = completedWorkSessions;
+    workDurationRef.current = workDuration;
+    shortBreakRef.current = shortBreak;
+    longBreakRef.current = longBreak;
+    longBreakIntervalRef.current = longBreakInterval;
+  });
 
   // Sync initial timerSeconds when duration settings change (if timer not actively running)
   const prevWorkDurationRef = useRef(workDuration);
@@ -90,6 +83,7 @@ export function useFocusTimer({
     if (prevWorkDurationRef.current !== workDuration) {
       prevWorkDurationRef.current = workDuration;
       if (phase === 'work' && !timerIsRunning) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setTimerSeconds(workDuration * 60);
       }
     }
@@ -103,7 +97,10 @@ export function useFocusTimer({
     if (!soundEnabledRef.current) return;
 
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const audioCtx = new (
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
+      )();
 
       const playTone = (startTime: number, frequency: number, duration: number) => {
         const oscillator = audioCtx.createOscillator();

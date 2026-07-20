@@ -3,7 +3,7 @@ import React from 'react';
 interface AppearanceSettingsProps {
   theme: string;
   oledBlackMode: boolean;
-  updateSetting: (key: 'theme', value: string) => void;
+  updateSetting: (key: string, value: string | boolean | number) => void;
   toggleSetting: (key: 'oledBlackMode') => void;
 }
 

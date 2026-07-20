@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { SettingsState } from '../types';;
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { DEFAULT_SETTINGS } from '../constants/initial-data';
+import type { SettingsState } from '../types';
 
 const STORAGE_KEY = 'axon_tasking_settings';
 
@@ -30,10 +30,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   // Handle Theme and OLED Black Mode
   useEffect(() => {
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    
+
     const applyTheme = () => {
-      const isDark = settings.theme === 'dark' || (settings.theme === 'system' && mediaQuery.matches);
-      
+      const isDark =
+        settings.theme === 'dark' || (settings.theme === 'system' && mediaQuery.matches);
+
       if (!isDark) {
         document.body.classList.add('light-theme');
       } else {
@@ -56,17 +57,24 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
 
   // Sync backup frequency with Rust backend
   useEffect(() => {
-    import('@tauri-apps/api/core').then(({ invoke }) => {
-      invoke('set_backup_frequency', { frequency: settings.backupFrequency }).catch(console.error);
-    }).catch(console.error);
+    import('@tauri-apps/api/core')
+      .then(({ invoke }) => {
+        invoke('set_backup_frequency', { frequency: settings.backupFrequency }).catch(
+          console.error,
+        );
+      })
+      .catch(console.error);
   }, [settings.backupFrequency]);
 
-  const updateSetting = useCallback(<K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
-    setSettings(prev => ({ ...prev, [key]: value }));
-  }, []);
+  const updateSetting = useCallback(
+    <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => {
+      setSettings((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
 
   const toggleSetting = useCallback((key: keyof SettingsState) => {
-    setSettings(prev => ({ ...prev, [key]: !prev[key] }));
+    setSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   }, []);
 
   return (
@@ -76,6 +84,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useSettings(): SettingsContextValue {
   const context = useContext(SettingsContext);
   if (!context) {

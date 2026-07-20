@@ -12,7 +12,7 @@ interface ProjectFilesProps {
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onDeleteVaultDoc: (entry: VaultEntry) => void;
-  onCreateVaultDoc: (filename: string) => void;
+  onCreateVaultDoc: (filename: string) => Promise<void>;
   onRefreshVault: () => void;
   onAddNativeFile: () => void;
   onDeleteNativeFile: (id: string) => void;

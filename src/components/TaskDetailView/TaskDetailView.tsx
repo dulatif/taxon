@@ -28,6 +28,7 @@ export default function TaskDetailView({
 
   useEffect(() => {
     if (task) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEditedTask({
         ...task,
         labels: task.labels || ['Work'],
@@ -41,7 +42,7 @@ export default function TaskDetailView({
 
   if (!task || !editedTask) return null;
 
-  const handleFieldChange = (field: keyof Task, value: any) => {
+  const handleFieldChange = <K extends keyof Task>(field: K, value: Task[K]) => {
     const updated = { ...editedTask, [field]: value };
     setEditedTask(updated);
     onUpdateTask(updated);
@@ -162,8 +163,9 @@ export default function TaskDetailView({
 
       {isDeleteConfirmOpen && (
         <ConfirmDialog
+          isOpen={true}
           title="Delete Task"
-          message={`Are you sure you want to delete "${editedTask.title}"? This action cannot be undone.`}
+          description={`Are you sure you want to delete "${editedTask.title}"? This action cannot be undone.`}
           confirmLabel="Delete Task"
           icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
           onConfirm={() => {
@@ -171,7 +173,7 @@ export default function TaskDetailView({
             setIsDeleteConfirmOpen(false);
             onClose();
           }}
-          onCancel={() => setIsDeleteConfirmOpen(false)}
+          onClose={() => setIsDeleteConfirmOpen(false)}
         />
       )}
     </AnimatePresence>

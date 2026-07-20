@@ -1,8 +1,9 @@
-import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
-import { Archive, CheckCircle2, CheckSquare, RotateCcw, Square, Trash2 } from 'lucide-react';
+import type { DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { Archive, CheckSquare, RotateCcw, Square, Trash2 } from 'lucide-react';
 import React from 'react';
 import type { Project, Sprint, Task } from '../../types';
-import { formatDisplayDate } from '../../utils/format-date';
+
 import type { TaskSortType, TaskTabType } from '../ProjectTabs/ProjectTabs';
 
 interface ProjectTaskListProps {
@@ -62,8 +63,9 @@ export default function ProjectTaskList({
   const handleDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
     if (!destination || !onReorderTasks) return;
-    if (source.droppableId === destination.droppableId && source.index === destination.index)
+    if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
+    }
 
     const isSourceCompleted = source.droppableId === 'completed-tasks';
     const isDestCompleted = destination.droppableId === 'completed-tasks';

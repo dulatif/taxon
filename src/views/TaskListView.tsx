@@ -10,7 +10,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import TaskEmptyState from '../sections/TaskList/TaskEmptyState';
 import TaskListGroup from '../sections/TaskList/TaskListGroup';
 import TaskListHeader from '../sections/TaskList/TaskListHeader';
@@ -161,12 +161,10 @@ export default function TaskListView({
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
 
   // Whenever groups change (filter/group-by toggle), initialise newly-seen IDs as collapsed
-  const groupIds = useMemo(
-    () => groups?.map((g) => g.projectId ?? '__unassigned__') ?? [],
-    [groups],
-  );
+  const groupIds = groups?.map((g) => g.projectId ?? '__unassigned__') ?? [];
   useEffect(() => {
     if (groupIds.length === 0) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCollapsedGroups((prev) => {
       // Only set IDs that aren't already tracked (preserve user overrides)
       const next = new Set(prev);
@@ -179,6 +177,7 @@ export default function TaskListView({
       });
       return changed ? next : prev;
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [groupIds.join(',')]);
 
   const allExpanded = groupIds.length > 0 && collapsedGroups.size === 0;
@@ -249,7 +248,7 @@ export default function TaskListView({
   const cycleSortBy = () => {
     const order: SortKey[] = ['dueDate', 'priority', 'none'];
     const next = order[(order.indexOf(sortBy) + 1) % order.length];
-    setSortBy(next);
+    setSortBy(next as SortKey);
   };
 
   const sortLabel =

@@ -1,4 +1,12 @@
-export type ProjectCategory = 'Engineering' | 'Design' | 'Product' | 'Marketing' | 'Operations' | 'Personal' | 'Completed' | string;
+export type ProjectCategory =
+  | 'Engineering'
+  | 'Design'
+  | 'Product'
+  | 'Marketing'
+  | 'Operations'
+  | 'Personal'
+  | 'Completed'
+  | string;
 
 export interface Project {
   id: string;

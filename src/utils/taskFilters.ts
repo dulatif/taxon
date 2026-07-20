@@ -1,4 +1,4 @@
-import { Project, Task } from '../types';
+import type { Project, Task } from '../types';
 
 // ---------------------------------------------------------------------------
 // Priority ordering & color maps
@@ -118,8 +118,9 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
         if (
           !task.projectId &&
           !filters.projectIds.filter((id) => id !== '__unassigned__').includes(task.projectId ?? '')
-        )
+        ) {
           return false;
+        }
       } else {
         if (!task.projectId || !filters.projectIds.includes(task.projectId)) return false;
       }

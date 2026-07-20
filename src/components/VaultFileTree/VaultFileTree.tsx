@@ -64,7 +64,7 @@ export default function VaultFileTree({
       await onCreateDocument(newDocName.trim());
       setNewDocName('');
       setIsCreating(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setCreateError(err.message || 'Failed to create document');
     }
   };

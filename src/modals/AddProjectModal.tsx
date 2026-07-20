@@ -1,10 +1,10 @@
+import { addMonths, format } from 'date-fns';
+import { ArrowLeft, CalendarIcon, ChevronLeft, ChevronRight, Trash2, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import React, { useState } from 'react';
-import { X, Plus, ArrowLeft, CalendarIcon, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { DayPicker } from 'react-day-picker';
-import { format, addMonths } from 'date-fns';
-import { Project } from '../types';
-import { PROJECT_CATEGORIES } from '../constants/categories';;
+import { PROJECT_CATEGORIES } from '../constants/categories';
+import type { Project } from '../types';
 
 interface AddProjectModalProps {
   isOpen: boolean;
@@ -40,7 +40,7 @@ export default function AddProjectModal({
   const [pickerMonth, setPickerMonth] = useState(new Date());
 
   const formatDateStr = (d: Date) => {
-    return d.toISOString().split('T')[0];
+    return d.toISOString().substring(0, 10);
   };
 
   const formatDisplayDate = (dStr: string) => {
@@ -53,7 +53,7 @@ export default function AddProjectModal({
 
   // Use availableCategories if provided, otherwise fallback to PROJECT_CATEGORIES
   const allPooledCategories = Array.from(
-    new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES)
+    new Set(availableCategories.length > 0 ? availableCategories : PROJECT_CATEGORIES),
   ).filter(Boolean);
 
   const handleCategorySelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -140,9 +140,9 @@ export default function AddProjectModal({
 
                   {isDatePickerOpen && (
                     <>
-                      <div 
-                        className="fixed inset-0 z-[9998]" 
-                        onClick={() => setIsDatePickerOpen(false)} 
+                      <div
+                        className="fixed inset-0 z-[9998]"
+                        onClick={() => setIsDatePickerOpen(false)}
                       />
                       <div className="absolute left-0 top-[calc(100%+8px)] w-[340px] bg-[#0A0A0A] border border-[#27272A] rounded-xl p-3.5 z-[9999] shadow-2xl animate-in fade-in zoom-in-95 duration-150">
                         <div className="flex items-center justify-between mb-2 px-1">
@@ -152,14 +152,14 @@ export default function AddProjectModal({
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => setPickerMonth(prev => addMonths(prev, -1))}
+                              onClick={() => setPickerMonth((prev) => addMonths(prev, -1))}
                               className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                               <ChevronLeft className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
-                              onClick={() => setPickerMonth(prev => addMonths(prev, 1))}
+                              onClick={() => setPickerMonth((prev) => addMonths(prev, 1))}
                               className="w-6 h-6 rounded-md border border-[#27272A] bg-[#141313] hover:bg-[#201F1F] hover:border-white text-[#8E9192] hover:text-white flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
                             >
                               <ChevronRight className="w-3.5 h-3.5" />
@@ -249,7 +249,9 @@ export default function AddProjectModal({
                   ) : (
                     <select
                       className="bg-black border border-[#27272A] text-xs text-[#C4C7C8] rounded-lg p-2.5 w-full focus:outline-none focus:border-white cursor-pointer"
-                      value={allPooledCategories.includes(projCategory) ? projCategory : '__custom__'}
+                      value={
+                        allPooledCategories.includes(projCategory) ? projCategory : '__custom__'
+                      }
                       onChange={handleCategorySelect}
                     >
                       {allPooledCategories.map((cat) => (
@@ -257,7 +259,9 @@ export default function AddProjectModal({
                           {cat}
                         </option>
                       ))}
-                      <option disabled value="">───</option>
+                      <option disabled value="">
+                        ───
+                      </option>
                       <option value="__custom__">+ Add Custom Category...</option>
                     </select>
                   )}

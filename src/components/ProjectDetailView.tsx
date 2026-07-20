@@ -1,12 +1,12 @@
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
-import { AlertTriangle, Archive, ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, Archive, ArrowLeft, Plus } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import SprintCompleteModal from '../modals/SprintCompleteModal';
 import ProjectFiles from '../sections/ProjectFiles/ProjectFiles';
-
 import ProjectHeader from '../sections/ProjectHeader/ProjectHeader';
-import ProjectTabs, { TaskSortType, TaskTabType } from '../sections/ProjectTabs/ProjectTabs';
+import type { TaskSortType, TaskTabType } from '../sections/ProjectTabs/ProjectTabs';
+import ProjectTabs from '../sections/ProjectTabs/ProjectTabs';
 import ProjectTaskList from '../sections/ProjectTaskList/ProjectTaskList';
 import {
   createDocument,
@@ -15,7 +15,7 @@ import {
   scanVault,
   writeDocument,
 } from '../services/vaultScanner';
-import type { DocumentFile, Project, Sprint, Task, VaultEntry } from '../types';
+import type { DocumentFile, Project, RecurrenceRule, Sprint, Task, VaultEntry } from '../types';
 import ConfirmDialog from './ConfirmDialog/ConfirmDialog';
 import DocumentPanel from './DocumentPanel';
 import SprintPanel from './SprintPanel';
@@ -43,7 +43,7 @@ interface ProjectDetailViewProps {
     title: string,
     projectId: string,
     dueDate?: string,
-    recurrence?: any,
+    recurrence?: RecurrenceRule,
     sprintId?: string | null,
   ) => Task | void;
   onDeleteTask: (id: string) => void;
@@ -128,7 +128,9 @@ export default function ProjectDetailView({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshVault();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.vaultPath]);
 
   const handleSetVaultDirectory = async () => {
@@ -287,7 +289,7 @@ export default function ProjectDetailView({
                   <span className="text-text-muted">Filter by Sprint:</span>
                   <select
                     value={selectedSprintId}
-                    onChange={(e) => setSelectedSprintId(e.target.value as any)}
+                    onChange={(e) => setSelectedSprintId(e.target.value)}
                     className="bg-surface-primary border border-border-primary rounded px-2.5 py-1 text-text-primary text-xs focus:outline-none focus:border-interactive-primary cursor-pointer"
                   >
                     <option value="all">All Tasks</option>
@@ -405,40 +407,43 @@ export default function ProjectDetailView({
 
       {isDeleteConfirmOpen && (
         <ConfirmDialog
+          isOpen={true}
           title="Delete Project"
-          message={`Are you sure you want to permanently delete "${project.name}"? All associated tasks, files, and progress metrics will be removed immediately. This action cannot be undone.`}
+          description={`Are you sure you want to permanently delete "${project.name}"? All associated tasks, files, and progress metrics will be removed immediately. This action cannot be undone.`}
           confirmLabel="Yes, Delete Project"
           icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
           onConfirm={() => {
             onDeleteProject(project.id);
             setIsDeleteConfirmOpen(false);
           }}
-          onCancel={() => setIsDeleteConfirmOpen(false)}
+          onClose={() => setIsDeleteConfirmOpen(false)}
         />
       )}
 
       {taskToDelete && (
         <ConfirmDialog
+          isOpen={true}
           title="Delete Task"
-          message={`Are you sure you want to permanently delete "${taskToDelete.title}"? This task will be removed immediately. This action cannot be undone.`}
+          description={`Are you sure you want to permanently delete "${taskToDelete.title}"? This task will be removed immediately. This action cannot be undone.`}
           confirmLabel="Yes, Delete Task"
           icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
           onConfirm={() => {
             onDeleteTask(taskToDelete.id);
             setTaskToDelete(null);
           }}
-          onCancel={() => setTaskToDelete(null)}
+          onClose={() => setTaskToDelete(null)}
         />
       )}
 
       {docToDelete && (
         <ConfirmDialog
+          isOpen={true}
           title="Delete Document"
-          message={`Are you sure you want to permanently delete "${docToDelete.name}" from disk? This file will be removed from ${docToDelete.path}. This action cannot be undone.`}
+          description={`Are you sure you want to permanently delete "${docToDelete.name}" from disk? This file will be removed from ${docToDelete.path}. This action cannot be undone.`}
           confirmLabel="Yes, Delete Document"
           icon={<AlertTriangle className="w-5 h-5 text-red-400" />}
           onConfirm={confirmDeleteVaultDoc}
-          onCancel={() => setDocToDelete(null)}
+          onClose={() => setDocToDelete(null)}
         />
       )}
 

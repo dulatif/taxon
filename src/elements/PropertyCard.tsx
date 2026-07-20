@@ -42,9 +42,7 @@ export default function PropertyCard({
         <div className="text-[11px] font-bold text-text-primary uppercase tracking-wide font-mono">
           {label}
         </div>
-        <div className="text-xs text-text-muted font-medium truncate mt-0.5">
-          {value}
-        </div>
+        <div className="text-xs text-text-muted font-medium truncate mt-0.5">{value}</div>
       </div>
 
       {/* ------ Dropdown ------ */}

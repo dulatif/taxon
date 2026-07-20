@@ -1,5 +1,4 @@
-import { addMonths, format } from 'date-fns';
-import { CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Edit, Trash2 } from 'lucide-react';
+import { CalendarIcon, CheckCircle, Edit, Trash2 } from 'lucide-react';
 import React, { useState } from 'react';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
@@ -32,9 +31,8 @@ export default function ProjectHeader({
   const [editName, setEditName] = useState(project.name);
   const [editDesc, setEditDesc] = useState(project.description);
   const [editCategory, setEditCategory] = useState(project.category);
-  const [editDueDate, setEditDueDate] = useState(project.dueDate || '');
+  const [editDueDate] = useState(project.dueDate || '');
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
-  const [pickerMonth, setPickerMonth] = useState(new Date());
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
 
   const handleSaveProjectEdit = (e: React.FormEvent) => {
@@ -42,10 +40,6 @@ export default function ProjectHeader({
     if (!editName.trim()) return;
     onEditProject(project.id, editName, editDesc, editCategory, editDueDate);
     setIsEditingProj(false);
-  };
-
-  const formatDateStr = (d: Date) => {
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   };
 
   return (

@@ -1,11 +1,14 @@
 import type { Task } from '../types';
 
-export const PRIORITY_CONFIG: Record<Task['priority'], {
-  text: string;
-  bg: string;
-  border: string;
-  weight: number;
-}> = {
+export const PRIORITY_CONFIG: Record<
+  Task['priority'],
+  {
+    text: string;
+    bg: string;
+    border: string;
+    weight: number;
+  }
+> = {
   Critical: {
     text: 'text-red-400',
     bg: 'bg-red-500/10',

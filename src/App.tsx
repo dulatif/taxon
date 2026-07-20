@@ -182,9 +182,10 @@ export default function App() {
         return 'Platform Settings';
       case 'help':
         return 'Onyx Help Desk';
-      case 'project-details':
+      case 'project-details': {
         const p = projects.find((pr) => pr.id === selectedProjectId);
         return p ? `${p.name} Details` : 'Project Management';
+      }
       default:
         return 'Taxon Tasking';
     }

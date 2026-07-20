@@ -1,22 +1,22 @@
-import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  Search,
-  Plus,
-  Timer,
-  LayoutDashboard,
-  Inbox,
-  FolderKanban,
-  Calendar,
-  BarChart2,
-  Settings,
-  Check,
-  Folder,
   ArrowRight,
+  BarChart2,
+  Calendar,
+  Check,
+  Command,
+  Folder,
+  FolderKanban,
+  Inbox,
+  LayoutDashboard,
+  Plus,
+  Search,
+  Settings,
   Sparkles,
-  Command
+  Timer,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Task, Project } from '../types';;
+import { AnimatePresence, motion } from 'motion/react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import type { Project, Task } from '../types';
 
 interface SpotlightSearchModalProps {
   isOpen: boolean;
@@ -61,7 +61,9 @@ export default function SpotlightSearchModal({
   // Reset query and selection when modal opens
   useEffect(() => {
     if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('');
+
       setSelectedIndex(0);
       setTimeout(() => {
         inputRef.current?.focus();
@@ -78,96 +80,99 @@ export default function SpotlightSearchModal({
   }, [projects]);
 
   // Build the list of available quick actions
-  const quickActionsList = useMemo(() => [
-    {
-      id: 'action-quick-add',
-      type: 'action' as const,
-      label: 'Quick Add Task',
-      subLabel: 'Create a new task immediately',
-      icon: <Plus className="w-4 h-4 text-white" />,
-      action: () => {
-        onClose();
-        onQuickAddTask();
-      }
-    },
-    {
-      id: 'action-focus-mode',
-      type: 'action' as const,
-      label: 'Launch Focus Mode',
-      subLabel: 'Start an immersive pomodoro session',
-      icon: <Timer className="w-4 h-4 text-yellow-400" />,
-      action: () => {
-        onClose();
-        onLaunchFocusMode();
-      }
-    },
-    {
-      id: 'action-nav-dashboard',
-      type: 'action' as const,
-      label: 'Go to Dashboard',
-      subLabel: 'View primary overview and daily activity',
-      icon: <LayoutDashboard className="w-4 h-4 text-blue-400" />,
-      action: () => {
-        onClose();
-        onNavigate('dashboard');
-      }
-    },
-    {
-      id: 'action-nav-inbox',
-      type: 'action' as const,
-      label: 'Go to Inbox',
-      subLabel: 'Review unorganized tasks',
-      icon: <Inbox className="w-4 h-4 text-purple-400" />,
-      action: () => {
-        onClose();
-        onNavigate('inbox');
-      }
-    },
-    {
-      id: 'action-nav-projects',
-      type: 'action' as const,
-      label: 'Go to Workspace Projects',
-      subLabel: 'Manage active projects and categories',
-      icon: <FolderKanban className="w-4 h-4 text-emerald-400" />,
-      action: () => {
-        onClose();
-        onNavigate('projects');
-      }
-    },
-    {
-      id: 'action-nav-calendar',
-      type: 'action' as const,
-      label: 'Go to Calendar & Scheduled',
-      subLabel: 'Inspect scheduled tasks and upcoming dates',
-      icon: <Calendar className="w-4 h-4 text-orange-400" />,
-      action: () => {
-        onClose();
-        onNavigate('scheduled');
-      }
-    },
-    {
-      id: 'action-nav-analytics',
-      type: 'action' as const,
-      label: 'Go to Productivity Analytics',
-      subLabel: 'View charts and completed focus hours',
-      icon: <BarChart2 className="w-4 h-4 text-cyan-400" />,
-      action: () => {
-        onClose();
-        onNavigate('analytics');
-      }
-    },
-    {
-      id: 'action-nav-settings',
-      type: 'action' as const,
-      label: 'Platform Settings',
-      subLabel: 'Configure timers, themes and data exports',
-      icon: <Settings className="w-4 h-4 text-gray-400" />,
-      action: () => {
-        onClose();
-        onNavigate('settings');
-      }
-    }
-  ], [onClose, onQuickAddTask, onLaunchFocusMode, onNavigate]);
+  const quickActionsList = useMemo(
+    () => [
+      {
+        id: 'action-quick-add',
+        type: 'action' as const,
+        label: 'Quick Add Task',
+        subLabel: 'Create a new task immediately',
+        icon: <Plus className="w-4 h-4 text-white" />,
+        action: () => {
+          onClose();
+          onQuickAddTask();
+        },
+      },
+      {
+        id: 'action-focus-mode',
+        type: 'action' as const,
+        label: 'Launch Focus Mode',
+        subLabel: 'Start an immersive pomodoro session',
+        icon: <Timer className="w-4 h-4 text-yellow-400" />,
+        action: () => {
+          onClose();
+          onLaunchFocusMode();
+        },
+      },
+      {
+        id: 'action-nav-dashboard',
+        type: 'action' as const,
+        label: 'Go to Dashboard',
+        subLabel: 'View primary overview and daily activity',
+        icon: <LayoutDashboard className="w-4 h-4 text-blue-400" />,
+        action: () => {
+          onClose();
+          onNavigate('dashboard');
+        },
+      },
+      {
+        id: 'action-nav-inbox',
+        type: 'action' as const,
+        label: 'Go to Inbox',
+        subLabel: 'Review unorganized tasks',
+        icon: <Inbox className="w-4 h-4 text-purple-400" />,
+        action: () => {
+          onClose();
+          onNavigate('inbox');
+        },
+      },
+      {
+        id: 'action-nav-projects',
+        type: 'action' as const,
+        label: 'Go to Workspace Projects',
+        subLabel: 'Manage active projects and categories',
+        icon: <FolderKanban className="w-4 h-4 text-emerald-400" />,
+        action: () => {
+          onClose();
+          onNavigate('projects');
+        },
+      },
+      {
+        id: 'action-nav-calendar',
+        type: 'action' as const,
+        label: 'Go to Calendar & Scheduled',
+        subLabel: 'Inspect scheduled tasks and upcoming dates',
+        icon: <Calendar className="w-4 h-4 text-orange-400" />,
+        action: () => {
+          onClose();
+          onNavigate('scheduled');
+        },
+      },
+      {
+        id: 'action-nav-analytics',
+        type: 'action' as const,
+        label: 'Go to Productivity Analytics',
+        subLabel: 'View charts and completed focus hours',
+        icon: <BarChart2 className="w-4 h-4 text-cyan-400" />,
+        action: () => {
+          onClose();
+          onNavigate('analytics');
+        },
+      },
+      {
+        id: 'action-nav-settings',
+        type: 'action' as const,
+        label: 'Platform Settings',
+        subLabel: 'Configure timers, themes and data exports',
+        icon: <Settings className="w-4 h-4 text-gray-400" />,
+        action: () => {
+          onClose();
+          onNavigate('settings');
+        },
+      },
+    ],
+    [onClose, onQuickAddTask, onLaunchFocusMode, onNavigate],
+  );
 
   // Filter items by search query
   const { filteredActions, filteredTasks, filteredProjects } = useMemo(() => {
@@ -176,29 +181,34 @@ export default function SpotlightSearchModal({
       return {
         filteredActions: quickActionsList.slice(0, 4),
         filteredProjects: projects.slice(0, 4),
-        filteredTasks: tasks.filter(t => !t.completed).slice(0, 6)
+        filteredTasks: tasks.filter((t) => !t.completed).slice(0, 6),
       };
     }
 
-    const actions = quickActionsList.filter(a =>
-      a.label.toLowerCase().includes(q) || (a.subLabel && a.subLabel.toLowerCase().includes(q))
+    const actions = quickActionsList.filter(
+      (a) =>
+        a.label.toLowerCase().includes(q) || (a.subLabel && a.subLabel.toLowerCase().includes(q)),
     );
 
-    const matchingProjects = projects.filter(p =>
-      p.name.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      (p.description && p.description.toLowerCase().includes(q))
+    const matchingProjects = projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        (p.description && p.description.toLowerCase().includes(q)),
     );
 
-    const matchingTasks = tasks.filter(t =>
-      t.title.toLowerCase().includes(q) ||
-      (t.description && t.description.toLowerCase().includes(q))
-    ).slice(0, 6);
+    const matchingTasks = tasks
+      .filter(
+        (t) =>
+          t.title.toLowerCase().includes(q) ||
+          (t.description && t.description.toLowerCase().includes(q)),
+      )
+      .slice(0, 6);
 
     return {
       filteredActions: actions,
       filteredTasks: matchingTasks,
-      filteredProjects: matchingProjects
+      filteredProjects: matchingProjects,
     };
   }, [query, quickActionsList, tasks, projects]);
 
@@ -222,7 +232,7 @@ export default function SpotlightSearchModal({
         action: () => {
           onClose();
           onSelectProject(proj.id);
-        }
+        },
       });
     }
 
@@ -242,7 +252,9 @@ export default function SpotlightSearchModal({
             }}
             className="w-4 h-4 rounded border border-[#27272A] flex items-center justify-center hover:border-white transition-colors cursor-pointer shrink-0"
           >
-            <Check className={`w-3 h-3 ${task.completed ? 'text-green-400' : 'text-transparent'}`} />
+            <Check
+              className={`w-3 h-3 ${task.completed ? 'text-green-400' : 'text-transparent'}`}
+            />
           </div>
         ),
         action: () => {
@@ -254,16 +266,27 @@ export default function SpotlightSearchModal({
           }
           onSelectTask(task.id);
         },
-        task
+        task,
       });
     }
 
     return list;
-  }, [filteredActions, filteredTasks, filteredProjects, projectsMap, onClose, onToggleTask, onSelectProject, onSelectTask, onNavigate]);
+  }, [
+    filteredActions,
+    filteredTasks,
+    filteredProjects,
+    projectsMap,
+    onClose,
+    onToggleTask,
+    onSelectProject,
+    onSelectTask,
+    onNavigate,
+  ]);
 
   // Reset selected index when filtered results change
   useEffect(() => {
-    setSelectedIndex(prev => (combinedList.length > 0 && prev < combinedList.length ? prev : 0));
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSelectedIndex((prev) => (combinedList.length > 0 && prev < combinedList.length ? prev : 0));
   }, [combinedList.length]);
 
   // Ensure selected item stays in view
@@ -287,10 +310,10 @@ export default function SpotlightSearchModal({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex(prev => (prev + 1) % combinedList.length);
+      setSelectedIndex((prev) => (prev + 1) % combinedList.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex(prev => (prev - 1 + combinedList.length) % combinedList.length);
+      setSelectedIndex((prev) => (prev - 1 + combinedList.length) % combinedList.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const currentItem = combinedList[selectedIndex];
@@ -353,7 +376,9 @@ export default function SpotlightSearchModal({
                 <div className="py-12 flex flex-col items-center justify-center text-center">
                   <Command className="w-8 h-8 text-[#27272A] mb-3 stroke-[1.5]" />
                   <p className="text-xs text-[#8E9192]">No results matching "{query}"</p>
-                  <p className="text-[11px] text-[#8E9192]/60 mt-1">Try checking for typos or searching a different keyword.</p>
+                  <p className="text-[11px] text-[#8E9192]/60 mt-1">
+                    Try checking for typos or searching a different keyword.
+                  </p>
                 </div>
               ) : (
                 <>
@@ -395,7 +420,9 @@ export default function SpotlightSearchModal({
                                   )}
                                 </div>
                               </div>
-                              <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`} />
+                              <ArrowRight
+                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`}
+                              />
                             </div>
                           );
                         })}
@@ -442,7 +469,9 @@ export default function SpotlightSearchModal({
                                   </div>
                                 </div>
                               </div>
-                              <ArrowRight className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`} />
+                              <ArrowRight
+                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-white' : 'opacity-0'}`}
+                              />
                             </div>
                           );
                         })}
@@ -495,10 +524,14 @@ export default function SpotlightSearchModal({
                                       : 'border-[#27272A] hover:border-white'
                                   }`}
                                 >
-                                  <Check className={`w-3 h-3 ${task.completed ? 'opacity-100' : 'opacity-0'}`} />
+                                  <Check
+                                    className={`w-3 h-3 ${task.completed ? 'opacity-100' : 'opacity-0'}`}
+                                  />
                                 </button>
                                 <div className="min-w-0 flex-1">
-                                  <div className={`text-xs font-semibold truncate ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}>
+                                  <div
+                                    className={`text-xs font-semibold truncate ${task.completed ? 'line-through text-[#8E9192]' : 'text-white'}`}
+                                  >
                                     {task.title}
                                   </div>
                                   <div className="flex items-center gap-2 text-[11px] text-[#8E9192]/80 truncate mt-0.5">
@@ -534,21 +567,29 @@ export default function SpotlightSearchModal({
             <div className="px-4 py-2.5 border-t border-[#27272A]/80 bg-[#141313]/40 flex items-center justify-between text-[11px] text-[#8E9192] font-mono">
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">↑↓</span>
+                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                    ↑↓
+                  </span>
                   Navigate
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">↵</span>
+                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                    ↵
+                  </span>
                   Select
                 </span>
                 <span className="flex items-center gap-1">
-                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">ESC</span>
+                  <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                    ESC
+                  </span>
                   Close
                 </span>
               </div>
               <div className="flex items-center gap-1">
                 <span>Spotlight</span>
-                <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">⌘K</span>
+                <span className="px-1.5 py-0.5 bg-[#1E1E22] border border-[#27272A] rounded text-[10px] text-white">
+                  ⌘K
+                </span>
               </div>
             </div>
           </motion.div>

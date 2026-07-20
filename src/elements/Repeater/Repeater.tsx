@@ -8,6 +8,7 @@ export interface RepeaterProps<T> {
   loader?: React.ReactNode;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useRepeater<T>(config: RepeaterProps<T>) {
   return useMemo(() => config, [config]);
 }

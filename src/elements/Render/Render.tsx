@@ -1,6 +1,7 @@
 'use client';
 
-import React, { Children, isValidElement, PropsWithChildren, ReactNode } from 'react';
+import type { PropsWithChildren, ReactNode } from 'react';
+import React, { Children, isValidElement } from 'react';
 
 // # entity
 interface IRenderProps extends PropsWithChildren {
@@ -37,7 +38,10 @@ const If: React.FC<IRenderProps> = ({ in: condition, children }) => {
   const childrenArray = Children.toArray(children);
 
   const elseChild = childrenArray.find(
-    (child) => isValidElement(child) && (child.type === Else || (child.type as any).displayName === 'Render.Else')
+    (child) =>
+      isValidElement(child) &&
+      (child.type === Else ||
+        (child.type as { displayName?: string }).displayName === 'Render.Else'),
   );
 
   const thenChildren = childrenArray.filter((child) => child !== elseChild);

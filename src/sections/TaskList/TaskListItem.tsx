@@ -44,10 +44,10 @@ export function DueDateBadge({ dueDate }: { dueDate: string | undefined }) {
 export function RecurrenceBadge({ recurrence }: { recurrence?: RecurrenceRule }) {
   if (!recurrence) return null;
   let label = 'Daily';
-  if (recurrence.frequency === 'daily')
+  if (recurrence.frequency === 'daily') {
     label =
       recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}d` : 'Daily';
-  else if (recurrence.frequency === 'weekdays') label = 'Weekdays';
+  } else if (recurrence.frequency === 'weekdays') label = 'Weekdays';
   else if (recurrence.frequency === 'weekly') {
     if (recurrence.daysOfWeek && recurrence.daysOfWeek.length > 0) {
       const names = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -60,13 +60,13 @@ export function RecurrenceBadge({ recurrence }: { recurrence?: RecurrenceRule })
       label =
         recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}w` : 'Weekly';
     }
-  } else if (recurrence.frequency === 'monthly')
+  } else if (recurrence.frequency === 'monthly') {
     label =
       recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}m` : 'Monthly';
-  else if (recurrence.frequency === 'yearly')
+  } else if (recurrence.frequency === 'yearly') {
     label =
       recurrence.interval && recurrence.interval > 1 ? `Every ${recurrence.interval}y` : 'Yearly';
-  else if (recurrence.frequency === 'custom') label = `Every ${recurrence.interval || 1}d`;
+  } else if (recurrence.frequency === 'custom') label = `Every ${recurrence.interval || 1}d`;
 
   return (
     <span

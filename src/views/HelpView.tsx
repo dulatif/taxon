@@ -1,5 +1,5 @@
-import React from 'react';
 import { HelpCircle } from 'lucide-react';
+import React from 'react';
 
 export default function HelpView() {
   return (
@@ -10,14 +10,17 @@ export default function HelpView() {
             <HelpCircle className="w-4 h-4 text-white" />
             Help &amp; Support Desk
           </h2>
-          <p className="text-xs text-[#8E9192] mt-1">Documentation, guidelines, and feedback options.</p>
+          <p className="text-xs text-[#8E9192] mt-1">
+            Documentation, guidelines, and feedback options.
+          </p>
         </div>
 
         <div className="space-y-4 text-xs leading-relaxed text-[#C4C7C8]">
           <p>
             Welcome to <strong>Taxon - Precision Tasking</strong>. This platform is optimized on{' '}
-            <strong>Precision in Darkness</strong> aesthetic guidelines. It facilitates absolute visual focus,
-            battery efficiency on high contrast OLED matrices, and robust daily tracking.
+            <strong>Precision in Darkness</strong> aesthetic guidelines. It facilitates absolute
+            visual focus, battery efficiency on high contrast OLED matrices, and robust daily
+            tracking.
           </p>
 
           <h4 className="font-bold text-white font-mono uppercase tracking-wider text-[11px] pt-2">
@@ -25,7 +28,9 @@ export default function HelpView() {
           </h4>
           <ul className="list-disc pl-4 space-y-1 text-[#8E9192]">
             <li>Select a task on the dashboard or inside a project list.</li>
-            <li>Click the Play action button to transition into fullscreen Focus Mode immediately.</li>
+            <li>
+              Click the Play action button to transition into fullscreen Focus Mode immediately.
+            </li>
             <li>Click the central circle to toggle timer countdown pausing/resumption.</li>
             <li>Upon completing the timer, your accomplishments increment instantly.</li>
           </ul>

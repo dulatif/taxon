@@ -99,7 +99,7 @@ export default function ProjectTabs({
           onClick={() => {
             const seq: TaskSortType[] = ['custom', 'priority', 'dueDate'];
             const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
-            onChangeSort(seq[nextIdx]);
+            onChangeSort(seq[nextIdx]!);
           }}
           className="flex items-center gap-1.5 text-text-muted hover:text-text-primary transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-surface-secondary hover:bg-surface-hover px-2.5 py-1.5 rounded-lg border border-border-primary/80 self-start sm:self-auto"
         >

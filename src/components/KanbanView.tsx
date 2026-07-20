@@ -1,16 +1,8 @@
-import { DragDropContext, Draggable, Droppable, DropResult } from '@hello-pangea/dnd';
-import {
-  CheckCircle,
-  CheckSquare,
-  Clock,
-  MoreHorizontal,
-  MoveLeft,
-  MoveRight,
-  Plus,
-  Trash2,
-} from 'lucide-react';
+import type { DropResult } from '@hello-pangea/dnd';
+import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
+import { CheckCircle, MoreHorizontal, MoveLeft, MoveRight, Plus } from 'lucide-react';
 import React, { useState } from 'react';
-import { Project, Sprint, Task } from '../types';
+import type { Project, Sprint, Task } from '../types';
 
 interface KanbanViewProps {
   projects: Project[];
@@ -59,7 +51,6 @@ export default function KanbanView({
   };
 
   // Filter tasks belonging strictly to active projects
-  const activeProjectIds = projects.filter((p) => p.category !== 'Completed').map((p) => p.id);
   const activeTasksAll = tasks.filter(
     (t) => t.projectId === selectedProjectId || (!t.projectId && selectedProjectId === 'all'),
   );
@@ -69,7 +60,7 @@ export default function KanbanView({
     return t.sprintId === selectedSprintId;
   });
 
-  const handleAddTaskSubmit = (columnName: string) => {
+  const handleAddTaskSubmit = (_columnName: string) => {
     if (!newTaskTitle.trim()) return;
     const targetSprintId =
       selectedSprintId !== 'all' && selectedSprintId !== 'backlog' ? selectedSprintId : null;
@@ -103,9 +94,9 @@ export default function KanbanView({
     const sequence: Task['status'][] = ['To Do', 'In Progress', 'Done'];
     const idx = sequence.indexOf(currentStatus);
     if (direction === 'right' && idx < 2) {
-      onMoveTaskStatus(taskId, sequence[idx + 1]);
+      onMoveTaskStatus(taskId, sequence[idx + 1] as Task['status']);
     } else if (direction === 'left' && idx > 0) {
-      onMoveTaskStatus(taskId, sequence[idx - 1]);
+      onMoveTaskStatus(taskId, sequence[idx - 1] as Task['status']);
     }
   };
 
@@ -156,7 +147,7 @@ export default function KanbanView({
               </span>
               <select
                 value={selectedSprintId}
-                onChange={(e) => setSelectedSprintId(e.target.value as any)}
+                onChange={(e) => setSelectedSprintId(e.target.value)}
                 className="bg-[#141313] border border-[#27272A] text-xs text-white rounded-lg px-3 py-1.5 focus:border-white focus:outline-none focus:ring-0 max-w-[200px]"
               >
                 <option value="all">All Sprints</option>
@@ -227,7 +218,6 @@ export default function KanbanView({
                           </div>
                         ) : (
                           colTasks.map((task, index) => (
-                            // @ts-ignore
                             <Draggable key={task.id} draggableId={task.id} index={index}>
                               {(provided, snapshot) => (
                                 <div
