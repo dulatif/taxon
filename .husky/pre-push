@@ -1,0 +1,9 @@
+#!/bin/sh
+# Exit immediately if a command exits with a non-zero status
+set -e
+
+# Run format check, linting, and type-check before push
+pnpm run format:check
+pnpm run oxlint
+pnpm run lint
+pnpm run type-check
