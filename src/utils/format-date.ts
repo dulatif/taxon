@@ -74,3 +74,14 @@ export function getPresetDates() {
     { label: 'In 1 Week', date: nextWeek, sub: formatSub(weekDate) },
   ];
 }
+
+export function formatDateRange(start: string, end: string) {
+  try {
+    const sDate = new Date(start + 'T00:00:00');
+    const eDate = new Date(end + 'T00:00:00');
+    const options: Intl.DateTimeFormatOptions = { month: 'short', day: 'numeric' };
+    return `${sDate.toLocaleDateString('en-US', options)} – ${eDate.toLocaleDateString('en-US', options)}`;
+  } catch (_) {
+    return `${start} — ${end}`;
+  }
+}
