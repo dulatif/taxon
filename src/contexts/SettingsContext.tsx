@@ -27,23 +27,32 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
   }, [settings]);
 
-  // TAXON-120: Apply/remove OLED Black Mode CSS class on <body>
+  // Handle Theme and OLED Black Mode
   useEffect(() => {
-    if (settings.oledBlackMode && settings.theme === 'dark') {
-      document.body.classList.add('oled-black');
-    } else {
-      document.body.classList.remove('oled-black');
-    }
-  }, [settings.oledBlackMode, settings.theme]);
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    
+    const applyTheme = () => {
+      const isDark = settings.theme === 'dark' || (settings.theme === 'system' && mediaQuery.matches);
+      
+      if (!isDark) {
+        document.body.classList.add('light-theme');
+      } else {
+        document.body.classList.remove('light-theme');
+      }
 
-  // Handle Light Theme CSS class
-  useEffect(() => {
-    if (settings.theme === 'light') {
-      document.body.classList.add('light-theme');
-    } else {
-      document.body.classList.remove('light-theme');
-    }
-  }, [settings.theme]);
+      if (settings.oledBlackMode && isDark) {
+        document.body.classList.add('oled-black');
+      } else {
+        document.body.classList.remove('oled-black');
+      }
+    };
+
+    applyTheme();
+
+    const listener = () => applyTheme();
+    mediaQuery.addEventListener('change', listener);
+    return () => mediaQuery.removeEventListener('change', listener);
+  }, [settings.theme, settings.oledBlackMode]);
 
   // Sync backup frequency with Rust backend
   useEffect(() => {
