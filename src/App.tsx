@@ -100,6 +100,7 @@ export default function App() {
     handleDeleteSprint,
     handleAssignTaskToSprint,
     handleSprintRollover,
+    refreshAllData,
   } = useWorkspaceData({
     onProjectCreated: (newId) => {
       setSelectedProjectId(newId);
@@ -356,6 +357,7 @@ export default function App() {
             onArchiveTask={handleArchiveTask}
             onUnarchiveTask={handleUnarchiveTask}
             onArchiveAllCompleted={handleArchiveAllCompleted}
+            refreshAllData={refreshAllData}
           />
         )}
       </Render>
