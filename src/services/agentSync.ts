@@ -1,6 +1,14 @@
+import { exists, mkdir, readDir, readTextFile, remove, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { Project, Sprint, SubTask, Task } from '../types';
+import type { AgentDiffResult, AgentSyncState } from '../types/agent';
+import { saveSprint, saveTask } from './database';
 
 // AGENT-102: YAML frontmatter parser
+function joinPath(parent: string, child: string): string {
+  const cleanedParent = parent.replace(/[/\\]+$/, '');
+  return `${cleanedParent}/${child}`;
+}
+
 export function parseFrontmatter(markdown: string): {
   data: Record<string, unknown>;
   body: string;
@@ -9,7 +17,7 @@ export function parseFrontmatter(markdown: string): {
   const match = markdown.match(frontmatterRegex);
 
   if (!match) {
-    return { data: {}, body: markdown };
+    throw new Error('Invalid markdown: missing frontmatter');
   }
 
   const frontmatterStr = match[1];
@@ -289,4 +297,221 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 
 export function generateClaudeMdPointer(): string {
   return `See AGENTS.md for project task integration instructions.\n`;
+}
+
+export async function exportProjectToAgent(
+  project: Project,
+  tasks: Task[],
+  sprints: Sprint[],
+  vaultPath: string,
+): Promise<AgentSyncState> {
+  const taxonPath = joinPath(vaultPath, '.taxon');
+  const tasksPath = joinPath(taxonPath, 'tasks');
+  const sprintsPath = joinPath(taxonPath, 'sprints');
+
+  const taxonExists = await exists(taxonPath).catch(() => false);
+  if (taxonExists) {
+    const tasksExists = await exists(tasksPath).catch(() => false);
+    if (tasksExists) await remove(tasksPath, { recursive: true }).catch(console.error);
+    const sprintsExists = await exists(sprintsPath).catch(() => false);
+    if (sprintsExists) await remove(sprintsPath, { recursive: true }).catch(console.error);
+  } else {
+    await mkdir(taxonPath, { recursive: true });
+  }
+
+  await mkdir(tasksPath, { recursive: true });
+  await mkdir(sprintsPath, { recursive: true });
+
+  await writeTextFile(joinPath(taxonPath, 'project.md'), projectToMarkdown(project));
+
+  const projectTasks = tasks.filter((t) => t.projectId === project.id);
+  let exportedTaskCount = 0;
+  for (const task of projectTasks) {
+    const filePath = joinPath(tasksPath, taskFilename(task));
+    await writeTextFile(filePath, taskToMarkdown(task));
+    exportedTaskCount++;
+  }
+
+  const projectSprints = sprints.filter((s) => s.projectId === project.id);
+  let exportedSprintCount = 0;
+  for (const sprint of projectSprints) {
+    const filePath = joinPath(sprintsPath, sprintFilename(sprint));
+    await writeTextFile(filePath, sprintToMarkdown(sprint, projectTasks));
+    exportedSprintCount++;
+  }
+
+  await writeTextFile(joinPath(vaultPath, 'AGENTS.md'), generateAgentInstructions(project));
+  await writeTextFile(joinPath(vaultPath, 'CLAUDE.md'), generateClaudeMdPointer());
+
+  return {
+    lastExportedAt: new Date().toISOString(),
+    lastImportedAt: null,
+    exportedTaskCount,
+    exportedSprintCount,
+  };
+}
+
+export async function scanAgentDirectory(
+  vaultPath: string,
+  projectId: string,
+): Promise<{ tasks: Task[]; sprints: Sprint[]; warnings: string[] }> {
+  const taxonPath = joinPath(vaultPath, '.taxon');
+  const tasksPath = joinPath(taxonPath, 'tasks');
+  const sprintsPath = joinPath(taxonPath, 'sprints');
+
+  const tasks: Task[] = [];
+  const sprints: Sprint[] = [];
+  const warnings: string[] = [];
+
+  const taxonExists = await exists(taxonPath).catch(() => false);
+  if (!taxonExists) {
+    return { tasks, sprints, warnings };
+  }
+
+  const tasksExists = await exists(tasksPath).catch(() => false);
+  if (tasksExists) {
+    const entries = await readDir(tasksPath).catch(() => []);
+    for (const entry of entries) {
+      if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
+        try {
+          const content = await readTextFile(joinPath(tasksPath, entry.name));
+          tasks.push(markdownToTask(content, projectId));
+        } catch {
+          warnings.push(`Failed to parse task file: ${entry.name}`);
+        }
+      }
+    }
+  }
+
+  const sprintsExists = await exists(sprintsPath).catch(() => false);
+  if (sprintsExists) {
+    const entries = await readDir(sprintsPath).catch(() => []);
+    for (const entry of entries) {
+      if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
+        try {
+          const content = await readTextFile(joinPath(sprintsPath, entry.name));
+          sprints.push(markdownToSprint(content, projectId));
+        } catch {
+          warnings.push(`Failed to parse sprint file: ${entry.name}`);
+        }
+      }
+    }
+  }
+
+  return { tasks, sprints, warnings };
+}
+
+function deepEqual(a: unknown, b: unknown): boolean {
+  if (a === b) return true;
+  if ((a === undefined && b === null) || (a === null && b === undefined)) return true;
+
+  if (a && b && typeof a === 'object' && typeof b === 'object') {
+    if (Array.isArray(a) && Array.isArray(b)) {
+      if (a.length !== b.length) return false;
+      for (let i = 0; i < a.length; i++) {
+        if (!deepEqual(a[i], b[i])) return false;
+      }
+      return true;
+    }
+    const keysA = Object.keys(a);
+    const keysB = Object.keys(b);
+    if (keysA.length !== keysB.length) return false;
+    for (const key of keysA) {
+      if (!deepEqual((a as Record<string, unknown>)[key], (b as Record<string, unknown>)[key])) {
+        return false;
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+function getChangedFields<T extends Record<string, unknown>>(before: T, after: T): string[] {
+  const changed: string[] = [];
+  const allKeys = new Set([...Object.keys(before), ...Object.keys(after)]);
+
+  for (const key of allKeys) {
+    if (key === 'updatedAt' || key === 'createdAt') continue;
+    if (!deepEqual(before[key], after[key])) {
+      changed.push(key);
+    }
+  }
+  return changed;
+}
+
+export function diffAgentChanges(
+  dbTasks: Task[],
+  dbSprints: Sprint[],
+  agentTasks: Task[],
+  agentSprints: Sprint[],
+): AgentDiffResult {
+  const newTasks: Task[] = [];
+  const modifiedTasks: { before: Task; after: Task; changedFields: string[] }[] = [];
+  const newSprints: Sprint[] = [];
+  const modifiedSprints: { before: Sprint; after: Sprint; changedFields: string[] }[] = [];
+  const warnings: string[] = [];
+
+  const dbTasksMap = new Map(dbTasks.map((t) => [t.id, t]));
+  const dbSprintsMap = new Map(dbSprints.map((s) => [s.id, s]));
+
+  for (const agentTask of agentTasks) {
+    const existingTask = dbTasksMap.get(agentTask.id);
+    if (!existingTask) {
+      newTasks.push(agentTask);
+    } else {
+      const changedFields = getChangedFields(
+        existingTask as unknown as Record<string, unknown>,
+        agentTask as unknown as Record<string, unknown>,
+      );
+      if (changedFields.length > 0) {
+        modifiedTasks.push({ before: existingTask, after: agentTask, changedFields });
+      }
+    }
+  }
+
+  for (const agentSprint of agentSprints) {
+    const existingSprint = dbSprintsMap.get(agentSprint.id);
+    if (!existingSprint) {
+      newSprints.push(agentSprint);
+    } else {
+      const changedFields = getChangedFields(
+        existingSprint as unknown as Record<string, unknown>,
+        agentSprint as unknown as Record<string, unknown>,
+      );
+      if (changedFields.length > 0) {
+        modifiedSprints.push({ before: existingSprint, after: agentSprint, changedFields });
+      }
+    }
+  }
+
+  return { newTasks, modifiedTasks, newSprints, modifiedSprints, warnings };
+}
+
+export async function applyAgentChanges(
+  diff: AgentDiffResult,
+): Promise<{ tasksApplied: number; sprintsApplied: number }> {
+  let tasksApplied = 0;
+  let sprintsApplied = 0;
+
+  for (const task of diff.newTasks) {
+    await saveTask(task);
+    tasksApplied++;
+  }
+
+  for (const modified of diff.modifiedTasks) {
+    await saveTask(modified.after);
+    tasksApplied++;
+  }
+
+  for (const sprint of diff.newSprints) {
+    await saveSprint(sprint);
+    sprintsApplied++;
+  }
+
+  for (const modified of diff.modifiedSprints) {
+    await saveSprint(modified.after);
+    sprintsApplied++;
+  }
+
+  return { tasksApplied, sprintsApplied };
 }
