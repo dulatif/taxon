@@ -270,28 +270,55 @@ metadata and a markdown body with description and subtasks.
 ### Creating New Tasks
 Create a new \`.md\` file in \`.taxon/tasks/\` with this format:
 - Filename: \`TASK-{6-char-id}-{slugified-title}.md\`
-- Generate a unique 6-character alphanumeric ID
+- Generate a unique 6-character alphanumeric ID (e.g. \`a1b2c3\`)
 - Required frontmatter: \`id\`, \`title\`, \`priority\`, \`status\`
-- Valid priorities: Critical, High, Medium, Low
-- Valid statuses: To Do, In Progress, Done
+- Valid priorities: \`Critical\`, \`High\`, \`Medium\`, \`Low\`
+- Valid statuses: \`To Do\`, \`In Progress\`, \`Done\`
+
+Example Task File:
+\`\`\`markdown
+---
+id: a1b2c3
+title: Implement Login Screen
+priority: High
+status: To Do
+completed: false
+sprintId: 
+labels:
+  - frontend
+  - auth
+---
+## Description
+Implement the login screen using React Hook Form.
+
+## Subtasks
+- [x] Create form component
+- [ ] Add validation
+- [ ] Connect to API
+\`\`\`
 
 ### Modifying Tasks
 Edit the frontmatter fields or markdown body directly.
-To complete a task: set \`completed: true\` and \`status: Done\`.
-To archive: set \`archived: true\`.
+- To complete a task: set \`completed: true\` and \`status: Done\`.
+- To archive: set \`archived: true\`.
+- To assign to a sprint: add the sprint's ID to \`sprintId\`. Leave empty or omit for backlog tasks.
 
 ### Creating Sprints
 Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Filename: \`SPRINT-{6-char-id}-{slugified-name}.md\`
 - Required frontmatter: \`id\`, \`name\`, \`status\`, \`startDate\`, \`endDate\`
-- Valid statuses: Planned, Active
+- Valid statuses: \`Planned\`, \`Active\`
+- Dates must be ISO strings (e.g. \`2024-01-01T00:00:00.000Z\`)
 - List task filenames under \`## Tasks\`
-- Set each task's \`sprintId\` in its frontmatter to match
+- Set each task's \`sprintId\` in its frontmatter to match this sprint's \`id\`.
 
-### Rules
-- Do NOT delete task files. Mark unwanted tasks as \`archived: true\`.
-- Do NOT modify \`project.md\` (treated as read-only context).
-- IDs must be unique across all tasks/sprints.
+### Common Mistakes / Rules
+- **DO NOT** delete task files to delete tasks. Instead, mark unwanted tasks as \`archived: true\`.
+- **DO NOT** modify \`project.md\` (it is treated as read-only context).
+- Ensure YAML syntax is strictly valid.
+- Subtasks must strictly use the format \`- [ ] Title\` or \`- [x] Title\`.
+- IDs must be unique across all tasks/sprints in the entire database, so use truly random alphanumeric strings.
+- Version: 1.0.0
 `;
 }
 
@@ -368,14 +395,26 @@ export async function scanAgentDirectory(
     return { tasks, sprints, warnings };
   }
 
+  const seenTaskIds = new Set<string>();
   const tasksExists = await exists(tasksPath).catch(() => false);
   if (tasksExists) {
     const entries = await readDir(tasksPath).catch(() => []);
+    // Sort to make the first file deterministic (alphabetical)
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
     for (const entry of entries) {
       if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
         try {
           const content = await readTextFile(joinPath(tasksPath, entry.name));
-          tasks.push(markdownToTask(content, projectId));
+          const task = markdownToTask(content, projectId);
+          if (seenTaskIds.has(task.id)) {
+            warnings.push(
+              `Duplicate task ID '${task.id}' found — using first found, skipping ${entry.name}`,
+            );
+            continue;
+          }
+          seenTaskIds.add(task.id);
+          tasks.push(task);
         } catch {
           warnings.push(`Failed to parse task file: ${entry.name}`);
         }
@@ -383,14 +422,25 @@ export async function scanAgentDirectory(
     }
   }
 
+  const seenSprintIds = new Set<string>();
   const sprintsExists = await exists(sprintsPath).catch(() => false);
   if (sprintsExists) {
     const entries = await readDir(sprintsPath).catch(() => []);
+    entries.sort((a, b) => a.name.localeCompare(b.name));
+
     for (const entry of entries) {
       if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
         try {
           const content = await readTextFile(joinPath(sprintsPath, entry.name));
-          sprints.push(markdownToSprint(content, projectId));
+          const sprint = markdownToSprint(content, projectId);
+          if (seenSprintIds.has(sprint.id)) {
+            warnings.push(
+              `Duplicate sprint ID '${sprint.id}' found — using first found, skipping ${entry.name}`,
+            );
+            continue;
+          }
+          seenSprintIds.add(sprint.id);
+          sprints.push(sprint);
         } catch {
           warnings.push(`Failed to parse sprint file: ${entry.name}`);
         }
@@ -440,8 +490,9 @@ function getChangedFields<T extends Record<string, unknown>>(before: T, after: T
 }
 
 export function diffAgentChanges(
-  dbTasks: Task[],
-  dbSprints: Sprint[],
+  projectId: string,
+  allTasks: Task[],
+  allSprints: Sprint[],
   agentTasks: Task[],
   agentSprints: Sprint[],
 ): AgentDiffResult {
@@ -451,13 +502,18 @@ export function diffAgentChanges(
   const modifiedSprints: { before: Sprint; after: Sprint; changedFields: string[] }[] = [];
   const warnings: string[] = [];
 
-  const dbTasksMap = new Map(dbTasks.map((t) => [t.id, t]));
-  const dbSprintsMap = new Map(dbSprints.map((s) => [s.id, s]));
+  const allTasksMap = new Map(allTasks.map((t) => [t.id, t]));
+  const allSprintsMap = new Map(allSprints.map((s) => [s.id, s]));
 
   for (const agentTask of agentTasks) {
-    const existingTask = dbTasksMap.get(agentTask.id);
+    const existingTask = allTasksMap.get(agentTask.id);
     if (!existingTask) {
       newTasks.push(agentTask);
+    } else if (existingTask.projectId !== projectId) {
+      warnings.push(
+        `Task '${agentTask.title}' has ID '${agentTask.id}' which belongs to a different project. Treating as new task with new ID.`,
+      );
+      newTasks.push({ ...agentTask, id: generateShortId() });
     } else {
       const changedFields = getChangedFields(
         existingTask as unknown as Record<string, unknown>,
@@ -470,9 +526,14 @@ export function diffAgentChanges(
   }
 
   for (const agentSprint of agentSprints) {
-    const existingSprint = dbSprintsMap.get(agentSprint.id);
+    const existingSprint = allSprintsMap.get(agentSprint.id);
     if (!existingSprint) {
       newSprints.push(agentSprint);
+    } else if (existingSprint.projectId !== projectId) {
+      warnings.push(
+        `Sprint '${agentSprint.name}' has ID '${agentSprint.id}' which belongs to a different project. Treating as new sprint with new ID.`,
+      );
+      newSprints.push({ ...agentSprint, id: generateShortId() });
     } else {
       const changedFields = getChangedFields(
         existingSprint as unknown as Record<string, unknown>,

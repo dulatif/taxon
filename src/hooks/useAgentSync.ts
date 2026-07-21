@@ -105,10 +105,7 @@ export function useAgentSync(
         warnings,
       } = await scanAgentDirectory(project.vaultPath, project.id);
 
-      const projectTasks = tasks.filter((t) => t.projectId === project.id);
-      const projectSprints = sprints.filter((s) => s.projectId === project.id);
-
-      const diff = diffAgentChanges(projectTasks, projectSprints, agentTasks, agentSprints);
+      const diff = diffAgentChanges(project.id, tasks, sprints, agentTasks, agentSprints);
       diff.warnings.push(...warnings);
 
       setAgentDiff(diff);
