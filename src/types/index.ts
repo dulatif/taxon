@@ -1,4 +1,5 @@
 export type { ActivityLogEntry, DailyActivity } from './activity';
+export type * from './agent';
 export type { DocumentFile, VaultEntry } from './document';
 export type { Project, ProjectCategory } from './project';
 export type { SettingsState } from './settings';
