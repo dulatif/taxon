@@ -201,6 +201,9 @@ export default function AgentSyncPanel({
                 vaultPath={project.vaultPath || ''}
                 onSelectFile={onSelectFile}
                 onChangeVaultPath={onSetVaultDirectory}
+                onDeleteFile={() => {}}
+                onCreateDocument={async () => {}}
+                onRefresh={onRefreshEntries}
               />
             </div>
           )}

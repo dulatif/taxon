@@ -141,6 +141,7 @@ export function useAgentSync(
             exportedTaskCount: 0,
             exportedSprintCount: 0,
             lastExportedAt: null,
+            lastImportedAt: null,
           };
 
       newState.lastImportedAt = new Date().toISOString();

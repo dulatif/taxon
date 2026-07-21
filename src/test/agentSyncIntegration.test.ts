@@ -7,6 +7,7 @@ import {
   scanAgentDirectory,
 } from '../services/agentSync';
 import type { Project, Sprint, Task } from '../types';
+import type { AgentDiffResult } from '../types/agent';
 
 // Mock dependencies
 vi.mock('@tauri-apps/plugin-fs', () => {
@@ -70,8 +71,9 @@ describe('agentSync Integration (AGENT-206)', () => {
   const mockProject: Project = {
     id: 'proj-1',
     name: 'Integration Test Project',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    description: '',
+    category: 'Engineering',
+    progress: 0,
   };
 
   const mockTasks: Task[] = Array.from({ length: 5 }).map(
@@ -89,8 +91,7 @@ describe('agentSync Integration (AGENT-206)', () => {
         timeSpent: 0,
         sortOrder: 0,
         archived: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        duration: '',
       }) as Task,
   );
 
@@ -103,8 +104,6 @@ describe('agentSync Integration (AGENT-206)', () => {
       status: 'Active',
       startDate: new Date().toISOString(),
       endDate: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
     } as Sprint,
   ];
 
@@ -150,10 +149,16 @@ New task added by agent.
       warnings,
     } = await scanAgentDirectory(vaultPath, mockProject.id);
 
-    const diff = diffAgentChanges(mockTasks, mockSprints, parsedTasks, parsedSprints);
+    const diff = diffAgentChanges(
+      mockProject.id,
+      mockTasks,
+      mockSprints,
+      parsedTasks,
+      parsedSprints,
+    );
 
     expect(diff.newTasks.length).toBe(1);
-    expect(diff.newTasks[0].id).toBe('task-new');
+    expect(diff.newTasks[0]!.id).toBe('task-new');
     expect(diff.modifiedTasks.length).toBe(0);
     expect(warnings.length).toBe(0);
   });
@@ -173,12 +178,18 @@ New task added by agent.
       mockProject.id,
     );
 
-    const diff = diffAgentChanges(mockTasks, mockSprints, parsedTasks, parsedSprints);
+    const diff = diffAgentChanges(
+      mockProject.id,
+      mockTasks,
+      mockSprints,
+      parsedTasks,
+      parsedSprints,
+    );
 
     expect(diff.newTasks.length).toBe(0);
     expect(diff.modifiedTasks.length).toBe(1);
-    expect(diff.modifiedTasks[0].changedFields).toContain('priority');
-    expect(diff.modifiedTasks[0].after.priority).toBe('High');
+    expect(diff.modifiedTasks[0]!.changedFields).toContain('priority');
+    expect(diff.modifiedTasks[0]!.after.priority).toBe('High');
   });
 
   it('should ignore deleted files in the diff', async () => {
@@ -194,7 +205,13 @@ New task added by agent.
       mockProject.id,
     );
 
-    const diff = diffAgentChanges(mockTasks, mockSprints, parsedTasks, parsedSprints);
+    const diff = diffAgentChanges(
+      mockProject.id,
+      mockTasks,
+      mockSprints,
+      parsedTasks,
+      parsedSprints,
+    );
 
     // Deletions from file system are ignored by design
     expect(diff.newTasks.length).toBe(0);
@@ -216,19 +233,19 @@ New task added by agent.
   });
 
   it('should apply changes to the database', async () => {
-    const diff: AgentDiffResult = {
-      newTasks: [mockTasks[0]],
+    const diff = {
+      newTasks: [mockTasks[0] as Task],
       modifiedTasks: [
         {
-          before: mockTasks[1],
-          after: { ...mockTasks[1], priority: 'High' },
+          before: mockTasks[1] as Task,
+          after: { ...mockTasks[1], priority: 'High' } as Task,
           changedFields: ['priority'],
         },
       ],
       newSprints: [],
       modifiedSprints: [],
       warnings: [],
-    };
+    } as AgentDiffResult;
 
     const stats = await applyAgentChanges(diff);
     expect(stats.tasksApplied).toBe(2);

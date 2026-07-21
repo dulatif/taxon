@@ -20,8 +20,8 @@ export function parseFrontmatter(markdown: string): {
     throw new Error('Invalid markdown: missing frontmatter');
   }
 
-  const frontmatterStr = match[1];
-  const body = match[2];
+  const frontmatterStr = match[1] || '';
+  const body = match[2] || '';
   const data: Record<string, unknown> = {};
 
   const lines = frontmatterStr.split(/\r?\n/);
@@ -129,17 +129,17 @@ export function markdownToTask(markdown: string, projectId: string): Task {
 
   // Parse description and subtasks
   const descMatch = body.match(/## Description\s*\n([\s\S]*?)(?:## Subtasks|$)/);
-  const description = descMatch ? descMatch[1].trim() : '';
+  const description = descMatch?.[1]?.trim() ?? '';
 
   const subtasksMatch = body.match(/## Subtasks\s*\n([\s\S]*)$/);
   const subtasks: SubTask[] = [];
 
-  if (subtasksMatch) {
+  if (subtasksMatch?.[1]) {
     const subtasksText = subtasksMatch[1];
     const lines = subtasksText.split(/\r?\n/);
     for (const line of lines) {
       const match = line.match(/^-\s*\[([ xX])\]\s+(.*)$/);
-      if (match) {
+      if (match?.[1] && match?.[2]) {
         // use hash of title for deterministic ID if possible, otherwise random
         const title = match[2].trim();
         let hash = 0;
@@ -156,24 +156,23 @@ export function markdownToTask(markdown: string, projectId: string): Task {
   }
 
   return {
-    id: data.id || generateShortId(),
+    id: (data.id as string) || generateShortId(),
     projectId,
-    title: data.title || 'Untitled Task',
+    title: (data.title as string) || 'Untitled Task',
     description,
-    priority: data.priority || 'Medium',
-    status: data.status || 'To Do',
-    completed: data.completed || false,
-    sprintId: data.sprintId,
-    dueDate: data.dueDate,
-    labels: data.labels || [],
+    priority: (data.priority as Task['priority']) || 'Medium',
+    status: (data.status as Task['status']) || 'To Do',
+    completed: (data.completed as boolean) || false,
+    sprintId: data.sprintId as string | undefined,
+    dueDate: data.dueDate as string | undefined,
+    labels: (data.labels as string[]) || [],
     subtasks,
-    timeEffort: data.timeEffort,
-    timeSpent: data.timeSpent || 0,
-    sortOrder: data.sortOrder || 0,
-    archived: data.archived || false,
-    archivedAt: data.archivedAt,
-    createdAt: data.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    duration: '',
+    timeEffort: data.timeEffort as number | undefined,
+    timeSpent: (data.timeSpent as number) || 0,
+    sortOrder: (data.sortOrder as number) || 0,
+    archived: (data.archived as boolean) || false,
+    archivedAt: data.archivedAt as string | undefined,
   } as Task;
 }
 
@@ -206,19 +205,17 @@ export function markdownToSprint(markdown: string, projectId: string): Sprint {
   const { data, body } = parseFrontmatter(markdown);
 
   const goalMatch = body.match(/## Goal\s*\n([\s\S]*?)(?:## Tasks|$)/);
-  const goal = goalMatch ? goalMatch[1].trim() : '';
+  const goal = goalMatch?.[1]?.trim() ?? '';
 
   return {
-    id: data.id || generateShortId(),
+    id: (data.id as string) || generateShortId(),
     projectId,
-    name: data.name || 'Untitled Sprint',
+    name: (data.name as string) || 'Untitled Sprint',
     goal,
-    status: data.status || 'Planned',
-    startDate: data.startDate || new Date().toISOString(),
-    endDate: data.endDate || new Date().toISOString(),
-    completedAt: data.completedAt,
-    createdAt: data.createdAt || new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    status: (data.status as Sprint['status']) || 'Planned',
+    startDate: (data.startDate as string) || new Date().toISOString(),
+    endDate: (data.endDate as string) || new Date().toISOString(),
+    completedAt: data.completedAt as string | undefined,
   } as Sprint;
 }
 
@@ -238,12 +235,12 @@ export function projectToMarkdown(project: Project): string {
 export function markdownToProject(markdown: string): Partial<Project> {
   const { data } = parseFrontmatter(markdown);
   return {
-    id: data.id,
-    name: data.name,
-    description: data.description,
-    category: data.category,
-    progress: data.progress,
-    dueDate: data.dueDate,
+    id: data.id as string,
+    name: data.name as string,
+    description: data.description as string,
+    category: data.category as string,
+    progress: data.progress as number,
+    dueDate: data.dueDate as string | undefined,
   };
 }
 

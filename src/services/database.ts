@@ -459,7 +459,7 @@ export const getAgentSyncState = async (projectId: string): Promise<AgentSyncSta
     projectId,
   ]);
   if (result && result.length > 0) {
-    return result[0];
+    return result[0] || null;
   }
   return null;
 };

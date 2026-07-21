@@ -92,8 +92,7 @@ Hello World`);
         timeSpent: 5,
         sortOrder: 1,
         archived: false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
+        duration: '',
         subtasks: [
           { id: 'sub-1', title: 'Subtask 1', completed: true },
           { id: 'sub-2', title: 'Subtask 2', completed: false },
@@ -111,10 +110,10 @@ Hello World`);
       expect(parsedTask.timeEffort).toBe(task.timeEffort);
       expect(parsedTask.timeSpent).toBe(task.timeSpent);
       expect(parsedTask.subtasks!.length).toBe(2);
-      expect(parsedTask.subtasks![0].title).toBe('Subtask 1');
-      expect(parsedTask.subtasks![0].completed).toBe(true);
-      expect(parsedTask.subtasks![1].title).toBe('Subtask 2');
-      expect(parsedTask.subtasks![1].completed).toBe(false);
+      expect(parsedTask.subtasks![0]!.title).toBe('Subtask 1');
+      expect(parsedTask.subtasks![0]!.completed).toBe(true);
+      expect(parsedTask.subtasks![1]!.title).toBe('Subtask 2');
+      expect(parsedTask.subtasks![1]!.completed).toBe(false);
     });
   });
 
@@ -128,8 +127,6 @@ Hello World`);
         status: 'Active',
         startDate: new Date().toISOString(),
         endDate: new Date().toISOString(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       const tasks: Task[] = [
@@ -156,8 +153,6 @@ Hello World`);
         description: 'Project description',
         category: 'Work',
         progress: 50,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
       };
 
       const markdown = projectToMarkdown(project);

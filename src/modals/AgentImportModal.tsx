@@ -160,11 +160,11 @@ export default function AgentImportModal({
                       <div className="divide-y divide-[#27272A]/50">
                         {diff.modifiedTasks.map((mod) => (
                           <div
-                            key={mod.task.id}
+                            key={mod.after.id}
                             className="p-3 pl-10 hover:bg-[#141313] transition-colors"
                           >
                             <span className="text-xs text-white font-medium block mb-1.5">
-                              {mod.task.title}
+                              {mod.after.title}
                             </span>
                             <div className="space-y-1 pl-2 border-l border-[#27272A]">
                               {mod.changedFields.map((field) => (
@@ -178,11 +178,11 @@ export default function AgentImportModal({
                                   ) : (
                                     <div className="flex items-center gap-2 overflow-hidden">
                                       <span className="text-red-400/80 line-through truncate max-w-[150px]">
-                                        {String((mod.original as any)[field] ?? 'none')}
+                                        {String((mod.before as any)[field] ?? 'none')}
                                       </span>
                                       <span className="text-text-muted">→</span>
                                       <span className="text-emerald-400 truncate max-w-[150px]">
-                                        {String((mod.task as any)[field] ?? 'none')}
+                                        {String((mod.after as any)[field] ?? 'none')}
                                       </span>
                                     </div>
                                   )}
@@ -255,11 +255,11 @@ export default function AgentImportModal({
                       <div className="divide-y divide-[#27272A]/50">
                         {diff.modifiedSprints.map((mod) => (
                           <div
-                            key={mod.sprint.id}
+                            key={mod.after.id}
                             className="p-3 pl-10 hover:bg-[#141313] transition-colors"
                           >
                             <span className="text-xs text-white font-medium block mb-1.5">
-                              {mod.sprint.name}
+                              {mod.after.name}
                             </span>
                             <div className="space-y-1 pl-2 border-l border-[#27272A]">
                               {mod.changedFields.map((field) => (
@@ -270,11 +270,11 @@ export default function AgentImportModal({
                                   <span className="text-white/60 w-24 shrink-0">{field}:</span>
                                   <div className="flex items-center gap-2 overflow-hidden">
                                     <span className="text-red-400/80 line-through truncate max-w-[150px]">
-                                      {String((mod.original as any)[field] ?? 'none')}
+                                      {String((mod.before as any)[field] ?? 'none')}
                                     </span>
                                     <span className="text-text-muted">→</span>
                                     <span className="text-emerald-400 truncate max-w-[150px]">
-                                      {String((mod.sprint as any)[field] ?? 'none')}
+                                      {String((mod.after as any)[field] ?? 'none')}
                                     </span>
                                   </div>
                                 </div>
