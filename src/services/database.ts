@@ -7,6 +7,7 @@ import type {
   Sprint,
   Task,
 } from '../types';
+import type { AgentSyncState } from '../types/agent';
 
 let dbPromise: Promise<Database> | null = null;
 
@@ -94,6 +95,18 @@ export const initDb = (): Promise<Database> => {
             goal TEXT,
             sortOrder INTEGER,
             completedAt TEXT
+        );
+      `)
+        .catch(() => {});
+
+      await database
+        .execute(`
+        CREATE TABLE IF NOT EXISTS agent_sync (
+            projectId TEXT PRIMARY KEY,
+            lastExportedAt TEXT,
+            lastImportedAt TEXT,
+            exportedTaskCount INTEGER,
+            exportedSprintCount INTEGER
         );
       `)
         .catch(() => {});
@@ -437,4 +450,30 @@ export const importWorkspaceData = async (jsonString: string) => {
   if (data.activityLog) {
     for (const al of data.activityLog) await saveActivityLogEntry(al);
   }
+};
+
+// --- Agent Sync ---
+export const getAgentSyncState = async (projectId: string): Promise<AgentSyncState | null> => {
+  const d = await initDb();
+  const result = await d.select<AgentSyncState[]>('SELECT * FROM agent_sync WHERE projectId = $1', [
+    projectId,
+  ]);
+  if (result && result.length > 0) {
+    return result[0];
+  }
+  return null;
+};
+
+export const saveAgentSyncState = async (projectId: string, state: AgentSyncState) => {
+  const d = await initDb();
+  await d.execute(
+    'INSERT OR REPLACE INTO agent_sync (projectId, lastExportedAt, lastImportedAt, exportedTaskCount, exportedSprintCount) VALUES ($1, $2, $3, $4, $5)',
+    [
+      projectId,
+      state.lastExportedAt ?? null,
+      state.lastImportedAt ?? null,
+      state.exportedTaskCount ?? 0,
+      state.exportedSprintCount ?? 0,
+    ],
+  );
 };
