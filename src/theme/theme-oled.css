@@ -1,0 +1,20 @@
+/* src/theme/theme-oled.css
+   ============================================
+   OLED BLACK THEME
+   Pure black surfaces for OLED battery efficiency.
+   Applied when body has class "oled-black"
+   ============================================ */
+
+:root.oled-black {
+  color-scheme: dark;
+  --_surface-app: #000000;
+  --_surface-primary: #000000;
+  --_surface-secondary: #000000;
+  --_surface-tertiary: #000000;
+  --_surface-elevated: #000000;
+  --_surface-hover: #0a0a0a;
+  --_surface-active: #141313;
+
+  --_border-primary: #1a1a1a;
+  --_border-secondary: rgba(26, 26, 26, 0.5);
+}

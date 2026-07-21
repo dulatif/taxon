@@ -1,0 +1,30 @@
+/* src/theme/theme-light.css
+   ============================================
+   LIGHT THEME
+   Applied when body has class "light-theme"
+   ============================================ */
+
+:root.light-theme {
+  color-scheme: light;
+  --_surface-app: #f4f4f5;
+  --_surface-primary: #ffffff;
+  --_surface-secondary: #fafafa;
+  --_surface-tertiary: #f0f0f0;
+  --_surface-elevated: #ffffff;
+  --_surface-hover: #e4e4e7;
+  --_surface-active: #d4d4d8;
+
+  --_border-primary: #e4e4e7;
+  --_border-secondary: rgba(228, 228, 231, 0.5);
+  --_border-hover: rgba(24, 24, 27, 0.2);
+  --_border-focus: rgba(24, 24, 27, 0.4);
+
+  --_text-primary: #18181b;
+  --_text-secondary: #3f3f46;
+  --_text-muted: #71717a;
+  --_text-inverted: #ffffff;
+
+  --_interactive-primary: #18181b;
+  --_interactive-primary-text: #ffffff;
+  --_interactive-hover: #27272a;
+}

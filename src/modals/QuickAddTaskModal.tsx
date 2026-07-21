@@ -1,5 +1,5 @@
 import { X } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 
 interface QuickAddTaskModalProps {
   isOpen: boolean;

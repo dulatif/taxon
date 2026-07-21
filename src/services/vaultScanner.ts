@@ -1,5 +1,5 @@
-import { readDir, readTextFile, writeTextFile, remove, exists } from '@tauri-apps/plugin-fs';
-import { VaultEntry } from '../types';
+import { exists, readDir, readTextFile, remove, writeTextFile } from '@tauri-apps/plugin-fs';
+import type { VaultEntry } from '../types';
 
 function joinPath(parent: string, child: string): string {
   const cleanedParent = parent.replace(/[/\\]+$/, '');
@@ -23,7 +23,7 @@ export async function scanVault(vaultPath: string): Promise<VaultEntry[]> {
           name: entry.name,
           path: fullPath,
           isDirectory: true,
-          children
+          children,
         });
       } else {
         const lower = entry.name.toLowerCase();
@@ -31,7 +31,7 @@ export async function scanVault(vaultPath: string): Promise<VaultEntry[]> {
           result.push({
             name: entry.name,
             path: fullPath,
-            isDirectory: false
+            isDirectory: false,
           });
         }
       }
@@ -81,13 +81,17 @@ export async function deleteDocument(filePath: string): Promise<void> {
 export async function createDocument(vaultPath: string, filename: string): Promise<string> {
   try {
     let cleanName = filename.trim();
-    if (!cleanName.toLowerCase().endsWith('.md') && !cleanName.toLowerCase().endsWith('.txt') && !cleanName.toLowerCase().endsWith('.markdown')) {
+    if (
+      !cleanName.toLowerCase().endsWith('.md') &&
+      !cleanName.toLowerCase().endsWith('.txt') &&
+      !cleanName.toLowerCase().endsWith('.markdown')
+    ) {
       cleanName += '.md';
     }
-    
+
     const targetPath = joinPath(vaultPath, cleanName);
     const fileExists = await exists(targetPath).catch(() => false);
-    
+
     if (fileExists) {
       throw new Error(`File "${cleanName}" already exists in this vault.`);
     }
@@ -97,8 +101,12 @@ export async function createDocument(vaultPath: string, filename: string): Promi
 
     await writeTextFile(targetPath, initialContent);
     return targetPath;
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Failed to create document "${filename}" inside "${vaultPath}":`, error);
-    throw new Error(error.message || `Could not create document "${filename}". Please check file system permissions.`);
+    throw new Error(
+      (error as Error).message ||
+        `Could not create document "${filename}". Please check file system permissions.`,
+      { cause: error },
+    );
   }
 }

@@ -1,4 +1,4 @@
-import { Task, Project } from '../types';
+import type { Project, Task } from '../types';
 
 // ---------------------------------------------------------------------------
 // Priority ordering & color maps
@@ -12,12 +12,13 @@ export const PRIORITY_ORDER: Record<Task['priority'], number> = {
 };
 
 /** Tailwind classes for priority badge background / text */
-export const PRIORITY_COLORS: Record<Task['priority'], { bg: string; text: string; dot: string }> = {
-  Critical: { bg: 'bg-red-500/20',    text: 'text-red-400',    dot: 'bg-red-500' },
-  High:     { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-500' },
-  Medium:   { bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-500' },
-  Low:      { bg: 'bg-zinc-700/40',   text: 'text-zinc-400',   dot: 'bg-zinc-500' },
-};
+export const PRIORITY_COLORS: Record<Task['priority'], { bg: string; text: string; dot: string }> =
+  {
+    Critical: { bg: 'bg-red-500/20', text: 'text-red-400', dot: 'bg-red-500' },
+    High: { bg: 'bg-orange-500/20', text: 'text-orange-400', dot: 'bg-orange-500' },
+    Medium: { bg: 'bg-yellow-500/20', text: 'text-yellow-400', dot: 'bg-yellow-500' },
+    Low: { bg: 'bg-zinc-700/40', text: 'text-zinc-400', dot: 'bg-zinc-500' },
+  };
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -114,7 +115,12 @@ export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
     if (filters.projectIds.length > 0) {
       // 'unassigned' is a sentinel value for tasks with no project
       if (filters.projectIds.includes('__unassigned__')) {
-        if (!task.projectId && !filters.projectIds.filter(id => id !== '__unassigned__').includes(task.projectId ?? '')) return false;
+        if (
+          !task.projectId &&
+          !filters.projectIds.filter((id) => id !== '__unassigned__').includes(task.projectId ?? '')
+        ) {
+          return false;
+        }
       } else {
         if (!task.projectId || !filters.projectIds.includes(task.projectId)) return false;
       }

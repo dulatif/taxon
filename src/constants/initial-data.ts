@@ -1,8 +1,8 @@
-import { Project, Task, DocumentFile, DailyActivity, SettingsState, Sprint } from './types';
+import type { DailyActivity, DocumentFile, Project, SettingsState, Sprint, Task } from '../types';
 
 // Helper to format date as YYYY-MM-DD
 function formatDate(d: Date): string {
-  return d.toISOString().split('T')[0];
+  return d.toISOString().substring(0, 10);
 }
 
 // Generate future date string
@@ -16,7 +16,8 @@ export const INITIAL_PROJECTS: Project[] = [
   {
     id: 'web-redesign',
     name: 'Website Redesign',
-    description: 'Overhaul of the corporate landing pages focusing on conversion rate optimization.',
+    description:
+      'Overhaul of the corporate landing pages focusing on conversion rate optimization.',
     category: 'Design',
     progress: 74,
     dueDate: futureDate(14),
@@ -32,7 +33,8 @@ export const INITIAL_PROJECTS: Project[] = [
   {
     id: 'marketing',
     name: 'Summer Brand Campaign',
-    description: 'Execute cross-channel marketing initiatives for Q3. Focus on technical audiences and developer tooling narrative.',
+    description:
+      'Execute cross-channel marketing initiatives for Q3. Focus on technical audiences and developer tooling narrative.',
     category: 'Marketing',
     progress: 68,
     dueDate: futureDate(14),
@@ -60,10 +62,8 @@ export const INITIAL_PROJECTS: Project[] = [
     category: 'Completed',
     progress: 100,
     dueDate: futureDate(0),
-  }
+  },
 ];
-
-
 
 export const INITIAL_SPRINTS: Sprint[] = [
   {
@@ -96,7 +96,7 @@ export const INITIAL_SPRINTS: Sprint[] = [
     endDate: futureDate(11),
     goal: 'Revamp typography system and fix alignment issues.',
     sortOrder: 0,
-  }
+  },
 ];
 
 export const INITIAL_TASKS: Task[] = [
@@ -141,7 +141,7 @@ export const INITIAL_TASKS: Task[] = [
     completed: true,
     duration: '45m',
     priority: 'Critical',
-    status: 'Done'
+    status: 'Done',
   },
   {
     id: 'm-2',
@@ -180,7 +180,7 @@ export const INITIAL_TASKS: Task[] = [
     completed: false,
     duration: '30m',
     priority: 'Medium',
-    status: 'To Do'
+    status: 'To Do',
   },
 
   // Kanban Tasks
@@ -245,7 +245,7 @@ export const INITIAL_TASKS: Task[] = [
     completed: true,
     duration: '1h',
     priority: 'Low',
-    status: 'Done'
+    status: 'Done',
   },
   {
     id: 'k-7',
@@ -254,8 +254,8 @@ export const INITIAL_TASKS: Task[] = [
     completed: true,
     duration: '2.5h',
     priority: 'High',
-    status: 'Done'
-  }
+    status: 'Done',
+  },
 ];
 
 export const INITIAL_FILES: DocumentFile[] = [
@@ -264,43 +264,43 @@ export const INITIAL_FILES: DocumentFile[] = [
     projectId: 'marketing',
     name: 'hero-banner-dark.svg',
     size: '2.4 MB',
-    type: 'image'
+    type: 'image',
   },
   {
     id: 'f-2',
     projectId: 'marketing',
     name: 'tracking-config.json',
     size: '12 KB',
-    type: 'code'
+    type: 'code',
   },
   {
     id: 'f-3',
     projectId: 'web-redesign',
     name: 'typography-system-spec.json',
     size: '4.2 KB',
-    type: 'code'
+    type: 'code',
   },
   {
     id: 'f-4',
     projectId: 'web-redesign',
     name: 'branding-guidelines.pdf',
     size: '15.4 MB',
-    type: 'pdf'
+    type: 'pdf',
   },
   {
     id: 'f-5',
     projectId: 'mobile-app',
     name: 'api-endpoints-map.json',
     size: '8.1 KB',
-    type: 'code'
+    type: 'code',
   },
   {
     id: 'f-6',
     projectId: 'mobile-app',
     name: 'figma-mockups-export.zip',
     size: '124 MB',
-    type: 'image'
-  }
+    type: 'image',
+  },
 ];
 
 // Generate daily activity for the current week with real dates
@@ -316,15 +316,19 @@ function generateWeeklyActivity(): DailyActivity[] {
     const diff = targetDay - dayOfWeek;
     const date = new Date(today);
     date.setDate(today.getDate() + diff);
-    
+
     const isToday = diff === 0;
     const isPast = diff < 0;
     const isFuture = diff > 0;
 
     result.push({
-      day: days[targetDay],
+      day: days[targetDay]!,
       date: formatDate(date),
-      hours: isFuture ? 0 : isPast ? Number((Math.random() * 4 + 0.5).toFixed(1)) : Number((Math.random() * 3 + 1).toFixed(1)),
+      hours: isFuture
+        ? 0
+        : isPast
+          ? Number((Math.random() * 4 + 0.5).toFixed(1))
+          : Number((Math.random() * 3 + 1).toFixed(1)),
       completions: isFuture ? 0 : isPast ? Math.floor(Math.random() * 6 + 1) : 0,
       isToday,
     });

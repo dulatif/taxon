@@ -1,21 +1,21 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { open as shellOpen } from '@tauri-apps/plugin-shell';
 import {
-  X,
-  Eye,
+  Check,
+  Clock,
   Edit3,
   ExternalLink,
-  Check,
-  Loader2,
-  FileText,
+  Eye,
   FileCode,
+  FileText,
+  Loader2,
   Save,
-  Clock
+  X,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { VaultEntry } from '../types';
-import { open as shellOpen } from '@tauri-apps/plugin-shell';
+import type { VaultEntry } from '../types';
 
 interface DocumentPanelProps {
   isOpen: boolean;
@@ -25,76 +25,100 @@ interface DocumentPanelProps {
   onReadContent: (path: string) => Promise<string>;
 }
 
-const markdownComponents: any = {
-  h1: ({ node, ...props }: any) => (
-    <h1 className="text-2xl font-black text-white mt-6 mb-4 border-b border-[#27272A] pb-2 tracking-tight font-sans" {...props} />
+const markdownComponents: Record<string, unknown> = {
+  h1: ({ node: _node, ...props }: Record<string, unknown>) => (
+    <h1
+      className="text-2xl font-black text-white mt-6 mb-4 border-b border-[#27272A] pb-2 tracking-tight font-sans"
+      {...props}
+    />
   ),
-  h2: ({ node, ...props }: any) => (
+  h2: ({ node: _node, ...props }: Record<string, unknown>) => (
     <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight font-sans" {...props} />
   ),
-  h3: ({ node, ...props }: any) => (
+  h3: ({ node: _node, ...props }: Record<string, unknown>) => (
     <h3 className="text-lg font-bold text-[#E4E4E7] mt-5 mb-2 font-sans" {...props} />
   ),
-  h4: ({ node, ...props }: any) => (
+  h4: ({ node: _node, ...props }: Record<string, unknown>) => (
     <h4 className="text-base font-semibold text-[#D4D4D8] mt-4 mb-2 font-mono" {...props} />
   ),
-  p: ({ node, ...props }: any) => (
+  p: ({ node: _node, ...props }: Record<string, unknown>) => (
     <p className="text-sm text-[#C4C7C8] leading-relaxed mb-4" {...props} />
   ),
-  a: ({ node, ...props }: any) => (
-    <a className="text-blue-400 hover:text-blue-300 underline underline-offset-4" target="_blank" rel="noopener noreferrer" {...props} />
+  a: ({ node: _node, ...props }: Record<string, unknown>) => (
+    <a
+      className="text-blue-400 hover:text-blue-300 underline underline-offset-4"
+      target="_blank"
+      rel="noopener noreferrer"
+      {...props}
+    />
   ),
-  ul: ({ node, ...props }: any) => (
+  ul: ({ node: _node, ...props }: Record<string, unknown>) => (
     <ul className="list-disc list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2" {...props} />
   ),
-  ol: ({ node, ...props }: any) => (
-    <ol className="list-decimal list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2" {...props} />
+  ol: ({ node: _node, ...props }: Record<string, unknown>) => (
+    <ol
+      className="list-decimal list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2"
+      {...props}
+    />
   ),
-  li: ({ node, ...props }: any) => (
+  li: ({ node: _node, ...props }: Record<string, unknown>) => (
     <li className="leading-relaxed" {...props} />
   ),
-  blockquote: ({ node, ...props }: any) => (
-    <blockquote className="border-l-4 border-blue-500/60 bg-[#141313] px-4 py-3 rounded-r-lg text-sm text-[#A1A1AA] italic mb-4" {...props} />
+  blockquote: ({ node: _node, ...props }: Record<string, unknown>) => (
+    <blockquote
+      className="border-l-4 border-blue-500/60 bg-[#141313] px-4 py-3 rounded-r-lg text-sm text-[#A1A1AA] italic mb-4"
+      {...props}
+    />
   ),
-  pre: ({ node, ...props }: any) => (
-    <pre className="bg-[#141313] border border-[#27272A] rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-cyan-300 shadow-inner" {...props} />
+  pre: ({ node: _node, ...props }: Record<string, unknown>) => (
+    <pre
+      className="bg-[#141313] border border-[#27272A] rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-cyan-300 shadow-inner"
+      {...props}
+    />
   ),
-  code: ({ node, className, children, ...props }: any) => {
-    const isBlock = /language-(\w+)/.exec(className || '') || String(children).includes('\n');
+  code: ({ node: _node, className, children, ...props }: Record<string, unknown>) => {
+    const isBlock =
+      /language-(\w+)/.exec((className as string) || '') || String(children).includes('\n');
     if (isBlock) {
       return (
-        <code className={className} {...props}>
-          {children}
+        <code className={className as string} {...props}>
+          {children as ReactNode}
         </code>
       );
     }
     return (
-      <code className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono" {...props}>
-        {children}
+      <code
+        className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono"
+        {...props}
+      >
+        {children as ReactNode}
       </code>
     );
   },
-  table: ({ node, ...props }: any) => (
+  table: ({ node: _node, ...props }: Record<string, unknown>) => (
     <div className="overflow-x-auto my-4 border border-[#27272A] rounded-xl">
       <table className="w-full text-left text-xs border-collapse" {...props} />
     </div>
   ),
-  thead: ({ node, ...props }: any) => (
-    <thead className="bg-[#141313] border-b border-[#27272A] text-white font-mono uppercase tracking-wider" {...props} />
+  thead: ({ node: _node, ...props }: Record<string, unknown>) => (
+    <thead
+      className="bg-[#141313] border-b border-[#27272A] text-white font-mono uppercase tracking-wider"
+      {...props}
+    />
   ),
-  tbody: ({ node, ...props }: any) => (
+  tbody: ({ node: _node, ...props }: Record<string, unknown>) => (
     <tbody className="divide-y divide-[#27272A]/50" {...props} />
   ),
-  tr: ({ node, ...props }: any) => (
+  tr: ({ node: _node, ...props }: Record<string, unknown>) => (
     <tr className="hover:bg-white/5 transition-colors" {...props} />
   ),
-  th: ({ node, ...props }: any) => (
+  th: ({ node: _node, ...props }: Record<string, unknown>) => (
     <th className="px-4 py-2.5 font-bold" {...props} />
   ),
-  td: ({ node, ...props }: any) => (
+  td: ({ node: _node, ...props }: Record<string, unknown>) => (
     <td className="px-4 py-2.5 text-[#C4C7C8]" {...props} />
   ),
-  hr: ({ node, ...props }: any) => (
+  hr: ({ node: _node, ...props }: Record<string, unknown>) => (
     <hr className="border-[#27272A] my-6" {...props} />
   ),
 };
@@ -104,7 +128,7 @@ export default function DocumentPanel({
   entry,
   onClose,
   onSaveContent,
-  onReadContent
+  onReadContent,
 }: DocumentPanelProps) {
   const [content, setContent] = useState<string>('');
   const [mode, setMode] = useState<'view' | 'edit'>('view');
@@ -113,17 +137,21 @@ export default function DocumentPanel({
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
 
   const contentRef = useRef(content);
-  contentRef.current = content;
   const entryRef = useRef(entry);
-  entryRef.current = entry;
+
+  useEffect(() => {
+    contentRef.current = content;
+    entryRef.current = entry;
+  });
 
   // Load document content whenever selected entry changes
   useEffect(() => {
     if (isOpen && entry) {
       let isMounted = true;
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsLoading(true);
       setSaveStatus('saved');
-      
+
       // Default to edit mode for .txt, view mode for .md
       if (entry.name.endsWith('.txt')) {
         setMode('edit');
@@ -223,10 +251,16 @@ export default function DocumentPanel({
                 )}
               </div>
               <div className="min-w-0">
-                <h3 className="text-sm font-bold text-white truncate tracking-tight font-sans" title={entry.name}>
+                <h3
+                  className="text-sm font-bold text-white truncate tracking-tight font-sans"
+                  title={entry.name}
+                >
                   {entry.name}
                 </h3>
-                <p className="text-[10px] text-[#8E9192] font-mono truncate mt-0.5" title={entry.path}>
+                <p
+                  className="text-[10px] text-[#8E9192] font-mono truncate mt-0.5"
+                  title={entry.path}
+                >
                   {entry.path}
                 </p>
               </div>
@@ -278,14 +312,13 @@ export default function DocumentPanel({
             {isLoading ? (
               <div className="h-full flex flex-col items-center justify-center text-[#8E9192] space-y-3">
                 <Loader2 className="w-6 h-6 animate-spin text-white" />
-                <span className="text-xs font-mono uppercase tracking-wider">Loading document...</span>
+                <span className="text-xs font-mono uppercase tracking-wider">
+                  Loading document...
+                </span>
               </div>
             ) : mode === 'view' ? (
               <div className="max-w-none">
-                <ReactMarkdown
-                  remarkPlugins={[remarkGfm]}
-                  components={markdownComponents}
-                >
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                   {content || '*Document is empty*'}
                 </ReactMarkdown>
               </div>
@@ -321,7 +354,10 @@ export default function DocumentPanel({
                 <span className="flex items-center gap-1.5 text-emerald-400">
                   <Check className="w-3.5 h-3.5" />
                   <span>
-                    Saved to vault {lastSavedAt ? `at ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}` : ''}
+                    Saved to vault{' '}
+                    {lastSavedAt
+                      ? `at ${lastSavedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}`
+                      : ''}
                   </span>
                 </span>
               )}

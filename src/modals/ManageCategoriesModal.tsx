@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
-import { X, Edit2, Trash2, Check, AlertTriangle, Plus } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
-import { Project, PROJECT_CATEGORIES, getCategoryStyle, CATEGORY_COLORS, getCategoryColorId } from '../types';
+import { AlertTriangle, Check, Edit2, Plus, Trash2, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useState } from 'react';
+import { CATEGORY_COLORS, PROJECT_CATEGORIES } from '../constants/categories';
+import { getCategoryColorId, getCategoryStyle } from '../services/category-color';
+import type { Project } from '../types';
 
 interface ManageCategoriesModalProps {
   isOpen: boolean;
@@ -37,7 +39,7 @@ export default function ManageCategoriesModal({
 
   // Gather all categories present or default
   const allCategories = Array.from(
-    new Set([...(categories || PROJECT_CATEGORIES), ...projects.map((p) => p.category)])
+    new Set([...(categories || PROJECT_CATEGORIES), ...projects.map((p) => p.category)]),
   ).filter(Boolean);
 
   const handleSaveRename = (oldCat: string) => {
@@ -167,10 +169,14 @@ export default function ManageCategoriesModal({
                               onClick={() => setNewTagColor(c.id)}
                               title={c.name}
                               className={`w-5 h-5 rounded-full ${c.dot} flex items-center justify-center transition-all cursor-pointer ${
-                                isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110 shadow-lg' : 'opacity-70 hover:opacity-100 hover:scale-105'
+                                isSelected
+                                  ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110 shadow-lg'
+                                  : 'opacity-70 hover:opacity-100 hover:scale-105'
                               }`}
                             >
-                              {isSelected && <Check className="w-3 h-3 text-white stroke-[3] drop-shadow" />}
+                              {isSelected && (
+                                <Check className="w-3 h-3 text-white stroke-[3] drop-shadow" />
+                              )}
                             </button>
                           );
                         })}
@@ -199,7 +205,9 @@ export default function ManageCategoriesModal({
                     {isEditing ? (
                       <div className="flex flex-col gap-3 flex-1 bg-[#141313] p-3 rounded-lg border border-white/20">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-[10px] text-[#8E9192] font-mono uppercase font-bold">Edit Tag Title</span>
+                          <span className="text-[10px] text-[#8E9192] font-mono uppercase font-bold">
+                            Edit Tag Title
+                          </span>
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleSaveRename(cat)}
@@ -241,10 +249,14 @@ export default function ManageCategoriesModal({
                                   onClick={() => setSelectedColorId(c.id)}
                                   title={c.name}
                                   className={`w-5 h-5 rounded-full ${c.dot} flex items-center justify-center transition-all cursor-pointer ${
-                                    isSelected ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110 shadow-lg' : 'opacity-70 hover:opacity-100 hover:scale-105'
+                                    isSelected
+                                      ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110 shadow-lg'
+                                      : 'opacity-70 hover:opacity-100 hover:scale-105'
                                   }`}
                                 >
-                                  {isSelected && <Check className="w-3 h-3 text-white stroke-[3] drop-shadow" />}
+                                  {isSelected && (
+                                    <Check className="w-3 h-3 text-white stroke-[3] drop-shadow" />
+                                  )}
                                 </button>
                               );
                             })}
@@ -253,8 +265,12 @@ export default function ManageCategoriesModal({
                       </div>
                     ) : (
                       <div className="flex items-center gap-2.5 flex-wrap">
-                        <span className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider leading-tight border ${style.border} ${style.bg} ${style.text}`}>
-                          <span className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${style.dot}`} />
+                        <span
+                          className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold font-mono uppercase tracking-wider leading-tight border ${style.border} ${style.bg} ${style.text}`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full shrink-0 self-center ${style.dot}`}
+                          />
                           <span className="self-center">{cat}</span>
                         </span>
                         <span className="text-[10px] text-[#8E9192] font-mono">

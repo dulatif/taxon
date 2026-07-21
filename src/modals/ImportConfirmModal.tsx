@@ -1,5 +1,5 @@
 import { Trash2 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 
 interface ImportConfirmModalProps {
   isOpen: boolean;
@@ -31,7 +31,8 @@ export default function ImportConfirmModal({
             </h3>
 
             <p className="text-xs text-[#8E9192] mb-6">
-              Importing data will <strong>permanently erase</strong> your current projects, tasks, and activity logs. This action cannot be undone.
+              Importing data will <strong>permanently erase</strong> your current projects, tasks,
+              and activity logs. This action cannot be undone.
             </p>
 
             <div className="flex gap-3 justify-center">
