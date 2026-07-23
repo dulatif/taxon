@@ -6,6 +6,7 @@ import {
   ClipboardCopy,
   DownloadCloud,
   FolderOpen,
+  GitCommit,
   History,
   Loader2,
   RefreshCw,
@@ -30,6 +31,7 @@ interface AgentSyncPanelProps {
   onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
   onCopyContextSnapshot?: () => Promise<{ success: boolean; activeCount: number }>;
   onOpenAuditLog?: () => void;
+  onInstallGitHook?: () => Promise<{ success: boolean; message: string }>;
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
@@ -49,6 +51,7 @@ export default function AgentSyncPanel({
   onCleanUpArchived,
   onCopyContextSnapshot,
   onOpenAuditLog,
+  onInstallGitHook,
   onSetVaultDirectory,
   onSelectFile,
   onRefreshEntries,
@@ -57,6 +60,8 @@ export default function AgentSyncPanel({
   const [isTreeExpanded, setIsTreeExpanded] = useState(true);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [isInstallingHook, setIsInstallingHook] = useState(false);
+  const [hookMessage, setHookMessage] = useState<string | null>(null);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
 
   // Time formatting helper
@@ -98,6 +103,21 @@ export default function AgentSyncPanel({
     if (res.success) {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
+    }
+  };
+
+  const handleInstallGitHook = async () => {
+    if (!onInstallGitHook) return;
+    setIsInstallingHook(true);
+    setHookMessage(null);
+    try {
+      const res = await onInstallGitHook();
+      setHookMessage(res.message);
+    } catch {
+      setHookMessage('Failed to install git hook.');
+    } finally {
+      setIsInstallingHook(false);
+      setTimeout(() => setHookMessage(null), 4000);
     }
   };
 
@@ -316,23 +336,49 @@ export default function AgentSyncPanel({
             )}
           </div>
 
-          <div className="pt-3 border-t border-border-primary/40">
-            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider block mb-2">
-              Maintenance
-            </span>
-            <button
-              type="button"
-              onClick={handleCleanUp}
-              disabled={isCleaningUp || isExporting || isScanning}
-              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-surface-primary border border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover text-xs font-mono rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isCleaningUp ? (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              ) : (
-                <Trash2 className="w-3.5 h-3.5 text-amber-400" />
+          <div className="pt-3 border-t border-border-primary/40 space-y-3">
+            <div>
+              <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider block mb-2">
+                Git Integration
+              </span>
+              <button
+                type="button"
+                onClick={handleInstallGitHook}
+                disabled={isInstallingHook || isExporting || isScanning}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-surface-primary border border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover text-xs font-mono rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isInstallingHook ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <GitCommit className="w-3.5 h-3.5 text-sky-400" />
+                )}
+                <span>Install Post-Commit Git Hook</span>
+              </button>
+              {hookMessage && (
+                <div className="mt-2 text-[10px] font-mono text-emerald-400 bg-emerald-500/10 p-2 rounded border border-emerald-500/20">
+                  {hookMessage}
+                </div>
               )}
-              <span>Clean Up Archived Files</span>
-            </button>
+            </div>
+
+            <div className="pt-2 border-t border-border-primary/20">
+              <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider block mb-2">
+                Maintenance
+              </span>
+              <button
+                type="button"
+                onClick={handleCleanUp}
+                disabled={isCleaningUp || isExporting || isScanning}
+                className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-surface-primary border border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover text-xs font-mono rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isCleaningUp ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="w-3.5 h-3.5 text-amber-400" />
+                )}
+                <span>Clean Up Archived Files</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

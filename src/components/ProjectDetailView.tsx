@@ -142,6 +142,7 @@ export default function ProjectDetailView({
     openAuditLog,
     closeAuditLog,
     exportChangelogFile,
+    installGitHook,
     refreshAgentEntries,
   } = useAgentSync(project, tasks, sprints || [], refreshAllData || (async () => {}));
 
@@ -462,6 +463,7 @@ export default function ProjectDetailView({
             onCleanUpArchived={cleanUpArchived}
             onCopyContextSnapshot={copyContextSnapshot}
             onOpenAuditLog={openAuditLog}
+            onInstallGitHook={installGitHook}
             onSetVaultDirectory={handleSetVaultDirectory}
             onSelectFile={(entry) => {
               setSelectedDocument(entry);
