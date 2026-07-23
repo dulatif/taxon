@@ -6,6 +6,7 @@ import {
   FolderOpen,
   Loader2,
   RefreshCw,
+  Trash2,
   UploadCloud,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -22,6 +23,7 @@ interface AgentSyncPanelProps {
   hasVaultPath: boolean;
   onExport: () => void;
   onImport: () => void;
+  onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
@@ -37,12 +39,15 @@ export default function AgentSyncPanel({
   hasVaultPath,
   onExport,
   onImport,
+  onCleanUpArchived,
   onSetVaultDirectory,
   onSelectFile,
   onRefreshEntries,
   error,
 }: AgentSyncPanelProps) {
   const [isTreeExpanded, setIsTreeExpanded] = useState(true);
+  const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
 
   // Time formatting helper
   const getRelativeTime = (isoString: string | null) => {
@@ -54,6 +59,27 @@ export default function AgentSyncPanel({
     const hours = Math.floor(diff / 60);
     if (hours < 24) return `${hours} hr${hours > 1 ? 's' : ''} ago`;
     return date.toLocaleDateString();
+  };
+
+  const handleCleanUp = async () => {
+    if (!onCleanUpArchived) return;
+    setIsCleaningUp(true);
+    setCleanupMessage(null);
+    try {
+      const res = await onCleanUpArchived();
+      if (res.movedCount > 0) {
+        setCleanupMessage(
+          `Moved ${res.movedCount} archived file${res.movedCount > 1 ? 's' : ''} to .taxon/archive/`,
+        );
+      } else {
+        setCleanupMessage('No archived files found to clean up.');
+      }
+    } catch {
+      setCleanupMessage('Failed to clean up archived files.');
+    } finally {
+      setIsCleaningUp(false);
+      setTimeout(() => setCleanupMessage(null), 4000);
+    }
   };
 
   return (
@@ -68,6 +94,12 @@ export default function AgentSyncPanel({
       {error && (
         <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-xs font-mono">
           {error}
+        </div>
+      )}
+
+      {cleanupMessage && (
+        <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-3 rounded-lg mb-4 text-xs font-mono">
+          {cleanupMessage}
         </div>
       )}
 
@@ -175,51 +207,74 @@ export default function AgentSyncPanel({
       )}
 
       {hasVaultPath && (
-        <div className="mt-4 pt-4 border-t border-border-primary/50">
-          <div className="flex justify-between items-center mb-2">
-            <button
-              onClick={() => setIsTreeExpanded(!isTreeExpanded)}
-              className="flex items-center gap-1.5 text-text-primary hover:text-white transition-colors cursor-pointer group"
-            >
-              {isTreeExpanded ? (
-                <ChevronDown className="w-3.5 h-3.5 text-text-muted group-hover:text-white" />
-              ) : (
-                <ChevronRight className="w-3.5 h-3.5 text-text-muted group-hover:text-white" />
-              )}
-              <span className="text-xs font-semibold font-mono tracking-tight flex items-center gap-1">
-                Agent Files
-                <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-primary border border-border-primary text-[9px] text-text-muted">
-                  {agentEntries.length} files
+        <div className="mt-4 pt-4 border-t border-border-primary/50 space-y-4">
+          <div>
+            <div className="flex justify-between items-center mb-2">
+              <button
+                type="button"
+                onClick={() => setIsTreeExpanded(!isTreeExpanded)}
+                className="flex items-center gap-1.5 text-text-primary hover:text-white transition-colors cursor-pointer group"
+              >
+                {isTreeExpanded ? (
+                  <ChevronDown className="w-3.5 h-3.5 text-text-muted group-hover:text-white" />
+                ) : (
+                  <ChevronRight className="w-3.5 h-3.5 text-text-muted group-hover:text-white" />
+                )}
+                <span className="text-xs font-semibold font-mono tracking-tight flex items-center gap-1">
+                  Agent Files
+                  <span className="ml-1 inline-flex items-center px-1.5 py-0.5 rounded-full bg-surface-primary border border-border-primary text-[9px] text-text-muted">
+                    {agentEntries.length} files
+                  </span>
                 </span>
-              </span>
-            </button>
-            <button
-              onClick={onRefreshEntries}
-              className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-primary rounded transition-colors cursor-pointer"
-              title="Refresh agent files"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-            </button>
+              </button>
+              <button
+                type="button"
+                onClick={onRefreshEntries}
+                className="p-1 text-text-muted hover:text-text-primary hover:bg-surface-primary rounded transition-colors cursor-pointer"
+                title="Refresh agent files"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {isTreeExpanded && agentEntries.length > 0 && (
+              <div className="mt-2 max-h-[300px] overflow-y-auto">
+                <VaultFileTree
+                  entries={agentEntries}
+                  vaultPath={project.vaultPath || ''}
+                  onSelectFile={onSelectFile}
+                  onChangeVaultPath={onSetVaultDirectory}
+                  onDeleteFile={() => {}}
+                  onCreateDocument={async () => {}}
+                  onRefresh={onRefreshEntries}
+                />
+              </div>
+            )}
+            {isTreeExpanded && agentEntries.length === 0 && (
+              <div className="py-4 text-center text-[10px] text-text-muted font-mono italic">
+                No files in .taxon/
+              </div>
+            )}
           </div>
 
-          {isTreeExpanded && agentEntries.length > 0 && (
-            <div className="mt-2 max-h-[300px] overflow-y-auto">
-              <VaultFileTree
-                entries={agentEntries}
-                vaultPath={project.vaultPath || ''}
-                onSelectFile={onSelectFile}
-                onChangeVaultPath={onSetVaultDirectory}
-                onDeleteFile={() => {}}
-                onCreateDocument={async () => {}}
-                onRefresh={onRefreshEntries}
-              />
-            </div>
-          )}
-          {isTreeExpanded && agentEntries.length === 0 && (
-            <div className="py-4 text-center text-[10px] text-text-muted font-mono italic">
-              No files in .taxon/
-            </div>
-          )}
+          <div className="pt-3 border-t border-border-primary/40">
+            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider block mb-2">
+              Maintenance
+            </span>
+            <button
+              type="button"
+              onClick={handleCleanUp}
+              disabled={isCleaningUp || isExporting || isScanning}
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 px-3 bg-surface-primary border border-border-primary text-text-muted hover:text-text-primary hover:bg-surface-hover text-xs font-mono rounded-lg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isCleaningUp ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Trash2 className="w-3.5 h-3.5 text-amber-400" />
+              )}
+              <span>Clean Up Archived Files</span>
+            </button>
+          </div>
         </div>
       )}
     </div>

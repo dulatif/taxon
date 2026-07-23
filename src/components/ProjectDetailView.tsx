@@ -133,6 +133,7 @@ export default function ProjectDetailView({
     scanForChanges,
     confirmImport,
     cancelImport,
+    cleanUpArchived,
     refreshAgentEntries,
   } = useAgentSync(project, tasks, sprints || [], refreshAllData || (async () => {}));
 
@@ -449,6 +450,7 @@ export default function ProjectDetailView({
             error={error}
             onExport={exportToAgent}
             onImport={handleScanForChanges}
+            onCleanUpArchived={cleanUpArchived}
             onSetVaultDirectory={handleSetVaultDirectory}
             onSelectFile={(entry) => {
               setSelectedDocument(entry);
