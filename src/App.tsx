@@ -280,6 +280,7 @@ export default function App() {
             onClose={() => setSelectedDetailTaskId(null)}
             onUpdateTask={handleUpdateTaskDetail}
             onDeleteTask={handleDeleteTask}
+            onStartFocus={focusTimer.startFocusSession}
           />
         </Render>
       }

@@ -1,4 +1,4 @@
-import { AlertTriangle, Maximize2, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Maximize2, Play, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import TaskPropertyGrid from '../../sections/TaskPropertyGrid/TaskPropertyGrid';
@@ -13,6 +13,7 @@ interface TaskDetailViewProps {
   onClose: () => void;
   onUpdateTask: (updatedTask: Task) => void;
   onDeleteTask: (taskId: string) => void;
+  onStartFocus?: (task: Task) => void;
 }
 
 export default function TaskDetailView({
@@ -22,6 +23,7 @@ export default function TaskDetailView({
   onClose,
   onUpdateTask,
   onDeleteTask,
+  onStartFocus,
 }: TaskDetailViewProps) {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
@@ -85,6 +87,19 @@ export default function TaskDetailView({
               </div>
 
               <div className="flex items-center gap-2">
+                {onStartFocus && (
+                  <button
+                    onClick={() => {
+                      onStartFocus(editedTask);
+                      onClose();
+                    }}
+                    title="Start Pomodoro"
+                    className="flex items-center gap-1.5 px-3 py-1.5 bg-interactive-primary text-interactive-primary-text font-bold text-xs rounded-lg hover:bg-interactive-primary/90 transition-colors shadow-sm cursor-pointer mr-1"
+                  >
+                    <Play className="w-3.5 h-3.5" fill="currentColor" />
+                    <span>Start Pomodoro</span>
+                  </button>
+                )}
                 <button
                   onClick={() => setIsDeleteConfirmOpen(true)}
                   title="Delete Task"
