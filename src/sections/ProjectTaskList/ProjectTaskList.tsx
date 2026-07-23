@@ -196,6 +196,38 @@ export default function ProjectTaskList({
                           {task.duration}
                         </span>
                       )}
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <div
+                          className="flex items-center justify-center shrink-0"
+                          title={`${task.subtasks.filter((st) => st.completed).length}/${task.subtasks.length} subtasks`}
+                        >
+                          <svg viewBox="0 0 36 36" className="w-4 h-4 -rotate-90">
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15.9155"
+                              fill="none"
+                              className="stroke-border-primary"
+                              strokeWidth="4.5"
+                            />
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15.9155"
+                              fill="none"
+                              className={
+                                task.subtasks.filter((st) => st.completed).length ===
+                                task.subtasks.length
+                                  ? 'stroke-green-400'
+                                  : 'stroke-interactive-primary'
+                              }
+                              strokeWidth="4.5"
+                              strokeDasharray={`${(task.subtasks.filter((st) => st.completed).length / task.subtasks.length) * 100}, 100`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
+                      )}
                       {!task.archived ? (
                         <button
                           onClick={(e) => {
