@@ -14,3 +14,16 @@ export interface AgentSyncState {
   exportedTaskCount: number;
   exportedSprintCount: number;
 }
+
+export interface AuditLogEntry {
+  id: string;
+  projectId: string;
+  timestamp: string;
+  action: 'task_created' | 'task_modified' | 'sprint_created' | 'sprint_modified';
+  entityType: 'task' | 'sprint';
+  entityId: string;
+  entityTitle: string;
+  changedFields?: string[];
+  diffSummary?: Record<string, { before: string; after: string }>;
+  commitHash?: string;
+}
