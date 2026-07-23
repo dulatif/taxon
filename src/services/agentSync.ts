@@ -385,12 +385,14 @@ export async function exportProjectToAgent(
   await mkdir(tasksPath, { recursive: true });
   await mkdir(sprintsPath, { recursive: true });
 
+  const projectTasks = tasks.filter((t) => t.projectId === project.id);
+  const projectSprints = sprints.filter((s) => s.projectId === project.id);
+
   await writeTextFile(
     joinPath(taxonPath, 'project.md'),
-    projectToMarkdown(project, tasks, sprints),
+    projectToMarkdown(project, projectTasks, projectSprints),
   );
 
-  const projectTasks = tasks.filter((t) => t.projectId === project.id);
   let exportedTaskCount = 0;
   for (const task of projectTasks) {
     const filePath = joinPath(tasksPath, taskFilename(task));
@@ -398,7 +400,6 @@ export async function exportProjectToAgent(
     exportedTaskCount++;
   }
 
-  const projectSprints = sprints.filter((s) => s.projectId === project.id);
   let exportedSprintCount = 0;
   for (const sprint of projectSprints) {
     const filePath = joinPath(sprintsPath, sprintFilename(sprint));
