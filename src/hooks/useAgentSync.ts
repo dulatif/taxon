@@ -4,6 +4,7 @@ import {
   cleanUpArchivedFiles,
   diffAgentChanges,
   exportProjectToAgent,
+  generateContextSnapshot,
   scanAgentDirectory,
 } from '../services/agentSync';
 import { getAgentSyncState, saveAgentSyncState } from '../services/database';
@@ -189,6 +190,30 @@ export function useAgentSync(
     }
   };
 
+  const copyContextSnapshot = async (): Promise<{ success: boolean; activeCount: number }> => {
+    if (!project) {
+      setError('No project selected.');
+      return { success: false, activeCount: 0 };
+    }
+
+    try {
+      const snapshot = generateContextSnapshot(project, tasks, sprints);
+      await navigator.clipboard.writeText(snapshot);
+      const activeCount = tasks.filter(
+        (t) =>
+          t.projectId === project.id &&
+          !t.archived &&
+          (t.status === 'In Progress' || t.status === 'To Do'),
+      ).length;
+      return { success: true, activeCount };
+    } catch (err: unknown) {
+      console.error('Failed to copy context snapshot to clipboard', err);
+      const errMsg = err instanceof Error ? err.message : 'Failed to copy to clipboard';
+      setError(errMsg);
+      return { success: false, activeCount: 0 };
+    }
+  };
+
   return {
     syncState,
     agentDiff,
@@ -202,6 +227,7 @@ export function useAgentSync(
     confirmImport,
     cancelImport,
     cleanUpArchived,
+    copyContextSnapshot,
     refreshAgentEntries,
   };
 }
