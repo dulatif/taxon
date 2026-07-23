@@ -5,10 +5,11 @@ import {
   cleanUpArchivedFiles,
   diffAgentChanges,
   exportProjectToAgent,
+  generateChangelog,
   scanAgentDirectory,
 } from '../services/agentSync';
 import type { Project, Sprint, Task } from '../types';
-import type { AgentDiffResult } from '../types/agent';
+import type { AgentDiffResult, AuditLogEntry } from '../types/agent';
 
 // Mock dependencies
 vi.mock('@tauri-apps/plugin-fs', () => {
@@ -57,6 +58,7 @@ vi.mock('../services/database', () => {
     saveSprint: vi.fn(async (sprint: Sprint) => {
       db.sprints[sprint.id] = sprint;
     }),
+    saveAuditLogEntry: vi.fn(async () => {}),
     _getMockDb: () => db,
     _resetMockDb: () => {
       db.tasks = {};
@@ -248,14 +250,48 @@ New task added by agent.
       warnings: [],
     } as AgentDiffResult;
 
-    const stats = await applyAgentChanges(diff);
+    const stats = await applyAgentChanges(diff, mockProject.id);
     expect(stats.tasksApplied).toBe(2);
     expect(stats.sprintsApplied).toBe(0);
+    expect(stats.auditEntries.length).toBe(2);
 
     const db = (dbMock as any)._getMockDb();
     expect(Object.keys(db.tasks).length).toBe(2);
     expect(db.tasks['task-0']).toBeDefined();
     expect(db.tasks['task-1'].priority).toBe('High');
+  });
+
+  it('should generate changelog markdown correctly', () => {
+    const entries: AuditLogEntry[] = [
+      {
+        id: 'aud-1',
+        projectId: 'proj-1',
+        timestamp: '2026-07-24T12:00:00.000Z',
+        action: 'task_created',
+        entityType: 'task',
+        entityId: 't1',
+        entityTitle: 'New Auth Task',
+      },
+      {
+        id: 'aud-2',
+        projectId: 'proj-1',
+        timestamp: '2026-07-24T12:05:00.000Z',
+        action: 'task_modified',
+        entityType: 'task',
+        entityId: 't2',
+        entityTitle: 'Database Migration',
+        changedFields: ['status', 'priority'],
+      },
+    ];
+
+    const changelog = generateChangelog(entries);
+
+    expect(changelog).toContain('# Taxon AI Agent Changelog');
+    expect(changelog).toContain('## 2026-07-24');
+    expect(changelog).toContain('🆕 **12:00:00** — task created: *New Auth Task*');
+    expect(changelog).toContain(
+      '✏️ **12:05:00** — task modified: *Database Migration* (status, priority)',
+    );
   });
 
   it('should skip archived tasks during export', async () => {

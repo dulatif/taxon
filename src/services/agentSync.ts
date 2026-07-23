@@ -1,7 +1,7 @@
 import { exists, mkdir, readDir, readTextFile, remove, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { Project, Sprint, SubTask, Task } from '../types';
-import type { AgentDiffResult, AgentSyncState } from '../types/agent';
-import { saveSprint, saveTask } from './database';
+import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
+import { saveAuditLogEntry, saveSprint, saveTask } from './database';
 
 // AGENT-102: YAML frontmatter parser
 function joinPath(parent: string, child: string): string {
@@ -590,31 +590,96 @@ export function diffAgentChanges(
 
 export async function applyAgentChanges(
   diff: AgentDiffResult,
-): Promise<{ tasksApplied: number; sprintsApplied: number }> {
+  projectId: string,
+): Promise<{ tasksApplied: number; sprintsApplied: number; auditEntries: AuditLogEntry[] }> {
   let tasksApplied = 0;
   let sprintsApplied = 0;
+  const auditEntries: AuditLogEntry[] = [];
+  const timestamp = new Date().toISOString();
 
   for (const task of diff.newTasks) {
     await saveTask(task);
+    const entry: AuditLogEntry = {
+      id: generateShortId(),
+      projectId,
+      timestamp,
+      action: 'task_created',
+      entityType: 'task',
+      entityId: task.id,
+      entityTitle: task.title,
+    };
+    await saveAuditLogEntry(entry);
+    auditEntries.push(entry);
     tasksApplied++;
   }
 
   for (const modified of diff.modifiedTasks) {
     await saveTask(modified.after);
+    const diffSummary: Record<string, { before: string; after: string }> = {};
+    for (const field of modified.changedFields) {
+      diffSummary[field] = {
+        before: String((modified.before as Record<string, unknown>)[field] ?? ''),
+        after: String((modified.after as Record<string, unknown>)[field] ?? ''),
+      };
+    }
+    const entry: AuditLogEntry = {
+      id: generateShortId(),
+      projectId,
+      timestamp,
+      action: 'task_modified',
+      entityType: 'task',
+      entityId: modified.after.id,
+      entityTitle: modified.after.title,
+      changedFields: modified.changedFields,
+      diffSummary,
+    };
+    await saveAuditLogEntry(entry);
+    auditEntries.push(entry);
     tasksApplied++;
   }
 
   for (const sprint of diff.newSprints) {
     await saveSprint(sprint);
+    const entry: AuditLogEntry = {
+      id: generateShortId(),
+      projectId,
+      timestamp,
+      action: 'sprint_created',
+      entityType: 'sprint',
+      entityId: sprint.id,
+      entityTitle: sprint.name,
+    };
+    await saveAuditLogEntry(entry);
+    auditEntries.push(entry);
     sprintsApplied++;
   }
 
   for (const modified of diff.modifiedSprints) {
     await saveSprint(modified.after);
+    const diffSummary: Record<string, { before: string; after: string }> = {};
+    for (const field of modified.changedFields) {
+      diffSummary[field] = {
+        before: String((modified.before as Record<string, unknown>)[field] ?? ''),
+        after: String((modified.after as Record<string, unknown>)[field] ?? ''),
+      };
+    }
+    const entry: AuditLogEntry = {
+      id: generateShortId(),
+      projectId,
+      timestamp,
+      action: 'sprint_modified',
+      entityType: 'sprint',
+      entityId: modified.after.id,
+      entityTitle: modified.after.name,
+      changedFields: modified.changedFields,
+      diffSummary,
+    };
+    await saveAuditLogEntry(entry);
+    auditEntries.push(entry);
     sprintsApplied++;
   }
 
-  return { tasksApplied, sprintsApplied };
+  return { tasksApplied, sprintsApplied, auditEntries };
 }
 
 export async function cleanUpArchivedFiles(
@@ -721,4 +786,38 @@ export function generateContextSnapshot(
   output += `\n---\nTasks: ${activeTasks.length} active\n`;
 
   return output;
+}
+
+export function generateChangelog(entries: AuditLogEntry[]): string {
+  let md = '# Taxon AI Agent Changelog\n\n';
+  md += '> Auto-generated from Taxon audit log. Do not edit manually.\n\n';
+
+  if (entries.length === 0) {
+    md += '*No recorded AI activity.*\n';
+    return md;
+  }
+
+  const byDate = new Map<string, AuditLogEntry[]>();
+  for (const entry of entries) {
+    const date = entry.timestamp.split('T')[0] || 'Unknown Date';
+    if (!byDate.has(date)) byDate.set(date, []);
+    byDate.get(date)!.push(entry);
+  }
+
+  for (const [date, dateEntries] of byDate) {
+    md += `## ${date}\n\n`;
+    for (const entry of dateEntries) {
+      const time = entry.timestamp.split('T')[1]?.substring(0, 8) || '';
+      const icon = entry.action.includes('created') ? '🆕' : '✏️';
+      const actionName = entry.action.replace('_', ' ');
+      md += `- ${icon} **${time}** — ${actionName}: *${entry.entityTitle}*`;
+      if (entry.changedFields && entry.changedFields.length > 0) {
+        md += ` (${entry.changedFields.join(', ')})`;
+      }
+      md += '\n';
+    }
+    md += '\n';
+  }
+
+  return md;
 }
