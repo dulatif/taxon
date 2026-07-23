@@ -4,6 +4,7 @@ import { AlertTriangle, Archive, ArrowLeft, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAgentSync } from '../hooks/useAgentSync';
 import AgentImportModal from '../modals/AgentImportModal';
+import AuditLogModal from '../modals/AuditLogModal';
 import SprintCompleteModal from '../modals/SprintCompleteModal';
 import AgentSyncPanel from '../sections/AgentSyncPanel';
 import ProjectFiles from '../sections/ProjectFiles/ProjectFiles';
@@ -125,6 +126,9 @@ export default function ProjectDetailView({
     syncState,
     agentDiff,
     agentEntries,
+    auditSummary,
+    auditLog,
+    isAuditModalOpen,
     isExporting,
     isImporting,
     isScanning,
@@ -135,6 +139,9 @@ export default function ProjectDetailView({
     cancelImport,
     cleanUpArchived,
     copyContextSnapshot,
+    openAuditLog,
+    closeAuditLog,
+    exportChangelogFile,
     refreshAgentEntries,
   } = useAgentSync(project, tasks, sprints || [], refreshAllData || (async () => {}));
 
@@ -448,11 +455,13 @@ export default function ProjectDetailView({
             isExporting={isExporting}
             isScanning={isScanning}
             hasVaultPath={!!project.vaultPath}
+            auditSummary={auditSummary}
             error={error}
             onExport={exportToAgent}
             onImport={handleScanForChanges}
             onCleanUpArchived={cleanUpArchived}
             onCopyContextSnapshot={copyContextSnapshot}
+            onOpenAuditLog={openAuditLog}
             onSetVaultDirectory={handleSetVaultDirectory}
             onSelectFile={(entry) => {
               setSelectedDocument(entry);
@@ -545,6 +554,14 @@ export default function ProjectDetailView({
         isImporting={isImporting}
         onConfirm={handleConfirmImport}
         onCancel={handleCancelImport}
+      />
+
+      <AuditLogModal
+        isOpen={isAuditModalOpen}
+        entries={auditLog}
+        projectName={project.name}
+        onClose={closeAuditLog}
+        onExportChangelog={exportChangelogFile}
       />
     </div>
   );

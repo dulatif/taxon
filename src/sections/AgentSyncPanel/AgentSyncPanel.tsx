@@ -6,6 +6,7 @@ import {
   ClipboardCopy,
   DownloadCloud,
   FolderOpen,
+  History,
   Loader2,
   RefreshCw,
   Trash2,
@@ -23,10 +24,12 @@ interface AgentSyncPanelProps {
   isExporting: boolean;
   isScanning: boolean;
   hasVaultPath: boolean;
+  auditSummary?: { count: number; lastTimestamp: string | null };
   onExport: () => void;
   onImport: () => void;
   onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
   onCopyContextSnapshot?: () => Promise<{ success: boolean; activeCount: number }>;
+  onOpenAuditLog?: () => void;
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
@@ -40,10 +43,12 @@ export default function AgentSyncPanel({
   isExporting,
   isScanning,
   hasVaultPath,
+  auditSummary,
   onExport,
   onImport,
   onCleanUpArchived,
   onCopyContextSnapshot,
+  onOpenAuditLog,
   onSetVaultDirectory,
   onSelectFile,
   onRefreshEntries,
@@ -239,6 +244,24 @@ export default function AgentSyncPanel({
               )}
             </button>
           </div>
+
+          {auditSummary && auditSummary.count > 0 && (
+            <div className="bg-surface-primary rounded-lg border border-border-primary/50 p-2.5 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-xs font-mono text-text-primary">
+                <History className="w-3.5 h-3.5 text-emerald-400" />
+                <span>
+                  {auditSummary.count} AI change{auditSummary.count > 1 ? 's' : ''} (24h)
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={onOpenAuditLog}
+                className="text-emerald-400 hover:underline text-xs font-mono font-semibold cursor-pointer"
+              >
+                View Log →
+              </button>
+            </div>
+          )}
         </div>
       )}
 
