@@ -125,8 +125,9 @@ describe('agentSync Integration (AGENT-206)', () => {
     expect(result.exportedSprintCount).toBe(1);
 
     const fs = (fsMock as any)._getMockFs();
-    expect(Object.keys(fs).length).toBe(9); // project.md, 5 tasks, 1 sprint, AGENTS.md, CLAUDE.md
+    expect(Object.keys(fs).length).toBe(10); // project.md, 5 tasks, 1 sprint, hooks/post-commit, AGENTS.md, CLAUDE.md
     expect(fs['/mock/vault/.taxon/project.md']).toContain('Integration Test Project');
+    expect(fs['/mock/vault/.taxon/hooks/post-commit']).toContain('Taxon Auto-Sync Git Hook');
   });
 
   it('should compute diff when a new task is added manually to fs', async () => {

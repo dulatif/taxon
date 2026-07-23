@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   generateContextSnapshot,
+  generatePostCommitHook,
   generateShortId,
   markdownToProject,
   markdownToSprint,
@@ -316,6 +317,18 @@ Hello World`);
     it('should return no active tasks message if no tasks are active', () => {
       const snapshot = generateContextSnapshot(project, [], []);
       expect(snapshot).toContain('*No active tasks*');
+    });
+  });
+
+  describe('Git Hooks (Feature 3)', () => {
+    it('should generate post-commit hook script with sqlite3 command', () => {
+      const hookScript = generatePostCommitHook();
+      expect(hookScript).toContain('#!/bin/bash');
+      expect(hookScript).toContain('# Taxon Auto-Sync Git Hook');
+      expect(hookScript).toContain("grep -oE 'TASK-[a-zA-Z0-9]{6}'");
+      expect(hookScript).toContain(
+        'sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 1, status = \'Done\' WHERE id LIKE \'%$SHORT_ID%\';"',
+      );
     });
   });
 });
