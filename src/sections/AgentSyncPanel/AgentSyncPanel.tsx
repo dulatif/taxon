@@ -1,7 +1,9 @@
 import {
   Bot,
+  Check,
   ChevronDown,
   ChevronRight,
+  ClipboardCopy,
   DownloadCloud,
   FolderOpen,
   Loader2,
@@ -24,6 +26,7 @@ interface AgentSyncPanelProps {
   onExport: () => void;
   onImport: () => void;
   onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
+  onCopyContextSnapshot?: () => Promise<{ success: boolean; activeCount: number }>;
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
@@ -40,6 +43,7 @@ export default function AgentSyncPanel({
   onExport,
   onImport,
   onCleanUpArchived,
+  onCopyContextSnapshot,
   onSetVaultDirectory,
   onSelectFile,
   onRefreshEntries,
@@ -47,6 +51,7 @@ export default function AgentSyncPanel({
 }: AgentSyncPanelProps) {
   const [isTreeExpanded, setIsTreeExpanded] = useState(true);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
 
   // Time formatting helper
@@ -79,6 +84,15 @@ export default function AgentSyncPanel({
     } finally {
       setIsCleaningUp(false);
       setTimeout(() => setCleanupMessage(null), 4000);
+    }
+  };
+
+  const handleCopySnapshot = async () => {
+    if (!onCopyContextSnapshot) return;
+    const res = await onCopyContextSnapshot();
+    if (res.success) {
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
     }
   };
 
@@ -154,8 +168,8 @@ export default function AgentSyncPanel({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="bg-surface-primary rounded-lg border border-border-primary/50 p-3">
-            <div className="flex items-center justify-between mb-3">
+          <div className="bg-surface-primary rounded-lg border border-border-primary/50 p-3 space-y-3">
+            <div className="flex items-center justify-between">
               <div className="flex flex-col">
                 <span className="text-[10px] text-text-muted font-mono uppercase tracking-widest">
                   Status
@@ -202,6 +216,28 @@ export default function AgentSyncPanel({
                 Import
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={handleCopySnapshot}
+              className={`w-full flex items-center justify-center gap-1.5 py-2 px-3 border text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+                isCopied
+                  ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400'
+                  : 'bg-surface-secondary border-border-primary text-text-primary hover:bg-surface-hover'
+              }`}
+            >
+              {isCopied ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Copied! ✓</span>
+                </>
+              ) : (
+                <>
+                  <ClipboardCopy className="w-3.5 h-3.5 text-sky-400" />
+                  <span>Copy Sprint Context</span>
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
