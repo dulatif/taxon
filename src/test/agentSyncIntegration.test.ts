@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   applyAgentChanges,
+  cleanUpArchivedFiles,
   diffAgentChanges,
   exportProjectToAgent,
   scanAgentDirectory,
@@ -255,5 +256,76 @@ New task added by agent.
     expect(Object.keys(db.tasks).length).toBe(2);
     expect(db.tasks['task-0']).toBeDefined();
     expect(db.tasks['task-1'].priority).toBe('High');
+  });
+
+  it('should skip archived tasks during export', async () => {
+    const tasksWithArchived = [
+      ...mockTasks,
+      {
+        id: 'archived-task',
+        projectId: 'proj-1',
+        title: 'Archived Task',
+        description: '',
+        priority: 'Low',
+        status: 'Done',
+        completed: true,
+        labels: [],
+        subtasks: [],
+        timeSpent: 0,
+        sortOrder: 0,
+        archived: true,
+        duration: '',
+      } as Task,
+    ];
+
+    const result = await exportProjectToAgent(
+      mockProject,
+      tasksWithArchived,
+      mockSprints,
+      vaultPath,
+    );
+
+    expect(result.exportedTaskCount).toBe(5); // archived task skipped
+    const fs = (fsMock as any)._getMockFs();
+    expect(Object.keys(fs).some((p) => p.includes('archived-task'))).toBe(false);
+  });
+
+  it('should move archived task files to .taxon/archive directory', async () => {
+    // Write 2 active tasks and 1 archived task file into mock fs
+    const activeTaskMd = `---
+id: task-active
+title: Active Task
+priority: Medium
+status: To Do
+archived: false
+---
+## Description
+Active task.
+`;
+    const archivedTaskMd = `---
+id: task-archived
+title: Archived Task
+priority: Low
+status: Done
+archived: true
+---
+## Description
+Archived task.
+`;
+    await fsMock.writeTextFile('/mock/vault/.taxon/tasks/TASK-task-a-active-task.md', activeTaskMd);
+    await fsMock.writeTextFile(
+      '/mock/vault/.taxon/tasks/TASK-task-b-archived-task.md',
+      archivedTaskMd,
+    );
+
+    const { movedCount, errors } = await cleanUpArchivedFiles(vaultPath);
+
+    expect(movedCount).toBe(1);
+    expect(errors.length).toBe(0);
+
+    const fs = (fsMock as any)._getMockFs();
+    expect(fs['/mock/vault/.taxon/tasks/TASK-task-a-active-task.md']).toBeDefined();
+    expect(fs['/mock/vault/.taxon/tasks/TASK-task-b-archived-task.md']).toBeUndefined();
+    expect(fs['/mock/vault/.taxon/archive/TASK-task-b-archived-task.md']).toBeDefined();
   });
 });
