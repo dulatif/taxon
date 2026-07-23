@@ -158,7 +158,19 @@ export default function ProjectTaskList({
                         )}
                       </button>
 
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex items-start gap-2">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 mt-[6px] ${
+                            task.priority === 'Critical'
+                              ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]'
+                              : task.priority === 'High'
+                                ? 'bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.5)]'
+                                : task.priority === 'Medium'
+                                  ? 'bg-blue-400'
+                                  : 'bg-gray-500/50'
+                          }`}
+                          title={`Priority: ${task.priority || 'None'}`}
+                        />
                         <p
                           className={`text-xs font-semibold leading-relaxed ${
                             task.completed ? 'line-through text-text-muted' : 'text-text-primary'
