@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  generateContextSnapshot,
   generateShortId,
   markdownToProject,
   markdownToSprint,
@@ -236,6 +237,85 @@ Hello World`);
 
       expect(t2Index).toBeLessThan(t1Index);
       expect(t1Index).toBeLessThan(t3Index);
+    });
+  });
+
+  describe('Context Snapshot (Feature 1)', () => {
+    const project: Project = {
+      id: 'proj-1',
+      name: 'Taxon Project',
+      description: '',
+      category: 'Dev',
+      progress: 0,
+    };
+
+    it('should generate snapshot with active tasks grouped by sprint and backlog', () => {
+      const sprints: Sprint[] = [
+        {
+          id: 'sprint-1',
+          name: 'Sprint 1',
+          projectId: 'proj-1',
+          status: 'Active',
+          startDate: '',
+          endDate: '',
+          goal: '',
+        },
+      ];
+
+      const tasks: Task[] = [
+        {
+          id: 't1',
+          projectId: 'proj-1',
+          title: 'In Progress Task',
+          status: 'In Progress',
+          priority: 'High',
+          sprintId: 'sprint-1',
+          archived: false,
+        } as Task,
+        {
+          id: 't2',
+          projectId: 'proj-1',
+          title: 'To Do Backlog Task',
+          status: 'To Do',
+          priority: 'Critical',
+          sprintId: undefined,
+          archived: false,
+        } as Task,
+        {
+          id: 't3',
+          projectId: 'proj-1',
+          title: 'Done Task',
+          status: 'Done',
+          priority: 'Low',
+          sprintId: 'sprint-1',
+          archived: false,
+        } as Task, // Excluded because status is Done
+        {
+          id: 't4',
+          projectId: 'proj-1',
+          title: 'Archived Task',
+          status: 'To Do',
+          priority: 'Medium',
+          sprintId: 'sprint-1',
+          archived: true,
+        } as Task, // Excluded because archived: true
+      ];
+
+      const snapshot = generateContextSnapshot(project, tasks, sprints);
+
+      expect(snapshot).toContain('## Project: Taxon Project');
+      expect(snapshot).toContain('### Sprint: Sprint 1 (Active)');
+      expect(snapshot).toContain('- [High] In Progress Task');
+      expect(snapshot).toContain('### Backlog');
+      expect(snapshot).toContain('- [Critical] To Do Backlog Task');
+      expect(snapshot).not.toContain('Done Task');
+      expect(snapshot).not.toContain('Archived Task');
+      expect(snapshot).toContain('Tasks: 2 active');
+    });
+
+    it('should return no active tasks message if no tasks are active', () => {
+      const snapshot = generateContextSnapshot(project, [], []);
+      expect(snapshot).toContain('*No active tasks*');
     });
   });
 });
