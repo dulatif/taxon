@@ -385,7 +385,7 @@ export async function exportProjectToAgent(
   await mkdir(tasksPath, { recursive: true });
   await mkdir(sprintsPath, { recursive: true });
 
-  const projectTasks = tasks.filter((t) => t.projectId === project.id);
+  const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
   const projectSprints = sprints.filter((s) => s.projectId === project.id);
 
   await writeTextFile(
@@ -615,4 +615,44 @@ export async function applyAgentChanges(
   }
 
   return { tasksApplied, sprintsApplied };
+}
+
+export async function cleanUpArchivedFiles(
+  vaultPath: string,
+): Promise<{ movedCount: number; errors: string[] }> {
+  const taxonPath = joinPath(vaultPath, '.taxon');
+  const tasksPath = joinPath(taxonPath, 'tasks');
+  const archivePath = joinPath(taxonPath, 'archive');
+
+  const errors: string[] = [];
+  let movedCount = 0;
+
+  const tasksExists = await exists(tasksPath).catch(() => false);
+  if (!tasksExists) {
+    return { movedCount, errors };
+  }
+
+  await mkdir(archivePath, { recursive: true });
+
+  const entries = await readDir(tasksPath).catch(() => []);
+  for (const entry of entries) {
+    if (entry.isDirectory || !entry.name.toLowerCase().endsWith('.md')) continue;
+
+    try {
+      const filePath = joinPath(tasksPath, entry.name);
+      const content = await readTextFile(filePath);
+      const { data } = parseFrontmatter(content);
+
+      if (data.archived === true) {
+        const destPath = joinPath(archivePath, entry.name);
+        await writeTextFile(destPath, content);
+        await remove(filePath);
+        movedCount++;
+      }
+    } catch (err) {
+      errors.push(`Failed to process ${entry.name}: ${err}`);
+    }
+  }
+
+  return { movedCount, errors };
 }
