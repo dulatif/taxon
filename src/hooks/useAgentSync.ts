@@ -1,16 +1,23 @@
+import { writeTextFile } from '@tauri-apps/plugin-fs';
 import { useCallback, useEffect, useState } from 'react';
 import {
   applyAgentChanges,
   cleanUpArchivedFiles,
   diffAgentChanges,
   exportProjectToAgent,
+  generateChangelog,
   generateContextSnapshot,
   scanAgentDirectory,
 } from '../services/agentSync';
-import { getAgentSyncState, saveAgentSyncState } from '../services/database';
+import {
+  getAgentSyncState,
+  getAuditLog,
+  getRecentAuditSummary,
+  saveAgentSyncState,
+} from '../services/database';
 import { scanAgentVault } from '../services/vaultScanner';
 import type { Project, Sprint, Task, VaultEntry } from '../types';
-import type { AgentDiffResult, AgentSyncState } from '../types/agent';
+import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
 
 export function useAgentSync(
   project: Project | null,
@@ -26,22 +33,44 @@ export function useAgentSync(
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load sync state from DB on mount / project change
+  const [auditSummary, setAuditSummary] = useState<{
+    count: number;
+    lastTimestamp: string | null;
+  }>({ count: 0, lastTimestamp: null });
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+  const refreshAuditSummary = useCallback(async () => {
+    if (!project) {
+      setAuditSummary({ count: 0, lastTimestamp: null });
+      return;
+    }
+    try {
+      const summary = await getRecentAuditSummary(project.id);
+      setAuditSummary(summary);
+    } catch (err) {
+      console.error('Failed to load audit summary', err);
+    }
+  }, [project]);
+
+  // Load sync state and audit summary on mount / project change
   useEffect(() => {
     async function loadSyncState() {
       if (!project) {
         setSyncState(null);
+        setAuditSummary({ count: 0, lastTimestamp: null });
         return;
       }
       try {
         const state = await getAgentSyncState(project.id);
         setSyncState(state);
+        await refreshAuditSummary();
       } catch (err) {
         console.error('Failed to load agent sync state', err);
       }
     }
     loadSyncState();
-  }, [project]);
+  }, [project, refreshAuditSummary]);
 
   const refreshAgentEntries = useCallback(async () => {
     if (!project?.vaultPath) {
@@ -135,7 +164,7 @@ export function useAgentSync(
     setError(null);
 
     try {
-      await applyAgentChanges(agentDiff);
+      const result = await applyAgentChanges(agentDiff, project.id);
 
       const newState: AgentSyncState = syncState
         ? { ...syncState }
@@ -150,6 +179,18 @@ export function useAgentSync(
       await saveAgentSyncState(project.id, newState);
       setSyncState(newState);
 
+      // Write CHANGELOG.md if vaultPath is available
+      if (project.vaultPath && result.auditEntries.length > 0) {
+        try {
+          const allEntries = await getAuditLog(project.id, 200);
+          const changelogContent = generateChangelog(allEntries);
+          await writeTextFile(`${project.vaultPath}/.taxon/CHANGELOG.md`, changelogContent);
+        } catch (err) {
+          console.error('Failed to write CHANGELOG.md', err);
+        }
+      }
+
+      await refreshAuditSummary();
       await refreshAllData();
       await refreshAgentEntries();
 
@@ -214,10 +255,41 @@ export function useAgentSync(
     }
   };
 
+  const openAuditLog = async () => {
+    if (!project) return;
+    try {
+      const entries = await getAuditLog(project.id, 100);
+      setAuditLog(entries);
+      setIsAuditModalOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch audit log', err);
+    }
+  };
+
+  const closeAuditLog = () => {
+    setIsAuditModalOpen(false);
+  };
+
+  const exportChangelogFile = async () => {
+    if (!project?.vaultPath) return false;
+    try {
+      const entries = await getAuditLog(project.id, 200);
+      const content = generateChangelog(entries);
+      await writeTextFile(`${project.vaultPath}/.taxon/CHANGELOG.md`, content);
+      return true;
+    } catch (err) {
+      console.error('Failed to export CHANGELOG.md', err);
+      return false;
+    }
+  };
+
   return {
     syncState,
     agentDiff,
     agentEntries,
+    auditSummary,
+    auditLog,
+    isAuditModalOpen,
     isExporting,
     isImporting,
     isScanning,
@@ -228,6 +300,10 @@ export function useAgentSync(
     cancelImport,
     cleanUpArchived,
     copyContextSnapshot,
+    openAuditLog,
+    closeAuditLog,
+    exportChangelogFile,
+    refreshAuditSummary,
     refreshAgentEntries,
   };
 }

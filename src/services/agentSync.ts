@@ -618,8 +618,8 @@ export async function applyAgentChanges(
     const diffSummary: Record<string, { before: string; after: string }> = {};
     for (const field of modified.changedFields) {
       diffSummary[field] = {
-        before: String((modified.before as Record<string, unknown>)[field] ?? ''),
-        after: String((modified.after as Record<string, unknown>)[field] ?? ''),
+        before: String((modified.before as unknown as Record<string, unknown>)[field] ?? ''),
+        after: String((modified.after as unknown as Record<string, unknown>)[field] ?? ''),
       };
     }
     const entry: AuditLogEntry = {
@@ -659,8 +659,8 @@ export async function applyAgentChanges(
     const diffSummary: Record<string, { before: string; after: string }> = {};
     for (const field of modified.changedFields) {
       diffSummary[field] = {
-        before: String((modified.before as Record<string, unknown>)[field] ?? ''),
-        after: String((modified.after as Record<string, unknown>)[field] ?? ''),
+        before: String((modified.before as unknown as Record<string, unknown>)[field] ?? ''),
+        after: String((modified.after as unknown as Record<string, unknown>)[field] ?? ''),
       };
     }
     const entry: AuditLogEntry = {
