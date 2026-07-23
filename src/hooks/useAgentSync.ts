@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   applyAgentChanges,
+  cleanUpArchivedFiles,
   diffAgentChanges,
   exportProjectToAgent,
   scanAgentDirectory,
@@ -165,6 +166,29 @@ export function useAgentSync(
     setError(null);
   };
 
+  const cleanUpArchived = async () => {
+    if (!project?.vaultPath) {
+      setError('Project vault path is not set.');
+      return { movedCount: 0, errors: ['Project vault path is not set.'] };
+    }
+
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      const result = await cleanUpArchivedFiles(project.vaultPath);
+      await refreshAgentEntries();
+      return result;
+    } catch (err: unknown) {
+      console.error('Failed to clean up archived files', err);
+      const errMsg = err instanceof Error ? err.message : 'Unknown error during cleanup';
+      setError(errMsg);
+      return { movedCount: 0, errors: [errMsg] };
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return {
     syncState,
     agentDiff,
@@ -177,6 +201,7 @@ export function useAgentSync(
     scanForChanges,
     confirmImport,
     cancelImport,
+    cleanUpArchived,
     refreshAgentEntries,
   };
 }
