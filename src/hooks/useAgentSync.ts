@@ -1,4 +1,5 @@
-import { writeTextFile } from '@tauri-apps/plugin-fs';
+import { exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { Command } from '@tauri-apps/plugin-shell';
 import { useCallback, useEffect, useState } from 'react';
 import {
   applyAgentChanges,
@@ -7,6 +8,7 @@ import {
   exportProjectToAgent,
   generateChangelog,
   generateContextSnapshot,
+  generatePostCommitHook,
   scanAgentDirectory,
 } from '../services/agentSync';
 import {
@@ -283,6 +285,50 @@ export function useAgentSync(
     }
   };
 
+  const installGitHook = async (): Promise<{ success: boolean; message: string }> => {
+    if (!project?.vaultPath) {
+      return { success: false, message: 'Project vault path is not set.' };
+    }
+
+    try {
+      const taxonHookPath = `${project.vaultPath}/.taxon/hooks/post-commit`;
+      const gitHooksDir = `${project.vaultPath}/.git/hooks`;
+      const targetHookPath = `${gitHooksDir}/post-commit`;
+
+      const hookExists = await exists(taxonHookPath).catch(() => false);
+      let hookContent = '';
+
+      if (hookExists) {
+        hookContent = await readTextFile(taxonHookPath);
+      } else {
+        hookContent = generatePostCommitHook();
+      }
+
+      const gitDirExists = await exists(gitHooksDir).catch(() => false);
+      if (!gitDirExists) {
+        await mkdir(gitHooksDir, { recursive: true }).catch(() => {});
+      }
+
+      await writeTextFile(targetHookPath, hookContent);
+
+      try {
+        const cmd = Command.create('chmod', ['+x', targetHookPath]);
+        await cmd.execute();
+      } catch {
+        // Ignore if chmod command is not allowed in permissions manifest
+      }
+
+      return {
+        success: true,
+        message: `Installed post-commit hook to ${targetHookPath}`,
+      };
+    } catch (err: unknown) {
+      console.error('Failed to install git hook', err);
+      const errMsg = err instanceof Error ? err.message : 'Failed to install git hook';
+      return { success: false, message: errMsg };
+    }
+  };
+
   return {
     syncState,
     agentDiff,
@@ -303,6 +349,7 @@ export function useAgentSync(
     openAuditLog,
     closeAuditLog,
     exportChangelogFile,
+    installGitHook,
     refreshAuditSummary,
     refreshAgentEntries,
   };
