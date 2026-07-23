@@ -34,9 +34,6 @@ export default function TreeToolbar({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-text-primary tracking-tight">
-                Project Vault
-              </span>
               <span
                 className="text-[11px] font-mono text-text-muted bg-surface-secondary px-2 py-0.5 rounded-md border border-border-primary truncate block max-w-[200px] sm:max-w-xs md:max-w-sm"
                 title={vaultPath}

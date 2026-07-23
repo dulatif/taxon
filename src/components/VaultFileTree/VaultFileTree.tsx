@@ -105,7 +105,7 @@ export default function VaultFileTree({
       </div>
 
       {/* Tree View Canvas */}
-      <div className="bg-black/40 rounded-lg p-2 border border-border-primary/40 min-h-[140px] max-h-[380px] overflow-y-auto scrollbar-thin">
+      <div className="bg-surface-secondary rounded-lg p-2 border border-border-primary/40 min-h-[140px] max-h-[380px] overflow-y-auto scrollbar-thin shadow-inner">
         {filteredEntries.length === 0 ? (
           <div className="py-10 text-center text-xs text-text-muted font-mono italic">
             {searchQuery

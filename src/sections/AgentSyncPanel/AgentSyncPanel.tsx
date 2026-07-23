@@ -203,7 +203,7 @@ export default function AgentSyncPanel({
           </div>
 
           {isTreeExpanded && agentEntries.length > 0 && (
-            <div className="pl-5 border-l border-border-primary/30 ml-1.5 max-h-[300px] overflow-y-auto">
+            <div className="mt-2 max-h-[300px] overflow-y-auto">
               <VaultFileTree
                 entries={agentEntries}
                 vaultPath={project.vaultPath || ''}

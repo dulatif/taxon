@@ -45,9 +45,13 @@ export default function TaskDetailView({
   if (!task || !editedTask) return null;
 
   const handleFieldChange = <K extends keyof Task>(field: K, value: Task[K]) => {
-    const updated = { ...editedTask, [field]: value };
-    setEditedTask(updated);
-    onUpdateTask(updated);
+    setEditedTask((prev) => {
+      if (!prev) return prev;
+      const updated = { ...prev, [field]: value };
+      // Call onUpdateTask with the newly computed object
+      onUpdateTask(updated);
+      return updated;
+    });
   };
 
   return (
@@ -59,7 +63,7 @@ export default function TaskDetailView({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 transition-opacity"
+            className="fixed inset-0 bg-black/40 backdrop-blur-[2px] z-50 transition-opacity"
           />
 
           <motion.div
@@ -67,12 +71,12 @@ export default function TaskDetailView({
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 pt-10 w-[420px] bg-surface-primary border-l border-border-primary shadow-2xl z-50 flex flex-col"
+            className="fixed inset-y-0 right-0 pt-10 w-[500px] bg-surface-primary border-l border-border-primary shadow-2xl z-[60] flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary shrink-0 bg-surface-primary">
               <div className="flex items-center gap-3">
-                <span className="text-sm font-bold text-text-primary tracking-wide">
+                <span className="text-sm font-bold text-text-primary tracking-wide whitespace-nowrap">
                   Task Details
                 </span>
                 <span
