@@ -348,6 +348,11 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - List task filenames under \`## Tasks\`
 - Set each task's \`sprintId\` in its frontmatter to match this sprint's \`id\`.
 
+### Git Commit Task References
+- Reference tasks in git commits using \`(TASK-{6-char-id})\` or \`TASK-{6-char-id}\` in commit messages.
+- Example: \`feat(auth): implement login flow (TASK-a1b2c3)\`
+- Installing the post-commit git hook (\`.taxon/hooks/post-commit\`) will automatically complete the task in Taxon upon commit!
+
 ### Common Mistakes / Rules
 - **DO NOT** delete task files to delete tasks. Instead, mark unwanted tasks as \`archived: true\`.
 - **DO NOT** modify \`project.md\` (it is treated as read-only context).
@@ -355,6 +360,40 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Subtasks must strictly use the format \`- [ ] Title\` or \`- [x] Title\`.
 - IDs must be unique across all tasks/sprints in the entire database, so use truly random alphanumeric strings.
 - Version: 1.0.0
+`;
+}
+
+export function generatePostCommitHook(): string {
+  return `#!/bin/bash
+# Taxon Auto-Sync Git Hook
+# Automatically completes tasks referenced in commit messages like (TASK-abc123)
+
+COMMIT_MSG_FILE=\${1}
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE" 2>/dev/null || git log -1 --pretty=%B)
+
+# Extract task IDs matching (TASK-XXXXXX) or TASK-XXXXXX
+TASK_IDS=$(echo "$COMMIT_MSG" | grep -oE 'TASK-[a-zA-Z0-9]{6}' | sort -u)
+
+if [ -z "$TASK_IDS" ]; then
+  exit 0
+fi
+
+# Locate Taxon SQLite database
+DB_PATH=""
+if [ -f "$HOME/.config/com.taxon.app/taxon.db" ]; then
+  DB_PATH="$HOME/.config/com.taxon.app/taxon.db"
+elif [ -f "$HOME/Library/Application Support/com.taxon.app/taxon.db" ]; then
+  DB_PATH="$HOME/Library/Application Support/com.taxon.app/taxon.db"
+fi
+
+if [ -z "$DB_PATH" ] || ! command -v sqlite3 &> /dev/null; then
+  exit 0
+fi
+
+for FULL_ID in $TASK_IDS; do
+  SHORT_ID=\${FULL_ID#TASK-}
+  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 1, status = 'Done' WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
+done
 `;
 }
 
@@ -406,6 +445,10 @@ export async function exportProjectToAgent(
     await writeTextFile(filePath, sprintToMarkdown(sprint, projectTasks));
     exportedSprintCount++;
   }
+
+  const hooksPath = joinPath(taxonPath, 'hooks');
+  await mkdir(hooksPath, { recursive: true });
+  await writeTextFile(joinPath(hooksPath, 'post-commit'), generatePostCommitHook());
 
   await writeTextFile(joinPath(vaultPath, 'AGENTS.md'), generateAgentInstructions(project));
   await writeTextFile(joinPath(vaultPath, 'CLAUDE.md'), generateClaudeMdPointer());
