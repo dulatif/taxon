@@ -7,7 +7,7 @@ import type {
   Sprint,
   Task,
 } from '../types';
-import type { AgentSyncState } from '../types/agent';
+import type { AgentSyncState, AuditLogEntry } from '../types/agent';
 
 let dbPromise: Promise<Database> | null = null;
 
@@ -99,14 +99,28 @@ export const initDb = (): Promise<Database> => {
       `)
         .catch(() => {});
 
-      await database
-        .execute(`
+      await database.execute(`
         CREATE TABLE IF NOT EXISTS agent_sync (
             projectId TEXT PRIMARY KEY,
             lastExportedAt TEXT,
             lastImportedAt TEXT,
             exportedTaskCount INTEGER,
             exportedSprintCount INTEGER
+        );
+      `);
+      await database
+        .execute(`
+        CREATE TABLE IF NOT EXISTS agent_audit_log (
+            id TEXT PRIMARY KEY,
+            projectId TEXT NOT NULL,
+            timestamp TEXT NOT NULL,
+            action TEXT NOT NULL,
+            entityType TEXT NOT NULL,
+            entityId TEXT NOT NULL,
+            entityTitle TEXT NOT NULL,
+            changedFields TEXT,
+            diffSummary TEXT,
+            commitHash TEXT
         );
       `)
         .catch(() => {});
@@ -476,4 +490,54 @@ export const saveAgentSyncState = async (projectId: string, state: AgentSyncStat
       state.exportedSprintCount ?? 0,
     ],
   );
+};
+
+// --- Agent Audit Log ---
+export const saveAuditLogEntry = async (entry: AuditLogEntry) => {
+  const d = await initDb();
+  await d.execute(
+    'INSERT OR REPLACE INTO agent_audit_log (id, projectId, timestamp, action, entityType, entityId, entityTitle, changedFields, diffSummary, commitHash) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+    [
+      entry.id,
+      entry.projectId,
+      entry.timestamp,
+      entry.action,
+      entry.entityType,
+      entry.entityId,
+      entry.entityTitle,
+      entry.changedFields ? JSON.stringify(entry.changedFields) : null,
+      entry.diffSummary ? JSON.stringify(entry.diffSummary) : null,
+      entry.commitHash ?? null,
+    ],
+  );
+};
+
+export const getAuditLog = async (
+  projectId: string,
+  limit: number = 50,
+): Promise<AuditLogEntry[]> => {
+  const d = await initDb();
+  const raw = await d.select<Record<string, unknown>[]>(
+    'SELECT * FROM agent_audit_log WHERE projectId = $1 ORDER BY timestamp DESC LIMIT $2',
+    [projectId, limit],
+  );
+  return raw.map((r) => ({
+    ...r,
+    changedFields: r.changedFields ? JSON.parse(r.changedFields as string) : undefined,
+    diffSummary: r.diffSummary ? JSON.parse(r.diffSummary as string) : undefined,
+  })) as unknown as AuditLogEntry[];
+};
+
+export const getRecentAuditSummary = async (
+  projectId: string,
+): Promise<{ count: number; lastTimestamp: string | null }> => {
+  const d = await initDb();
+  const result = await d.select<{ cnt: number; lastTs: string | null }[]>(
+    "SELECT COUNT(*) as cnt, MAX(timestamp) as lastTs FROM agent_audit_log WHERE projectId = $1 AND timestamp > datetime('now', '-24 hours')",
+    [projectId],
+  );
+  return {
+    count: result[0]?.cnt ?? 0,
+    lastTimestamp: result[0]?.lastTs ?? null,
+  };
 };
