@@ -128,6 +128,7 @@ export default function ProjectDetailView({
     isExporting,
     isImporting,
     isScanning,
+    error,
     exportToAgent,
     scanForChanges,
     confirmImport,
@@ -445,6 +446,7 @@ export default function ProjectDetailView({
             isExporting={isExporting}
             isScanning={isScanning}
             hasVaultPath={!!project.vaultPath}
+            error={error}
             onExport={exportToAgent}
             onImport={handleScanForChanges}
             onSetVaultDirectory={handleSetVaultDirectory}

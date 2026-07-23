@@ -27,43 +27,43 @@
     "fs:allow-rename",
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-create",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-remove",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-stat",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }]
     },
     {
       "identifier": "fs:allow-rename",

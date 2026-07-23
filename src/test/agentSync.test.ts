@@ -146,15 +146,15 @@ Hello World`);
   });
 
   describe('Project Metadata Serialization (AGENT-106)', () => {
-    it('should roundtrip project serialization', () => {
-      const project: Project = {
-        id: 'proj-1',
-        name: 'Project 1',
-        description: 'Project description',
-        category: 'Work',
-        progress: 50,
-      };
+    const project: Project = {
+      id: 'proj-1',
+      name: 'Project 1',
+      description: 'Project description',
+      category: 'Work',
+      progress: 50,
+    };
 
+    it('should roundtrip project serialization', () => {
       const markdown = projectToMarkdown(project);
       const parsedProject = markdownToProject(markdown);
 
@@ -162,6 +162,80 @@ Hello World`);
       expect(parsedProject.description).toBe(project.description);
       expect(parsedProject.category).toBe(project.category);
       expect(parsedProject.progress).toBe(project.progress);
+    });
+
+    it('should append empty tasks index if no tasks', () => {
+      const markdown = projectToMarkdown(project, [], []);
+      expect(markdown).toContain('## Tasks Index');
+      expect(markdown).toContain('*No active tasks*');
+    });
+
+    it('should generate task index with proper sorting and escaping', () => {
+      const sprints: Sprint[] = [
+        {
+          id: 'sprint-1',
+          name: 'Sprint Alpha',
+          projectId: 'proj-1',
+          status: 'Active',
+          goal: '',
+          startDate: '',
+          endDate: '',
+        },
+      ];
+
+      const tasks: Task[] = [
+        {
+          id: 't1',
+          title: 'Task | One',
+          priority: 'Low',
+          status: 'To Do',
+          sprintId: 'sprint-1',
+          archived: false,
+        } as Task,
+        {
+          id: 't2',
+          title: 'Task Two',
+          priority: 'Critical',
+          status: 'In Progress',
+          sprintId: 'sprint-1',
+          archived: false,
+        } as Task,
+        {
+          id: 't3',
+          title: 'Task Three',
+          priority: 'High',
+          status: 'To Do',
+          sprintId: undefined,
+          archived: false,
+        } as Task,
+        {
+          id: 't4',
+          title: 'Task Four',
+          priority: 'High',
+          status: 'To Do',
+          sprintId: 'sprint-1',
+          archived: true,
+        } as Task, // should be excluded
+      ];
+
+      const markdown = projectToMarkdown(project, tasks, sprints);
+
+      expect(markdown).toContain('## Tasks Index');
+      expect(markdown).not.toContain('Task Four'); // archived
+
+      // Check escaping
+      expect(markdown).toContain('Task \\| One');
+
+      // Check rows and sorting
+      // Sprint Alpha (Critical) -> t2
+      // Sprint Alpha (Low) -> t1
+      // Backlog (High) -> t3
+      const t2Index = markdown.indexOf('| t2 | Task Two');
+      const t1Index = markdown.indexOf('| t1 | Task \\| One');
+      const t3Index = markdown.indexOf('| t3 | Task Three');
+
+      expect(t2Index).toBeLessThan(t1Index);
+      expect(t1Index).toBeLessThan(t3Index);
     });
   });
 });

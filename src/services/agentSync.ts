@@ -220,7 +220,7 @@ export function markdownToSprint(markdown: string, projectId: string): Sprint {
 }
 
 // AGENT-106: Project metadata serializer
-export function projectToMarkdown(project: Project): string {
+export function projectToMarkdown(project: Project, tasks?: Task[], sprints?: Sprint[]): string {
   const frontmatterData = {
     id: project.id,
     name: project.name,
@@ -229,7 +229,44 @@ export function projectToMarkdown(project: Project): string {
     progress: project.progress,
     dueDate: project.dueDate,
   };
-  return serializeFrontmatter(frontmatterData);
+
+  let markdown = serializeFrontmatter(frontmatterData);
+
+  if (tasks && sprints) {
+    markdown += `\n## Tasks Index\n`;
+
+    const activeTasks = tasks.filter((t) => !t.archived);
+    if (activeTasks.length === 0) {
+      markdown += `\n*No active tasks*\n`;
+    } else {
+      const priorityWeights: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
+
+      const sortedTasks = activeTasks.sort((a, b) => {
+        const sprintA = sprints.find((s) => s.id === a.sprintId)?.name || 'Backlog';
+        const sprintB = sprints.find((s) => s.id === b.sprintId)?.name || 'Backlog';
+
+        if (sprintA === 'Backlog' && sprintB !== 'Backlog') return 1;
+        if (sprintA !== 'Backlog' && sprintB === 'Backlog') return -1;
+        if (sprintA !== sprintB) return sprintA.localeCompare(sprintB);
+
+        const weightA = priorityWeights[a.priority] || 0;
+        const weightB = priorityWeights[b.priority] || 0;
+        return weightB - weightA;
+      });
+
+      markdown += `\n| ID | Title | Status | Priority | Sprint | File Path |`;
+      markdown += `\n|---|---|---|---|---|---|\n`;
+
+      for (const task of sortedTasks) {
+        const sprintName = sprints.find((s) => s.id === task.sprintId)?.name || 'Backlog';
+        const escapedTitle = task.title.replace(/\|/g, '\\|');
+        const filePath = `.taxon/tasks/${taskFilename(task)}`;
+        markdown += `| ${task.id} | ${escapedTitle} | ${task.status} | ${task.priority} | ${sprintName} | \`${filePath}\` |\n`;
+      }
+    }
+  }
+
+  return markdown;
 }
 
 export function markdownToProject(markdown: string): Partial<Project> {
@@ -261,8 +298,10 @@ Project Name: ${project.name}
 ## How to Work With Tasks
 
 ### Reading Tasks
-All task files are in \`.taxon/tasks/\`. Each has YAML frontmatter with structured
-metadata and a markdown body with description and subtasks.
+All task files are stored in \`.taxon/tasks/\`[cite: 1].
+- **Efficiency Rule**: ALWAYS read \`.taxon/project.md\` first to get an index of all tasks, their statuses, and IDs[cite: 1].
+- DO NOT list or scan all files in \`.taxon/tasks/\` blindly[cite: 1].
+- Use the \`File Path\` provided in \`.taxon/project.md\` to open only the specific task file you need[cite: 1].
 
 ### Creating New Tasks
 Create a new \`.md\` file in \`.taxon/tasks/\` with this format:
@@ -346,7 +385,10 @@ export async function exportProjectToAgent(
   await mkdir(tasksPath, { recursive: true });
   await mkdir(sprintsPath, { recursive: true });
 
-  await writeTextFile(joinPath(taxonPath, 'project.md'), projectToMarkdown(project));
+  await writeTextFile(
+    joinPath(taxonPath, 'project.md'),
+    projectToMarkdown(project, tasks, sprints),
+  );
 
   const projectTasks = tasks.filter((t) => t.projectId === project.id);
   let exportedTaskCount = 0;

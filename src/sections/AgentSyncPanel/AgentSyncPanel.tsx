@@ -25,6 +25,7 @@ interface AgentSyncPanelProps {
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
+  error?: string | null;
 }
 
 export default function AgentSyncPanel({
@@ -39,6 +40,7 @@ export default function AgentSyncPanel({
   onSetVaultDirectory,
   onSelectFile,
   onRefreshEntries,
+  error,
 }: AgentSyncPanelProps) {
   const [isTreeExpanded, setIsTreeExpanded] = useState(true);
 
@@ -62,6 +64,12 @@ export default function AgentSyncPanel({
           AI Agent Sync
         </h3>
       </div>
+
+      {error && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-xs font-mono">
+          {error}
+        </div>
+      )}
 
       {!hasVaultPath ? (
         <div className="bg-surface-primary border border-dashed border-border-primary hover:border-white/40 rounded-xl p-5 text-center space-y-3 transition-colors mb-2">
