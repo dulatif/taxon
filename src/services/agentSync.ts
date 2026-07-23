@@ -656,3 +656,69 @@ export async function cleanUpArchivedFiles(
 
   return { movedCount, errors };
 }
+
+export function generateContextSnapshot(
+  project: Project,
+  tasks: Task[],
+  sprints: Sprint[],
+): string {
+  const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+
+  const activeTasks = projectTasks.filter(
+    (t) => t.status === 'In Progress' || t.status === 'To Do',
+  );
+
+  if (activeTasks.length === 0) {
+    return `## Project: ${project.name}\n\n*No active tasks*\n`;
+  }
+
+  // Group by sprint
+  const sprintMap = new Map<string, { sprint: Sprint | null; tasks: Task[] }>();
+
+  for (const task of activeTasks) {
+    const sprintId = task.sprintId || '__backlog__';
+    if (!sprintMap.has(sprintId)) {
+      const sprint = sprints.find((s) => s.id === sprintId) || null;
+      sprintMap.set(sprintId, { sprint, tasks: [] });
+    }
+    sprintMap.get(sprintId)!.tasks.push(task);
+  }
+
+  let output = `## Project: ${project.name}\n`;
+
+  // Active sprints first, then backlog
+  const sortedEntries = [...sprintMap.entries()].sort(([a], [b]) => {
+    if (a === '__backlog__') return 1;
+    if (b === '__backlog__') return -1;
+    return 0;
+  });
+
+  for (const [key, { sprint, tasks: sprintTasks }] of sortedEntries) {
+    if (key === '__backlog__') {
+      output += `\n### Backlog\n`;
+    } else {
+      output += `\n### Sprint: ${sprint?.name || 'Unknown'} (${sprint?.status || 'Active'})\n`;
+    }
+
+    const inProgress = sprintTasks.filter((t) => t.status === 'In Progress');
+    const toDo = sprintTasks.filter((t) => t.status === 'To Do');
+
+    if (inProgress.length > 0) {
+      output += `\n**In Progress:**\n`;
+      for (const t of inProgress) {
+        output += `- [${t.priority}] ${t.title}\n`;
+      }
+    }
+
+    if (toDo.length > 0) {
+      output += `\n**To Do:**\n`;
+      for (const t of toDo) {
+        output += `- [${t.priority}] ${t.title}\n`;
+      }
+    }
+  }
+
+  output += `\n---\nTasks: ${activeTasks.length} active\n`;
+
+  return output;
+}
