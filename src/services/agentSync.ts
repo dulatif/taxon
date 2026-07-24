@@ -572,6 +572,28 @@ function getChangedFields<T extends Record<string, unknown>>(before: T, after: T
   return changed;
 }
 
+function normalizeTask(task: Task): Task {
+  return {
+    ...task,
+    description: task.description || '',
+    labels: task.labels || [],
+    subtasks: task.subtasks || [],
+    duration: task.duration || '',
+    timeSpent: task.timeSpent || 0,
+    sortOrder: task.sortOrder || 0,
+    archived: task.archived || false,
+    dueDate: task.dueDate || undefined,
+  };
+}
+
+function normalizeSprint(sprint: Sprint): Sprint {
+  return {
+    ...sprint,
+    goal: sprint.goal || '',
+    completedAt: sprint.completedAt || undefined,
+  };
+}
+
 export function diffAgentChanges(
   projectId: string,
   allTasks: Task[],
@@ -598,9 +620,11 @@ export function diffAgentChanges(
       );
       newTasks.push({ ...agentTask, id: generateShortId() });
     } else {
+      const normalizedExisting = normalizeTask(existingTask);
+      const normalizedAgent = normalizeTask(agentTask);
       const changedFields = getChangedFields(
-        existingTask as unknown as Record<string, unknown>,
-        agentTask as unknown as Record<string, unknown>,
+        normalizedExisting as unknown as Record<string, unknown>,
+        normalizedAgent as unknown as Record<string, unknown>,
       );
       if (changedFields.length > 0) {
         modifiedTasks.push({ before: existingTask, after: agentTask, changedFields });
@@ -618,9 +642,11 @@ export function diffAgentChanges(
       );
       newSprints.push({ ...agentSprint, id: generateShortId() });
     } else {
+      const normalizedExisting = normalizeSprint(existingSprint);
+      const normalizedAgent = normalizeSprint(agentSprint);
       const changedFields = getChangedFields(
-        existingSprint as unknown as Record<string, unknown>,
-        agentSprint as unknown as Record<string, unknown>,
+        normalizedExisting as unknown as Record<string, unknown>,
+        normalizedAgent as unknown as Record<string, unknown>,
       );
       if (changedFields.length > 0) {
         modifiedSprints.push({ before: existingSprint, after: agentSprint, changedFields });
