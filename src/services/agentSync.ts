@@ -82,12 +82,12 @@ export function generateShortId(): string {
 }
 
 export function taskFilename(task: Task): string {
-  const shortId = task.id.substring(0, 6);
+  const shortId = task.id.slice(-6);
   return `TASK-${shortId}-${slugify(task.title)}.md`;
 }
 
 export function sprintFilename(sprint: Sprint): string {
-  const shortId = sprint.id.substring(0, 6);
+  const shortId = sprint.id.slice(-6);
   return `SPRINT-${shortId}-${slugify(sprint.name)}.md`;
 }
 
