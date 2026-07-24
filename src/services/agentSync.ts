@@ -382,8 +382,14 @@ fi
 DB_PATH=""
 if [ -f "$HOME/.config/com.taxon.app/taxon.db" ]; then
   DB_PATH="$HOME/.config/com.taxon.app/taxon.db"
+elif [ -f "$HOME/.config/com.taxon.dev/taxon.db" ]; then
+  DB_PATH="$HOME/.config/com.taxon.dev/taxon.db"
+elif [ -f "$HOME/.config/com.tauri.dev/taxon.db" ]; then
+  DB_PATH="$HOME/.config/com.tauri.dev/taxon.db"
 elif [ -f "$HOME/Library/Application Support/com.taxon.app/taxon.db" ]; then
   DB_PATH="$HOME/Library/Application Support/com.taxon.app/taxon.db"
+elif [ -f "$HOME/Library/Application Support/com.taxon.dev/taxon.db" ]; then
+  DB_PATH="$HOME/Library/Application Support/com.taxon.dev/taxon.db"
 fi
 
 if [ -z "$DB_PATH" ] || ! command -v sqlite3 &> /dev/null; then
