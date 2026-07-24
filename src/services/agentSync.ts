@@ -620,6 +620,15 @@ export function diffAgentChanges(
       );
       newTasks.push({ ...agentTask, id: generateShortId() });
     } else {
+      // Preserve UI-specific fields and fields missing from markdown
+      agentTask.duration = existingTask.duration;
+      agentTask.reminders = existingTask.reminders;
+      agentTask.deadline = existingTask.deadline;
+      agentTask.recurrence = existingTask.recurrence;
+      if (agentTask.timeEffort === undefined) agentTask.timeEffort = existingTask.timeEffort;
+      if (agentTask.timeSpent === 0) agentTask.timeSpent = existingTask.timeSpent;
+      if (agentTask.sortOrder === 0) agentTask.sortOrder = existingTask.sortOrder;
+
       const normalizedExisting = normalizeTask(existingTask);
       const normalizedAgent = normalizeTask(agentTask);
       const changedFields = getChangedFields(
@@ -642,6 +651,8 @@ export function diffAgentChanges(
       );
       newSprints.push({ ...agentSprint, id: generateShortId() });
     } else {
+      if (agentSprint.sortOrder === undefined) agentSprint.sortOrder = existingSprint.sortOrder;
+
       const normalizedExisting = normalizeSprint(existingSprint);
       const normalizedAgent = normalizeSprint(agentSprint);
       const changedFields = getChangedFields(
