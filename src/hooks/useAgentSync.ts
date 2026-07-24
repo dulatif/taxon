@@ -291,6 +291,11 @@ export function useAgentSync(
     }
 
     try {
+      const gitDirExists = await exists(`${project.vaultPath}/.git`).catch(() => false);
+      if (!gitDirExists) {
+        return { success: false, message: 'Git is not initialized. Run "git init" first.' };
+      }
+
       const taxonHookPath = `${project.vaultPath}/.taxon/hooks/post-commit`;
       const gitHooksDir = `${project.vaultPath}/.git/hooks`;
       const targetHookPath = `${gitHooksDir}/post-commit`;
@@ -304,8 +309,8 @@ export function useAgentSync(
         hookContent = generatePostCommitHook();
       }
 
-      const gitDirExists = await exists(gitHooksDir).catch(() => false);
-      if (!gitDirExists) {
+      const gitHooksDirExists = await exists(gitHooksDir).catch(() => false);
+      if (!gitHooksDirExists) {
         await mkdir(gitHooksDir, { recursive: true }).catch(() => {});
       }
 
