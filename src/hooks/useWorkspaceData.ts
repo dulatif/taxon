@@ -338,11 +338,32 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
     [projectActions, taskActions, logCompletion],
   );
 
+  const refreshAllData = useCallback(async () => {
+    try {
+      const dbProjects = await getProjects();
+      const dbTasks = await getTasks();
+      const dbFiles = await getFiles();
+      const dbSprints = await getSprints();
+      const dbActivity = await getActivity();
+      const dbLog = await getActivityLog();
+
+      projectActions.setProjects(dbProjects);
+      taskActions.setTasks(dbTasks);
+      projectActions.setFiles(dbFiles);
+      sprintActions.setSprints(dbSprints);
+      setDailyActivity(dbActivity);
+      setActivityLog(dbLog);
+    } catch (e) {
+      console.error('Failed to refresh DB', e);
+    }
+  }, [projectActions, taskActions, sprintActions]);
+
   return {
     isDataLoaded,
     dailyActivity,
     activityLog,
     onTickFocusTime,
+    refreshAllData,
     ...categoryActions,
     ...projectActions,
     handleCompleteProject, // Override with extended version

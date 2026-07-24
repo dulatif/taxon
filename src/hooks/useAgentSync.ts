@@ -1,0 +1,361 @@
+import { exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { Command } from '@tauri-apps/plugin-shell';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  applyAgentChanges,
+  cleanUpArchivedFiles,
+  diffAgentChanges,
+  exportProjectToAgent,
+  generateChangelog,
+  generateContextSnapshot,
+  generatePostCommitHook,
+  scanAgentDirectory,
+} from '../services/agentSync';
+import {
+  getAgentSyncState,
+  getAuditLog,
+  getRecentAuditSummary,
+  saveAgentSyncState,
+} from '../services/database';
+import { scanAgentVault } from '../services/vaultScanner';
+import type { Project, Sprint, Task, VaultEntry } from '../types';
+import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
+
+export function useAgentSync(
+  project: Project | null,
+  tasks: Task[],
+  sprints: Sprint[],
+  refreshAllData: () => Promise<void>,
+) {
+  const [syncState, setSyncState] = useState<AgentSyncState | null>(null);
+  const [agentDiff, setAgentDiff] = useState<AgentDiffResult | null>(null);
+  const [agentEntries, setAgentEntries] = useState<VaultEntry[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [auditSummary, setAuditSummary] = useState<{
+    count: number;
+    lastTimestamp: string | null;
+  }>({ count: 0, lastTimestamp: null });
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>([]);
+  const [isAuditModalOpen, setIsAuditModalOpen] = useState(false);
+
+  const refreshAuditSummary = useCallback(async () => {
+    if (!project) {
+      setAuditSummary({ count: 0, lastTimestamp: null });
+      return;
+    }
+    try {
+      const summary = await getRecentAuditSummary(project.id);
+      setAuditSummary(summary);
+    } catch (err) {
+      console.error('Failed to load audit summary', err);
+    }
+  }, [project]);
+
+  // Load sync state and audit summary on mount / project change
+  useEffect(() => {
+    async function loadSyncState() {
+      if (!project) {
+        setSyncState(null);
+        setAuditSummary({ count: 0, lastTimestamp: null });
+        return;
+      }
+      try {
+        const state = await getAgentSyncState(project.id);
+        setSyncState(state);
+        await refreshAuditSummary();
+      } catch (err) {
+        console.error('Failed to load agent sync state', err);
+      }
+    }
+    loadSyncState();
+  }, [project, refreshAuditSummary]);
+
+  const refreshAgentEntries = useCallback(async () => {
+    if (!project?.vaultPath) {
+      setAgentEntries([]);
+      return;
+    }
+    try {
+      const entries = await scanAgentVault(project.vaultPath);
+      setAgentEntries(entries);
+    } catch (err) {
+      console.error('Failed to scan agent vault', err);
+    }
+  }, [project]);
+
+  // Load agent entries on mount if vault path exists
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refreshAgentEntries();
+  }, [refreshAgentEntries]);
+
+  const exportToAgent = async () => {
+    if (!project) return;
+
+    setIsExporting(true);
+    setError(null);
+
+    if (!project.vaultPath) {
+      setError('Project vault path is not set.');
+      setIsExporting(false);
+      return;
+    }
+
+    try {
+      const state = await exportProjectToAgent(project, tasks, sprints, project.vaultPath);
+      await saveAgentSyncState(project.id, state);
+      setSyncState(state);
+      await refreshAgentEntries();
+    } catch (err: unknown) {
+      console.error('Failed to export to agent', err);
+      setError(err instanceof Error ? err.message : 'Unknown error during export');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const scanForChanges = async () => {
+    if (!project) return;
+
+    setIsScanning(true);
+    setError(null);
+    setAgentDiff(null);
+
+    if (!project.vaultPath) {
+      setError('Project vault path is not set.');
+      setIsScanning(false);
+      return;
+    }
+
+    try {
+      const {
+        tasks: agentTasks,
+        sprints: agentSprints,
+        warnings,
+      } = await scanAgentDirectory(project.vaultPath, project.id);
+
+      const diff = diffAgentChanges(project.id, tasks, sprints, agentTasks, agentSprints);
+      diff.warnings.push(...warnings);
+
+      setAgentDiff(diff);
+
+      if (
+        diff.newTasks.length === 0 &&
+        diff.modifiedTasks.length === 0 &&
+        diff.newSprints.length === 0 &&
+        diff.modifiedSprints.length === 0
+      ) {
+        setError('No changes found in the agent directory.');
+      }
+    } catch (err: unknown) {
+      console.error('Failed to scan agent directory for changes', err);
+      setError(err instanceof Error ? err.message : 'Unknown error during scan');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  const confirmImport = async () => {
+    if (!project || !agentDiff) return;
+
+    setIsImporting(true);
+    setError(null);
+
+    try {
+      const result = await applyAgentChanges(agentDiff, project.id);
+
+      const newState: AgentSyncState = syncState
+        ? { ...syncState }
+        : {
+            exportedTaskCount: 0,
+            exportedSprintCount: 0,
+            lastExportedAt: null,
+            lastImportedAt: null,
+          };
+
+      newState.lastImportedAt = new Date().toISOString();
+      await saveAgentSyncState(project.id, newState);
+      setSyncState(newState);
+
+      // Write CHANGELOG.md if vaultPath is available
+      if (project.vaultPath && result.auditEntries.length > 0) {
+        try {
+          const allEntries = await getAuditLog(project.id, 200);
+          const changelogContent = generateChangelog(allEntries);
+          await writeTextFile(`${project.vaultPath}/.taxon/CHANGELOG.md`, changelogContent);
+        } catch (err) {
+          console.error('Failed to write CHANGELOG.md', err);
+        }
+      }
+
+      await refreshAuditSummary();
+      await refreshAllData();
+      await refreshAgentEntries();
+
+      setAgentDiff(null);
+    } catch (err: unknown) {
+      console.error('Failed to apply agent changes', err);
+      setError(err instanceof Error ? err.message : 'Unknown error during apply');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const cancelImport = () => {
+    setAgentDiff(null);
+    setError(null);
+  };
+
+  const cleanUpArchived = async () => {
+    if (!project?.vaultPath) {
+      setError('Project vault path is not set.');
+      return { movedCount: 0, errors: ['Project vault path is not set.'] };
+    }
+
+    setIsExporting(true);
+    setError(null);
+
+    try {
+      const result = await cleanUpArchivedFiles(project.vaultPath);
+      await refreshAgentEntries();
+      return result;
+    } catch (err: unknown) {
+      console.error('Failed to clean up archived files', err);
+      const errMsg = err instanceof Error ? err.message : 'Unknown error during cleanup';
+      setError(errMsg);
+      return { movedCount: 0, errors: [errMsg] };
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const copyContextSnapshot = async (): Promise<{ success: boolean; activeCount: number }> => {
+    if (!project) {
+      setError('No project selected.');
+      return { success: false, activeCount: 0 };
+    }
+
+    try {
+      const snapshot = generateContextSnapshot(project, tasks, sprints);
+      await navigator.clipboard.writeText(snapshot);
+      const activeCount = tasks.filter(
+        (t) =>
+          t.projectId === project.id &&
+          !t.archived &&
+          (t.status === 'In Progress' || t.status === 'To Do'),
+      ).length;
+      return { success: true, activeCount };
+    } catch (err: unknown) {
+      console.error('Failed to copy context snapshot to clipboard', err);
+      const errMsg = err instanceof Error ? err.message : 'Failed to copy to clipboard';
+      setError(errMsg);
+      return { success: false, activeCount: 0 };
+    }
+  };
+
+  const openAuditLog = async () => {
+    if (!project) return;
+    try {
+      const entries = await getAuditLog(project.id, 100);
+      setAuditLog(entries);
+      setIsAuditModalOpen(true);
+    } catch (err) {
+      console.error('Failed to fetch audit log', err);
+    }
+  };
+
+  const closeAuditLog = () => {
+    setIsAuditModalOpen(false);
+  };
+
+  const exportChangelogFile = async () => {
+    if (!project?.vaultPath) return false;
+    try {
+      const entries = await getAuditLog(project.id, 200);
+      const content = generateChangelog(entries);
+      await writeTextFile(`${project.vaultPath}/.taxon/CHANGELOG.md`, content);
+      return true;
+    } catch (err) {
+      console.error('Failed to export CHANGELOG.md', err);
+      return false;
+    }
+  };
+
+  const installGitHook = async (): Promise<{ success: boolean; message: string }> => {
+    if (!project?.vaultPath) {
+      return { success: false, message: 'Project vault path is not set.' };
+    }
+
+    try {
+      const gitDirExists = await exists(`${project.vaultPath}/.git`).catch(() => false);
+      if (!gitDirExists) {
+        return { success: false, message: 'Git is not initialized. Run "git init" first.' };
+      }
+
+      const taxonHookPath = `${project.vaultPath}/.taxon/hooks/post-commit`;
+      const gitHooksDir = `${project.vaultPath}/.git/hooks`;
+      const targetHookPath = `${gitHooksDir}/post-commit`;
+
+      const hookExists = await exists(taxonHookPath).catch(() => false);
+      let hookContent = '';
+
+      if (hookExists) {
+        hookContent = await readTextFile(taxonHookPath);
+      } else {
+        hookContent = generatePostCommitHook();
+      }
+
+      const gitHooksDirExists = await exists(gitHooksDir).catch(() => false);
+      if (!gitHooksDirExists) {
+        await mkdir(gitHooksDir, { recursive: true }).catch(() => {});
+      }
+
+      await writeTextFile(targetHookPath, hookContent);
+
+      try {
+        const cmd = Command.create('chmod', ['+x', targetHookPath]);
+        await cmd.execute();
+      } catch {
+        // Ignore if chmod command is not allowed in permissions manifest
+      }
+
+      return {
+        success: true,
+        message: `Installed post-commit hook to ${targetHookPath}`,
+      };
+    } catch (err: unknown) {
+      console.error('Failed to install git hook', err);
+      const errMsg = err instanceof Error ? err.message : 'Failed to install git hook';
+      return { success: false, message: errMsg };
+    }
+  };
+
+  return {
+    syncState,
+    agentDiff,
+    agentEntries,
+    auditSummary,
+    auditLog,
+    isAuditModalOpen,
+    isExporting,
+    isImporting,
+    isScanning,
+    error,
+    exportToAgent,
+    scanForChanges,
+    confirmImport,
+    cancelImport,
+    cleanUpArchived,
+    copyContextSnapshot,
+    openAuditLog,
+    closeAuditLog,
+    exportChangelogFile,
+    installGitHook,
+    refreshAuditSummary,
+    refreshAgentEntries,
+  };
+}

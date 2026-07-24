@@ -2,7 +2,11 @@ import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { AlertTriangle, Archive, ArrowLeft, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useAgentSync } from '../hooks/useAgentSync';
+import AgentImportModal from '../modals/AgentImportModal';
+import AuditLogModal from '../modals/AuditLogModal';
 import SprintCompleteModal from '../modals/SprintCompleteModal';
+import AgentSyncPanel from '../sections/AgentSyncPanel';
 import ProjectFiles from '../sections/ProjectFiles/ProjectFiles';
 import ProjectHeader from '../sections/ProjectHeader/ProjectHeader';
 import type { TaskSortType, TaskTabType } from '../sections/ProjectTabs/ProjectTabs';
@@ -65,6 +69,7 @@ interface ProjectDetailViewProps {
   onArchiveTask?: (id: string) => void;
   onUnarchiveTask?: (id: string) => void;
   onArchiveAllCompleted?: (projectId?: string, taskIds?: string[]) => void;
+  refreshAllData?: () => Promise<void>;
 }
 
 export default function ProjectDetailView({
@@ -94,6 +99,7 @@ export default function ProjectDetailView({
   onDeleteSprint,
   onAssignTaskToSprint,
   onSprintRollover,
+  refreshAllData,
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<TaskSortType>('custom');
@@ -113,6 +119,47 @@ export default function ProjectDetailView({
   const [vaultEntries, setVaultEntries] = useState<VaultEntry[]>([]);
   const [selectedDocument, setSelectedDocument] = useState<VaultEntry | null>(null);
   const [isDocumentPanelOpen, setIsDocumentPanelOpen] = useState(false);
+
+  // Agent Sync
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const {
+    syncState,
+    agentDiff,
+    agentEntries,
+    auditSummary,
+    auditLog,
+    isAuditModalOpen,
+    isExporting,
+    isImporting,
+    isScanning,
+    error,
+    exportToAgent,
+    scanForChanges,
+    confirmImport,
+    cancelImport,
+    cleanUpArchived,
+    copyContextSnapshot,
+    openAuditLog,
+    closeAuditLog,
+    exportChangelogFile,
+    installGitHook,
+    refreshAgentEntries,
+  } = useAgentSync(project, tasks, sprints || [], refreshAllData || (async () => {}));
+
+  const handleScanForChanges = async () => {
+    await scanForChanges();
+    setIsImportModalOpen(true);
+  };
+
+  const handleConfirmImport = async () => {
+    await confirmImport();
+    setIsImportModalOpen(false);
+  };
+
+  const handleCancelImport = () => {
+    cancelImport();
+    setIsImportModalOpen(false);
+  };
 
   const refreshVault = async () => {
     if (project.vaultPath) {
@@ -402,6 +449,28 @@ export default function ProjectDetailView({
             onAddNativeFile={handleNativeAddFile}
             onDeleteNativeFile={onDeleteFile}
           />
+          <AgentSyncPanel
+            project={project}
+            syncState={syncState}
+            agentEntries={agentEntries}
+            isExporting={isExporting}
+            isScanning={isScanning}
+            hasVaultPath={!!project.vaultPath}
+            auditSummary={auditSummary}
+            error={error}
+            onExport={exportToAgent}
+            onImport={handleScanForChanges}
+            onCleanUpArchived={cleanUpArchived}
+            onCopyContextSnapshot={copyContextSnapshot}
+            onOpenAuditLog={openAuditLog}
+            onInstallGitHook={installGitHook}
+            onSetVaultDirectory={handleSetVaultDirectory}
+            onSelectFile={(entry) => {
+              setSelectedDocument(entry);
+              setIsDocumentPanelOpen(true);
+            }}
+            onRefreshEntries={refreshAgentEntries}
+          />
         </div>
       </div>
 
@@ -480,6 +549,22 @@ export default function ProjectDetailView({
           }}
         />
       )}
+
+      <AgentImportModal
+        isOpen={isImportModalOpen && !!agentDiff}
+        diff={agentDiff}
+        isImporting={isImporting}
+        onConfirm={handleConfirmImport}
+        onCancel={handleCancelImport}
+      />
+
+      <AuditLogModal
+        isOpen={isAuditModalOpen}
+        entries={auditLog}
+        projectName={project.name}
+        onClose={closeAuditLog}
+        onExportChangelog={exportChangelogFile}
+      />
     </div>
   );
 }

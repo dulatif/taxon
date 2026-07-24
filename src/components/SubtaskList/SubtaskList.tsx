@@ -62,7 +62,8 @@ export default function SubtaskList({ subtasks, onChange }: SubtaskListProps) {
           </h3>
           {subtasks.length > 0 && (
             <span className="text-[10px] font-mono font-bold bg-surface-secondary px-2 py-0.5 rounded border border-border-primary text-text-muted">
-              {completedCount}/{subtasks.length}
+              {completedCount}/{subtasks.length} -{' '}
+              {Math.round((completedCount / subtasks.length) * 100)}%
             </span>
           )}
         </div>

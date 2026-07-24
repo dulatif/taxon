@@ -158,7 +158,19 @@ export default function ProjectTaskList({
                         )}
                       </button>
 
-                      <div className="flex-1 min-w-0">
+                      <div className="flex-1 min-w-0 flex items-start gap-2">
+                        <div
+                          className={`w-1.5 h-1.5 rounded-full shrink-0 mt-[6px] ${
+                            task.priority === 'Critical'
+                              ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]'
+                              : task.priority === 'High'
+                                ? 'bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.5)]'
+                                : task.priority === 'Medium'
+                                  ? 'bg-blue-400'
+                                  : 'bg-gray-500/50'
+                          }`}
+                          title={`Priority: ${task.priority || 'None'}`}
+                        />
                         <p
                           className={`text-xs font-semibold leading-relaxed ${
                             task.completed ? 'line-through text-text-muted' : 'text-text-primary'
@@ -195,6 +207,38 @@ export default function ProjectTaskList({
                         <span className="text-[9px] font-mono font-semibold bg-surface-primary px-1.5 py-0.5 rounded border border-border-primary/50 text-text-muted">
                           {task.duration}
                         </span>
+                      )}
+                      {task.subtasks && task.subtasks.length > 0 && (
+                        <div
+                          className="flex items-center justify-center shrink-0"
+                          title={`${task.subtasks.filter((st) => st.completed).length}/${task.subtasks.length} subtasks`}
+                        >
+                          <svg viewBox="0 0 36 36" className="w-4 h-4 -rotate-90">
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15.9155"
+                              fill="none"
+                              className="stroke-border-primary"
+                              strokeWidth="4.5"
+                            />
+                            <circle
+                              cx="18"
+                              cy="18"
+                              r="15.9155"
+                              fill="none"
+                              className={
+                                task.subtasks.filter((st) => st.completed).length ===
+                                task.subtasks.length
+                                  ? 'stroke-green-400'
+                                  : 'stroke-interactive-primary'
+                              }
+                              strokeWidth="4.5"
+                              strokeDasharray={`${(task.subtasks.filter((st) => st.completed).length / task.subtasks.length) * 100}, 100`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                        </div>
                       )}
                       {!task.archived ? (
                         <button

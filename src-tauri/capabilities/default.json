@@ -27,43 +27,43 @@
     "fs:allow-rename",
     {
       "identifier": "fs:allow-read-text-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-write-text-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-read-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-write-file",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-read-dir",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-create",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-remove",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-mkdir",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-exists",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-stat",
-      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }]
+      "allow": [{ "path": "**" }, { "path": "$HOME/**" }, { "path": "/mnt/**" }, { "path": "/mnt/**/.taxon" }, { "path": "/mnt/**/.taxon/**" }, { "path": "/mnt/**/.git" }, { "path": "/mnt/**/.git/**" }]
     },
     {
       "identifier": "fs:allow-rename",
@@ -71,6 +71,16 @@
     },
     "shell:default",
     "shell:allow-open",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "chmod",
+          "cmd": "chmod",
+          "args": true
+        }
+      ]
+    },
     "core:window:default",
     "core:window:allow-minimize",
     "core:window:allow-maximize",

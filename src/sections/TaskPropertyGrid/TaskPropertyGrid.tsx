@@ -421,7 +421,7 @@ export default function TaskPropertyGrid({
           </div>
         </PropertyCard>
       </div>
-      {((task.timeEffort && task.timeEffort > 0) || (task.timeSpent && task.timeSpent > 0)) && (
+      {((task.timeEffort || 0) > 0 || (task.timeSpent || 0) > 0) && (
         <div className="bg-surface-secondary border border-border-primary rounded-xl p-3.5 space-y-2 mt-3">
           <div className="flex justify-between items-center text-xs font-mono">
             <span className="text-text-muted uppercase font-bold text-[10px]">Time Progress</span>

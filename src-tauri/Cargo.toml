@@ -1,3 +1,7 @@
+[workspace]
+members = [".", "taxon-core", "taxon-cli"]
+resolver = "2"
+
 [package]
 name = "taxon"
 version = "0.1.0"

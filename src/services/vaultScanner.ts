@@ -110,3 +110,64 @@ export async function createDocument(vaultPath: string, filename: string): Promi
     );
   }
 }
+
+export async function scanAgentVault(vaultPath: string): Promise<VaultEntry[]> {
+  try {
+    const taxonPath = joinPath(vaultPath, '.taxon');
+    const taxonExists = await exists(taxonPath).catch(() => false);
+    if (!taxonExists) {
+      return [];
+    }
+
+    const entries = await readDir(taxonPath);
+    const result: VaultEntry[] = [];
+
+    for (const entry of entries) {
+      const fullPath = joinPath(taxonPath, entry.name);
+
+      if (entry.isDirectory) {
+        const subEntries = await readDir(fullPath);
+        const children: VaultEntry[] = [];
+        for (const subEntry of subEntries) {
+          if (!subEntry.isDirectory && subEntry.name.toLowerCase().endsWith('.md')) {
+            children.push({
+              name: subEntry.name,
+              path: joinPath(fullPath, subEntry.name),
+              isDirectory: false,
+            });
+          }
+        }
+
+        children.sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' }),
+        );
+
+        result.push({
+          name: entry.name,
+          path: fullPath,
+          isDirectory: true,
+          children,
+        });
+      } else {
+        if (entry.name.toLowerCase().endsWith('.md')) {
+          result.push({
+            name: entry.name,
+            path: fullPath,
+            isDirectory: false,
+          });
+        }
+      }
+    }
+
+    result.sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+    });
+
+    return result;
+  } catch (error) {
+    console.error(`Failed to scan agent vault at ${vaultPath}:`, error);
+    return [];
+  }
+}
