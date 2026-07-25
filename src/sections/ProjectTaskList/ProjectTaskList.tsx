@@ -12,6 +12,7 @@ interface ProjectTaskListProps {
   sprints?: Sprint[];
   taskTab: TaskTabType;
   selectedSort: TaskSortType;
+  dueDateFilter: string;
   onToggleTask: (id: string) => void;
   onReorderTasks?: (tasks: Task[]) => void;
   onSelectTask?: (task: Task) => void;
@@ -28,6 +29,7 @@ export default function ProjectTaskList({
   sprints,
   taskTab,
   selectedSort,
+  dueDateFilter,
   onToggleTask,
   onReorderTasks,
   onSelectTask,
@@ -36,9 +38,15 @@ export default function ProjectTaskList({
   onUnarchiveTask,
   onSetTaskToDelete,
 }: ProjectTaskListProps) {
-  const activeTasks = projectTasks.filter((t) => !t.completed && !t.archived);
-  const completedTasks = projectTasks.filter((t) => t.completed && !t.archived);
-  const archivedTasks = projectTasks.filter((t) => t.archived);
+  const filterByDueDate = (list: Task[]) => {
+    if (dueDateFilter === 'all') return list;
+    if (dueDateFilter === 'unscheduled') return list.filter((t) => !t.dueDate);
+    return list.filter((t) => t.dueDate === dueDateFilter);
+  };
+
+  const activeTasks = filterByDueDate(projectTasks.filter((t) => !t.completed && !t.archived));
+  const completedTasks = filterByDueDate(projectTasks.filter((t) => t.completed && !t.archived));
+  const archivedTasks = filterByDueDate(projectTasks.filter((t) => t.archived));
 
   const sortTasksHelper = (list: Task[]) => {
     return [...list].sort((a, b) => {

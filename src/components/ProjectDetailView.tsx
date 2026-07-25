@@ -103,6 +103,7 @@ export default function ProjectDetailView({
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<TaskSortType>('custom');
+  const [dueDateFilter, setDueDateFilter] = useState<string>('all');
   const [taskTab, setTaskTab] = useState<TaskTabType>('todo');
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
     const activeSprint = sprints?.find((s) => s.projectId === project.id && s.status === 'Active');
@@ -366,6 +367,8 @@ export default function ProjectDetailView({
               onChangeTab={setTaskTab}
               selectedSort={selectedSort}
               onChangeSort={setSelectedSort}
+              dueDateFilter={dueDateFilter}
+              onChangeDueDateFilter={setDueDateFilter}
               counts={{
                 active: activeTasks.length,
                 completed: completedTasks.length,
@@ -380,6 +383,7 @@ export default function ProjectDetailView({
               sprints={sprints}
               taskTab={taskTab}
               selectedSort={selectedSort}
+              dueDateFilter={dueDateFilter}
               onToggleTask={onToggleTask}
               onReorderTasks={onReorderTasks}
               onSelectTask={onSelectTask}

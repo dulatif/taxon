@@ -1,4 +1,8 @@
-import { Archive, SortAsc } from 'lucide-react';
+import { Archive, Calendar as CalendarIcon, SortAsc, X } from 'lucide-react';
+import { useState } from 'react';
+import DatePicker from '../../components/DatePicker/DatePicker';
+import { formatDisplayDate } from '../../utils/format-date';
+
 export type TaskTabType = 'todo' | 'completed' | 'archived';
 export type TaskSortType = 'custom' | 'priority' | 'dueDate';
 
@@ -7,6 +11,8 @@ interface ProjectTabsProps {
   onChangeTab: (tab: TaskTabType) => void;
   selectedSort: TaskSortType;
   onChangeSort: (sort: TaskSortType) => void;
+  dueDateFilter: string;
+  onChangeDueDateFilter: (filter: string) => void;
   counts: {
     active: number;
     completed: number;
@@ -19,8 +25,11 @@ export default function ProjectTabs({
   onChangeTab,
   selectedSort,
   onChangeSort,
+  dueDateFilter,
+  onChangeDueDateFilter,
   counts,
 }: ProjectTabsProps) {
+  const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-border-primary/60">
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
@@ -92,19 +101,66 @@ export default function ProjectTabs({
         </div>
       </div>
 
-      {taskTab !== 'archived' && (
-        <button
-          onClick={() => {
-            const seq: TaskSortType[] = ['custom', 'priority', 'dueDate'];
-            const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
-            onChangeSort(seq[nextIdx]!);
-          }}
-          className="flex items-center gap-1.5 text-text-muted hover:text-text-primary transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-surface-secondary hover:bg-surface-hover px-2.5 py-1.5 rounded-lg border border-border-primary/80 self-start sm:self-auto"
-        >
-          <SortAsc className="w-3.5 h-3.5" />
-          <span>Sort: {selectedSort}</span>
-        </button>
-      )}
+      <div className="flex items-center gap-2">
+        <div className="relative">
+          <button
+            onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
+            className={`flex items-center gap-1.5 text-xs tracking-wider font-mono cursor-pointer px-2.5 py-1.5 rounded-lg border transition-colors ${
+              dueDateFilter !== 'all'
+                ? 'bg-interactive-primary/10 border-interactive-primary/30 text-interactive-primary'
+                : 'bg-surface-secondary border-border-primary/80 text-text-muted hover:text-text-primary hover:bg-surface-hover'
+            }`}
+          >
+            <CalendarIcon className="w-3.5 h-3.5" />
+            <span>
+              {dueDateFilter === 'all'
+                ? 'Date'
+                : dueDateFilter === 'unscheduled'
+                  ? 'Unscheduled'
+                  : formatDisplayDate(dueDateFilter)}
+            </span>
+            {dueDateFilter !== 'all' && (
+              <X
+                className="w-3 h-3 ml-1 cursor-pointer hover:opacity-70"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onChangeDueDateFilter('all');
+                }}
+              />
+            )}
+          </button>
+
+          {isDatePickerOpen && (
+            <div className="absolute top-full right-0 mt-2 z-50 shadow-xl">
+              <DatePicker
+                value={dueDateFilter === 'all' ? undefined : dueDateFilter}
+                onChange={(date) => {
+                  onChangeDueDateFilter(date);
+                  setIsDatePickerOpen(false);
+                }}
+                onClose={() => setIsDatePickerOpen(false)}
+                title="Presets"
+                unscheduledValue="unscheduled"
+                positionClass="right-0 top-full"
+              />
+            </div>
+          )}
+        </div>
+
+        {taskTab !== 'archived' && (
+          <button
+            onClick={() => {
+              const seq: TaskSortType[] = ['custom', 'priority', 'dueDate'];
+              const nextIdx = (seq.indexOf(selectedSort) + 1) % seq.length;
+              onChangeSort(seq[nextIdx]!);
+            }}
+            className="flex items-center gap-1.5 text-text-muted hover:text-text-primary transition-colors text-xs uppercase tracking-wider font-mono cursor-pointer bg-surface-secondary hover:bg-surface-hover px-2.5 py-1.5 rounded-lg border border-border-primary/80 self-start sm:self-auto"
+          >
+            <SortAsc className="w-3.5 h-3.5" />
+            <span>Sort: {selectedSort}</span>
+          </button>
+        )}
+      </div>
     </div>
   );
 }
