@@ -33,6 +33,7 @@ import AnalyticsView from './views/AnalyticsView';
 import HelpView from './views/HelpView';
 import SettingsView from './views/SettingsView';
 import TaskListView from './views/TaskListView';
+import WorkLogView from './views/WorkLogView';
 
 export default function App() {
   const {
@@ -403,6 +404,17 @@ export default function App() {
           onToggleTask={handleToggleTask}
           onDeleteTask={handleDeleteTask}
           onAddTask={handleAddTask}
+          onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+        />
+      </Render>
+
+      <Render in={currentView === 'history'}>
+        <WorkLogView
+          tasks={tasks}
+          projects={projects}
+          activityLog={activityLog}
+          onToggleTask={handleToggleTask}
+          onDeleteTask={handleDeleteTask}
           onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
         />
       </Render>

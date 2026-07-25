@@ -88,6 +88,7 @@ interface TaskListItemProps {
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
+  isReadOnly?: boolean;
 }
 
 export default function TaskListItem({
@@ -96,6 +97,7 @@ export default function TaskListItem({
   onToggleTask,
   onDeleteTask,
   onSelectTask,
+  isReadOnly,
 }: TaskListItemProps) {
   return (
     <motion.div
@@ -104,28 +106,30 @@ export default function TaskListItem({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: 40 }}
       transition={{ delay: index * 0.03 }}
-      className="py-3 flex items-center justify-between group hover:bg-surface-secondary/50 px-2 rounded-lg transition-colors cursor-pointer"
+      className="py-3 flex items-center justify-between px-2 rounded-lg transition-colors group hover:bg-surface-secondary/50 cursor-pointer"
       onClick={() => onSelectTask(task)}
     >
       <div className="flex items-center gap-3 min-w-0 flex-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onToggleTask(task.id);
-          }}
-          aria-label="Toggle Complete"
-          className="w-4 h-4 rounded border border-border-primary flex items-center justify-center shrink-0 hover:border-white transition-colors"
-        >
-          <Check
-            className={`w-2.5 h-2.5 text-text-primary transition-opacity ${
-              task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
-            }`}
-          />
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleTask(task.id);
+            }}
+            aria-label="Toggle Complete"
+            className="w-4 h-4 rounded border border-border-primary flex items-center justify-center shrink-0 hover:border-white transition-colors"
+          >
+            <Check
+              className={`w-2.5 h-2.5 text-text-primary transition-opacity ${
+                task.completed ? 'opacity-100' : 'opacity-0 group-hover:opacity-50'
+              }`}
+            />
+          </button>
+        )}
         <div className="min-w-0">
           <span
             className={`text-xs font-semibold truncate block max-w-sm ${
-              task.completed ? 'line-through text-text-muted' : 'text-text-primary'
+              task.completed && !isReadOnly ? 'line-through text-text-muted' : 'text-text-primary'
             }`}
           >
             {task.title}
@@ -148,16 +152,18 @@ export default function TaskListItem({
         <span className="text-[9px] font-mono text-text-muted bg-surface-primary border border-border-primary/40 px-1.5 py-0.5 rounded hidden group-hover:inline-flex items-center gap-1">
           {task.duration || '25m'}
         </span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onDeleteTask(task.id);
-          }}
-          aria-label="Delete Task"
-          className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
-        >
-          <Trash2 className="w-3.5 h-3.5" />
-        </button>
+        {!isReadOnly && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDeleteTask(task.id);
+            }}
+            aria-label="Delete Task"
+            className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+          </button>
+        )}
       </div>
     </motion.div>
   );

@@ -417,6 +417,7 @@ export async function exportProjectToAgent(
   const taxonPath = joinPath(vaultPath, '.taxon');
   const tasksPath = joinPath(taxonPath, 'tasks');
   const sprintsPath = joinPath(taxonPath, 'sprints');
+  const logsPath = joinPath(taxonPath, 'logs');
 
   const taxonExists = await exists(taxonPath).catch(() => false);
   if (taxonExists) {
@@ -424,12 +425,15 @@ export async function exportProjectToAgent(
     if (tasksExists) await remove(tasksPath, { recursive: true }).catch(console.error);
     const sprintsExists = await exists(sprintsPath).catch(() => false);
     if (sprintsExists) await remove(sprintsPath, { recursive: true }).catch(console.error);
+    const logsExists = await exists(logsPath).catch(() => false);
+    if (logsExists) await remove(logsPath, { recursive: true }).catch(console.error);
   } else {
     await mkdir(taxonPath, { recursive: true });
   }
 
   await mkdir(tasksPath, { recursive: true });
   await mkdir(sprintsPath, { recursive: true });
+  await mkdir(logsPath, { recursive: true });
 
   const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
   const projectSprints = sprints.filter((s) => s.projectId === project.id);
@@ -451,6 +455,39 @@ export async function exportProjectToAgent(
     const filePath = joinPath(sprintsPath, sprintFilename(sprint));
     await writeTextFile(filePath, sprintToMarkdown(sprint, projectTasks));
     exportedSprintCount++;
+  }
+
+  // Export Daily Work Logs to Second Brain
+  const { getActivityLog } = await import('./database');
+  const activityLog = await getActivityLog();
+  const taskCompletionMap = new Map<string, string>();
+  for (const log of activityLog) {
+    taskCompletionMap.set(log.taskId, log.completedAt);
+  }
+
+  const completedTasks = projectTasks.filter((t) => t.completed && taskCompletionMap.has(t.id));
+  const tasksByDate = completedTasks.reduce(
+    (acc, t) => {
+      const completedAt = taskCompletionMap.get(t.id);
+      if (!completedAt) return acc;
+      const dateStr = completedAt.split('T')[0];
+      if (!dateStr) return acc;
+      if (!acc[dateStr]) acc[dateStr] = [];
+      acc[dateStr].push(t);
+      return acc;
+    },
+    {} as Record<string, Task[]>,
+  );
+
+  for (const [dateStr, dateTasks] of Object.entries(tasksByDate)) {
+    const logPath = joinPath(logsPath, `${dateStr}.md`);
+    let content = `# Work Log: ${dateStr}\n\n`;
+    content += `**Total Tasks Completed:** ${dateTasks.length}\n\n`;
+    content += `## Completed Tasks\n\n`;
+    for (const t of dateTasks) {
+      content += `- [x] ${t.title} (Time spent: ${t.timeSpent || 0}m)\n`;
+    }
+    await writeTextFile(logPath, content);
   }
 
   const hooksPath = joinPath(taxonPath, 'hooks');
