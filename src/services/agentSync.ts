@@ -1,6 +1,7 @@
 import { exists, mkdir, readDir, readTextFile, remove, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { Project, Sprint, SubTask, Task } from '../types';
 import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
+import { getTodayStr } from '../utils/format-date';
 import { saveAuditLogEntry, saveSprint, saveTask } from './database';
 
 // AGENT-102: YAML frontmatter parser
@@ -194,7 +195,7 @@ export function sprintToMarkdown(sprint: Sprint, tasks: Task[]): string {
 
   for (const task of tasks) {
     if (task.sprintId === sprint.id) {
-      markdown += `- ${taskFilename(task)}\n`;
+      markdown += `- [${task.priority || 'Medium'}] ${taskFilename(task)}\n`;
     }
   }
 
@@ -213,8 +214,8 @@ export function markdownToSprint(markdown: string, projectId: string): Sprint {
     name: (data.name as string) || 'Untitled Sprint',
     goal,
     status: (data.status as Sprint['status']) || 'Planned',
-    startDate: (data.startDate as string) || new Date().toISOString(),
-    endDate: (data.endDate as string) || new Date().toISOString(),
+    startDate: (data.startDate as string) || getTodayStr(),
+    endDate: (data.endDate as string) || getTodayStr(),
     completedAt: data.completedAt as string | undefined,
   } as Sprint;
 }
@@ -344,7 +345,7 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Filename: \`SPRINT-{6-char-id}-{slugified-name}.md\`
 - Required frontmatter: \`id\`, \`name\`, \`status\`, \`startDate\`, \`endDate\`
 - Valid statuses: \`Planned\`, \`Active\`
-- Dates must be ISO strings (e.g. \`2024-01-01T00:00:00.000Z\`)
+- Dates must be YYYY-MM-DD strings (e.g. \`2024-01-01\`)
 - List task filenames under \`## Tasks\`
 - Set each task's \`sprintId\` in its frontmatter to match this sprint's \`id\`.
 

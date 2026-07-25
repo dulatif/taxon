@@ -1,9 +1,10 @@
-import { AlertTriangle, Maximize2, Play, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Edit3, Eye, Maximize2, Play, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import TaskPropertyGrid from '../../sections/TaskPropertyGrid/TaskPropertyGrid';
 import type { Project, Sprint, SubTask, Task } from '../../types';
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';
+import MarkdownViewer from '../MarkdownViewer';
 import SubtaskList from '../SubtaskList/SubtaskList';
 
 interface TaskDetailViewProps {
@@ -27,6 +28,7 @@ export default function TaskDetailView({
 }: TaskDetailViewProps) {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isEditingDescription, setIsEditingDescription] = useState(false);
 
   useEffect(() => {
     if (task) {
@@ -152,22 +154,64 @@ export default function TaskDetailView({
                   <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono">
                     Description
                   </h3>
-                  <button
-                    title="Expand Description"
-                    className="text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-                  >
-                    <Maximize2 className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <div className="bg-surface-secondary p-0.5 rounded-lg border border-border-primary flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingDescription(false)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                          !isEditingDescription
+                            ? 'bg-white text-black font-bold shadow'
+                            : 'text-text-muted hover:text-white'
+                        }`}
+                      >
+                        <Eye className="w-3 h-3" />
+                        Preview
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsEditingDescription(true)}
+                        className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
+                          isEditingDescription
+                            ? 'bg-white text-black font-bold shadow'
+                            : 'text-text-muted hover:text-white'
+                        }`}
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        Edit
+                      </button>
+                    </div>
+                    <button
+                      title="Expand Description"
+                      className="text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+                    >
+                      <Maximize2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="bg-surface-secondary border border-border-primary rounded-xl p-3 focus-within:border-white/40 transition-all shadow-inner">
-                  <textarea
-                    rows={4}
-                    value={editedTask.description || ''}
-                    onChange={(e) => handleFieldChange('description', e.target.value)}
-                    placeholder="Add a detailed description, notes, or links..."
-                    className="w-full bg-transparent border-none text-xs text-text-primary focus:outline-none resize-none placeholder:text-text-muted/60 leading-relaxed"
-                  />
+                <div
+                  className={`bg-surface-secondary border border-border-primary rounded-xl p-3 focus-within:border-white/40 transition-all shadow-inner ${!isEditingDescription && editedTask.description ? 'max-h-[400px] overflow-y-auto scrollbar-thin' : ''}`}
+                >
+                  {isEditingDescription ? (
+                    <textarea
+                      rows={4}
+                      value={editedTask.description || ''}
+                      onChange={(e) => handleFieldChange('description', e.target.value)}
+                      placeholder="Add a detailed description, notes, or links..."
+                      className="w-full bg-transparent border-none text-xs text-text-primary focus:outline-none resize-none placeholder:text-text-muted/60 leading-relaxed"
+                    />
+                  ) : (
+                    <div
+                      className={!editedTask.description ? 'text-xs text-text-muted/60 italic' : ''}
+                    >
+                      <MarkdownViewer
+                        content={
+                          editedTask.description || 'Add a detailed description, notes, or links...'
+                        }
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
 

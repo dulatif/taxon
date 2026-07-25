@@ -72,10 +72,10 @@ Hello World`);
 
     it('should generate task and sprint filenames', () => {
       const task = { id: 'abc12def789', title: 'My Task' } as Task;
-      expect(taskFilename(task)).toBe('TASK-abc12d-my-task.md');
+      expect(taskFilename(task)).toBe('TASK-def789-my-task.md');
 
       const sprint = { id: 'jkl78mno', name: 'v1 MVP' } as Sprint;
-      expect(sprintFilename(sprint)).toBe('SPRINT-jkl78m-v1-mvp.md');
+      expect(sprintFilename(sprint)).toBe('SPRINT-l78mno-v1-mvp.md');
     });
   });
 
@@ -132,12 +132,12 @@ Hello World`);
       };
 
       const tasks: Task[] = [
-        { id: 'task-1', title: 'Task 1', sprintId: 'sprint-1' } as Task,
-        { id: 'task-2', title: 'Task 2', sprintId: 'sprint-2' } as Task,
+        { id: 'task-1', title: 'Task 1', sprintId: 'sprint-1', priority: 'High' } as Task,
+        { id: 'task-2', title: 'Task 2', sprintId: 'sprint-2', priority: 'Medium' } as Task,
       ];
 
       const markdown = sprintToMarkdown(sprint, tasks);
-      expect(markdown).toContain('TASK-task-1-task-1.md');
+      expect(markdown).toContain('[High] TASK-task-1-task-1.md');
       expect(markdown).not.toContain('TASK-task-2-task-2.md');
 
       const parsedSprint = markdownToSprint(markdown, 'proj-1');
