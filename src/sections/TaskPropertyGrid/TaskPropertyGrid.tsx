@@ -1,6 +1,5 @@
 import {
   Calendar as CalendarIcon,
-  Check,
   CheckCircle2,
   Clock,
   Flag,
@@ -92,7 +91,7 @@ export default function TaskPropertyGrid({
           isActive={activePropertyEdit === 'status'}
           onClick={() => setActivePropertyEdit(activePropertyEdit === 'status' ? null : 'status')}
         >
-          {(['To Do', 'In Progress', 'Done'] as Task['status'][]).map((s) => (
+          {(['To Do', 'In Progress', 'Need to Test', 'Done'] as Task['status'][]).map((s) => (
             <button
               key={s}
               onClick={() => {
@@ -105,7 +104,6 @@ export default function TaskPropertyGrid({
               }`}
             >
               <span>{s}</span>
-              {s === 'Done' && <Check className="w-3.5 h-3.5 text-green-400" />}
             </button>
           ))}
         </PropertyCard>

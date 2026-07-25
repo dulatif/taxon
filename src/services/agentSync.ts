@@ -193,9 +193,17 @@ export function sprintToMarkdown(sprint: Sprint, tasks: Task[]): string {
   markdown += sprint.goal || '';
   markdown += '\n\n## Tasks\n\n';
 
-  for (const task of tasks) {
-    if (task.sprintId === sprint.id) {
-      markdown += `- [${task.priority || 'Medium'}] ${taskFilename(task)}\n`;
+  const sprintTasks = tasks.filter((t) => t.sprintId === sprint.id);
+  const STATUS_ORDER: Task['status'][] = ['To Do', 'In Progress', 'Need to Test', 'Done'];
+
+  for (const status of STATUS_ORDER) {
+    const statusTasks = sprintTasks.filter((t) => t.status === status);
+    if (statusTasks.length > 0) {
+      markdown += `### ${status}\n`;
+      for (const task of statusTasks) {
+        markdown += `- [${task.priority || 'Medium'}] ${taskFilename(task)}\n`;
+      }
+      markdown += '\n';
     }
   }
 
