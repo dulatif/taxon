@@ -83,9 +83,11 @@ export default function TaskDetailView({
                 </span>
                 <span
                   className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold border ${
-                    editedTask.completed
+                    editedTask.status === 'Done'
                       ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                      : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
+                      : editedTask.status === 'Need to Test'
+                        ? 'bg-orange-500/10 text-orange-400 border-orange-500/30'
+                        : 'bg-blue-500/10 text-blue-400 border-blue-500/30'
                   }`}
                 >
                   {editedTask.status}

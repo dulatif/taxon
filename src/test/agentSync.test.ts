@@ -327,7 +327,7 @@ Hello World`);
       expect(hookScript).toContain('# Taxon Auto-Sync Git Hook');
       expect(hookScript).toContain("grep -oE 'TASK-[a-zA-Z0-9]{6}'");
       expect(hookScript).toContain(
-        'sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 1, status = \'Done\' WHERE id LIKE \'%$SHORT_ID%\';"',
+        'sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 0, status = \'Need to Test\' WHERE id LIKE \'%$SHORT_ID%\';"',
       );
     });
   });

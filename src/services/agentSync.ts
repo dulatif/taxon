@@ -310,7 +310,7 @@ Create a new \`.md\` file in \`.taxon/tasks/\` with this format:
 - Generate a unique 6-character alphanumeric ID (e.g. \`a1b2c3\`)
 - Required frontmatter: \`id\`, \`title\`, \`priority\`, \`status\`
 - Valid priorities: \`Critical\`, \`High\`, \`Medium\`, \`Low\`
-- Valid statuses: \`To Do\`, \`In Progress\`, \`Done\`
+- Valid statuses: \`To Do\`, \`In Progress\`, \`Need to Test\`, \`Done\`
 
 Example Task File:
 \`\`\`markdown
@@ -336,7 +336,7 @@ Implement the login screen using React Hook Form.
 
 ### Modifying Tasks
 Edit the frontmatter fields or markdown body directly.
-- To complete a task: set \`completed: true\` and \`status: Done\`.
+- To complete a task: set \`completed: false\` and \`status: Need to Test\`. AI agents MUST NOT set status to 'Done'.
 - To archive: set \`archived: true\`.
 - To assign to a sprint: add the sprint's ID to \`sprintId\`. Leave empty or omit for backlog tasks.
 
@@ -352,7 +352,7 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 ### Git Commit Task References
 - Reference tasks in git commits using \`(TASK-{6-char-id})\` or \`TASK-{6-char-id}\` in commit messages.
 - Example: \`feat(auth): implement login flow (TASK-a1b2c3)\`
-- Installing the post-commit git hook (\`.taxon/hooks/post-commit\`) will automatically complete the task in Taxon upon commit!
+- Installing the post-commit git hook (\`.taxon/hooks/post-commit\`) will automatically mark the task as 'Need to Test' in Taxon upon commit!
 
 ### Common Mistakes / Rules
 - **DO NOT** delete task files to delete tasks. Instead, mark unwanted tasks as \`archived: true\`.
@@ -399,7 +399,7 @@ fi
 
 for FULL_ID in $TASK_IDS; do
   SHORT_ID=\${FULL_ID#TASK-}
-  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 1, status = 'Done' WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
+  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 0, status = 'Need to Test' WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
 done
 `;
 }
@@ -619,6 +619,17 @@ export function diffAgentChanges(
 
   for (const agentTask of agentTasks) {
     const existingTask = allTasksMap.get(agentTask.id);
+
+    // Prevent AI agents from marking tasks as 'Done' directly.
+    if (agentTask.status === 'Done' || agentTask.completed) {
+      const wasAlreadyDone =
+        existingTask && (existingTask.status === 'Done' || existingTask.completed);
+      if (!wasAlreadyDone) {
+        agentTask.status = 'Need to Test';
+        agentTask.completed = false;
+      }
+    }
+
     if (!existingTask) {
       newTasks.push(agentTask);
     } else if (existingTask.projectId !== projectId) {
@@ -644,6 +655,28 @@ export function diffAgentChanges(
       );
       if (changedFields.length > 0) {
         modifiedTasks.push({ before: existingTask, after: agentTask, changedFields });
+      }
+    }
+  }
+  let currentActiveSprintId = allSprints.find(
+    (s) => s.projectId === projectId && s.status === 'Active',
+  )?.id;
+
+  for (const agentSprint of agentSprints) {
+    if (agentSprint.id === currentActiveSprintId && agentSprint.status !== 'Active') {
+      currentActiveSprintId = undefined;
+    }
+  }
+
+  for (const agentSprint of agentSprints) {
+    if (agentSprint.status === 'Active') {
+      if (currentActiveSprintId && currentActiveSprintId !== agentSprint.id) {
+        agentSprint.status = 'Planned';
+        warnings.push(
+          `Sprint '${agentSprint.name}' was imported as Active, but another sprint is already active. Forced status to Planned.`,
+        );
+      } else {
+        currentActiveSprintId = agentSprint.id;
       }
     }
   }

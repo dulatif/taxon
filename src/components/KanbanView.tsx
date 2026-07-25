@@ -28,7 +28,12 @@ export default function KanbanView({
   onAssignTaskToSprint,
 }: KanbanViewProps) {
   // Columns state
-  const [columns, setColumns] = useState<string[]>(['To Do', 'In Progress', 'Done']);
+  const [columns, setColumns] = useState<string[]>([
+    'To Do',
+    'In Progress',
+    'Need to Test',
+    'Done',
+  ]);
   const [isAddingColumn, setIsAddingColumn] = useState(false);
   const [newColumnName, setNewColumnName] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<string>(projects[0]?.id || '');
@@ -44,6 +49,7 @@ export default function KanbanView({
     if (
       destination.droppableId === 'To Do' ||
       destination.droppableId === 'In Progress' ||
+      destination.droppableId === 'Need to Test' ||
       destination.droppableId === 'Done'
     ) {
       onMoveTaskStatus(draggableId, destination.droppableId as Task['status']);
@@ -91,9 +97,9 @@ export default function KanbanView({
     currentStatus: Task['status'],
     direction: 'left' | 'right',
   ) => {
-    const sequence: Task['status'][] = ['To Do', 'In Progress', 'Done'];
+    const sequence: Task['status'][] = ['To Do', 'In Progress', 'Need to Test', 'Done'];
     const idx = sequence.indexOf(currentStatus);
-    if (direction === 'right' && idx < 2) {
+    if (direction === 'right' && idx < 3) {
       onMoveTaskStatus(taskId, sequence[idx + 1] as Task['status']);
     } else if (direction === 'left' && idx > 0) {
       onMoveTaskStatus(taskId, sequence[idx - 1] as Task['status']);
@@ -194,7 +200,7 @@ export default function KanbanView({
                       <div className="flex items-center justify-between px-2 py-3 border-b border-[#27272A]/40 mb-3">
                         <div className="flex items-center gap-2">
                           <span
-                            className={`text-xs font-bold uppercase tracking-widest ${colName === 'Done' ? 'text-[#8E9192]' : 'text-white'}`}
+                            className={`text-xs font-bold uppercase tracking-widest ${colName === 'Done' ? 'text-[#8E9192]' : colName === 'Need to Test' ? 'text-orange-400' : 'text-white'}`}
                           >
                             {colName}
                           </span>
@@ -228,7 +234,9 @@ export default function KanbanView({
                                   className={`task-card bg-[#0A0A0A] border p-4 transition-all group rounded-lg relative cursor-grab select-none ${
                                     snapshot.isDragging
                                       ? 'border-white ring-2 ring-white/20 z-50'
-                                      : 'border-[#27272A] hover:border-white/30'
+                                      : colName === 'Need to Test'
+                                        ? 'border-orange-500/50 hover:border-orange-400/80 bg-orange-500/5'
+                                        : 'border-[#27272A] hover:border-white/30'
                                   } ${colName === 'Done' && !snapshot.isDragging ? 'opacity-65' : ''}`}
                                 >
                                   {/* Priority Tag and Duration stats */}
@@ -256,7 +264,7 @@ export default function KanbanView({
 
                                   {/* Task text body */}
                                   <h3
-                                    className={`text-xs font-medium leading-relaxed mb-4 text-white ${colName === 'Done' ? 'line-through text-[#8E9192]' : ''}`}
+                                    className={`text-xs font-medium leading-relaxed mb-4 text-white ${colName === 'Done' ? 'line-through text-[#8E9192]' : colName === 'Need to Test' ? 'text-orange-100' : ''}`}
                                   >
                                     {task.title}
                                   </h3>

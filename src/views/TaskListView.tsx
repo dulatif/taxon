@@ -202,7 +202,7 @@ export default function TaskListView({
   };
 
   const PRIORITIES: Task['priority'][] = ['Critical', 'High', 'Medium', 'Low'];
-  const STATUSES: Task['status'][] = ['To Do', 'In Progress', 'Done'];
+  const STATUSES: Task['status'][] = ['To Do', 'In Progress', 'Need to Test', 'Done'];
   const DUE_DATE_OPTIONS: { key: DueDateRangeKey; label: string }[] = [
     { key: 'overdue', label: 'Overdue' },
     { key: 'today', label: 'Today' },
@@ -362,9 +362,11 @@ export default function TaskListView({
                         className={`w-2 h-2 rounded-full border ${
                           s === 'Done'
                             ? 'bg-green-500 border-green-400'
-                            : s === 'In Progress'
-                              ? 'bg-blue-500 border-blue-400'
-                              : 'bg-surface-secondary border-border-primary'
+                            : s === 'Need to Test'
+                              ? 'bg-orange-500 border-orange-400'
+                              : s === 'In Progress'
+                                ? 'bg-blue-500 border-blue-400'
+                                : 'bg-surface-secondary border-border-primary'
                         }`}
                       />
                       {s}

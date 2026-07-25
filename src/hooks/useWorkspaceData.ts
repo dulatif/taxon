@@ -23,7 +23,7 @@ import {
   saveSprint,
   saveTask,
 } from '../services/database';
-import type { ActivityLogEntry, DailyActivity, Task } from '../types';
+import type { ActivityLogEntry, DailyActivity, Sprint, Task } from '../types';
 import { useCategoryActions } from './useCategoryActions';
 import { useDataExport } from './useDataExport';
 import { useProjectActions } from './useProjectActions';
@@ -39,6 +39,46 @@ const tryParseJSON = (str: string | null) => {
   } catch {
     return null;
   }
+};
+
+const sanitizeSprints = async (sprints: Sprint[]): Promise<Sprint[]> => {
+  const activeSprintsByProject: Record<string, Sprint[]> = {};
+  for (const s of sprints) {
+    if (s.status === 'Active') {
+      if (!activeSprintsByProject[s.projectId]) activeSprintsByProject[s.projectId] = [];
+      activeSprintsByProject[s.projectId]!.push(s);
+    }
+  }
+
+  const updatedSprints = [...sprints];
+  let changed = false;
+
+  for (const [, activeSprints] of Object.entries(activeSprintsByProject)) {
+    if (activeSprints.length > 1) {
+      activeSprints.sort((a, b) => {
+        const da = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const db = b.startDate ? new Date(b.startDate).getTime() : 0;
+        return db - da;
+      });
+
+      for (let i = 1; i < activeSprints.length; i++) {
+        const sprintToUpdate = activeSprints[i];
+        if (!sprintToUpdate) continue;
+        const idx = updatedSprints.findIndex((s) => s.id === sprintToUpdate.id);
+        if (idx !== -1) {
+          const original = updatedSprints[idx];
+          if (original) {
+            const updated = { ...original, status: 'Planned' as const };
+            updatedSprints[idx] = updated;
+            await saveSprint(updated).catch(console.error);
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+
+  return changed ? updatedSprints : sprints;
 };
 
 interface UseWorkspaceDataOptions {
@@ -264,6 +304,8 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         categoryActions.setCategories(initialCats);
         saveCategories(initialCats);
 
+        dbSprints = await sanitizeSprints(dbSprints);
+
         projectActions.setProjects(dbProjects);
         taskActions.setTasks(dbTasks);
         projectActions.setFiles(dbFiles);
@@ -343,9 +385,11 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
       const dbProjects = await getProjects();
       const dbTasks = await getTasks();
       const dbFiles = await getFiles();
-      const dbSprints = await getSprints();
+      let dbSprints = await getSprints();
       const dbActivity = await getActivity();
       const dbLog = await getActivityLog();
+
+      dbSprints = await sanitizeSprints(dbSprints);
 
       projectActions.setProjects(dbProjects);
       taskActions.setTasks(dbTasks);

@@ -20,7 +20,7 @@ export interface Task {
   completed: boolean;
   duration: string;
   priority: 'Critical' | 'High' | 'Medium' | 'Low';
-  status: 'To Do' | 'In Progress' | 'Done';
+  status: 'To Do' | 'In Progress' | 'Need to Test' | 'Done';
   dueDate?: string;
   description?: string;
   labels?: string[];
