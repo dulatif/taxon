@@ -2,7 +2,9 @@ import {
   Calendar as CalendarIcon,
   CheckCircle2,
   Clock,
+  FileCode2,
   Flag,
+  Folder,
   FolderOpen,
   Repeat,
   Rocket,
@@ -13,7 +15,12 @@ import DatePicker from '../../components/DatePicker/DatePicker';
 import RecurrencePicker from '../../components/RecurrencePicker/RecurrencePicker';
 import PropertyCard from '../../elements/PropertyCard';
 import type { Project, Sprint, Task } from '../../types';
-import { formatDateStr, formatDisplayDate, formatMinutes } from '../../utils/format-date';
+import {
+  formatDateStr,
+  formatDisplayDate,
+  formatMinutes,
+  getTodayStr,
+} from '../../utils/format-date';
 import { getRecurrenceLabel } from '../../utils/recurrence';
 
 const getPriorityColor = (priority: Task['priority']) => {
@@ -47,6 +54,8 @@ export default function TaskPropertyGrid({
   const [activePropertyEdit, setActivePropertyEdit] = useState<string | null>(null);
   const [isAddingLabel, setIsAddingLabel] = useState(false);
   const [newLabelText, setNewLabelText] = useState('');
+  const [isAddingFile, setIsAddingFile] = useState(false);
+  const [newFileText, setNewFileText] = useState('');
 
   const currentProject = projects.find((p) => p.id === task.projectId);
   const projectSprints = sprints.filter(
@@ -68,6 +77,16 @@ export default function TaskPropertyGrid({
   const handleRemoveLabel = (labelToRemove: string) => {
     const updatedLabels = (task.labels || []).filter((l) => l !== labelToRemove);
     onChange('labels', updatedLabels);
+  };
+
+  const handleAddFile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFileText.trim()) return;
+    const currentFiles = task.linkedFiles || [];
+    if (!currentFiles.includes(newFileText.trim())) {
+      onChange('linkedFiles', [...currentFiles, newFileText.trim()]);
+    }
+    setNewFileText('');
   };
 
   return (
@@ -95,8 +114,12 @@ export default function TaskPropertyGrid({
             <button
               key={s}
               onClick={() => {
+                const isDone = s === 'Done';
                 onChange('status', s);
-                onChange('completed', s === 'Done');
+                onChange('completed', isDone);
+                if (isDone && !task.dueDate) {
+                  onChange('dueDate', getTodayStr());
+                }
                 setActivePropertyEdit(null);
               }}
               className={`dropdown-item ${
@@ -277,6 +300,103 @@ export default function TaskPropertyGrid({
               </button>
             ))}
           </div>
+        </PropertyCard>
+
+        {/* Workspace Path */}
+        <PropertyCard
+          icon={<Folder className="w-5 h-5" />}
+          label="Workspace"
+          value={task.workspacePath ? task.workspacePath.split('/').pop() : 'None Linked'}
+          isActive={activePropertyEdit === 'workspace'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'workspace' ? null : 'workspace')
+          }
+        >
+          <div className="max-h-48 overflow-y-auto">
+            <button
+              onClick={() => {
+                onChange('workspacePath', undefined);
+                setActivePropertyEdit(null);
+              }}
+              className={`dropdown-item ${!task.workspacePath ? 'bg-surface-hover text-text-primary font-semibold' : ''}`}
+            >
+              None Linked
+            </button>
+            {currentProject?.workspacePaths?.map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  onChange('workspacePath', p);
+                  setActivePropertyEdit(null);
+                }}
+                className={`dropdown-item truncate ${
+                  task.workspacePath === p ? 'bg-surface-hover text-text-primary font-semibold' : ''
+                }`}
+                title={p}
+              >
+                {p.split('/').pop() || p}
+              </button>
+            ))}
+            {(!currentProject?.workspacePaths || currentProject.workspacePaths.length === 0) && (
+              <div className="p-2 text-xs text-text-muted italic text-center">
+                Project has no workspaces. Add them in Project details.
+              </div>
+            )}
+          </div>
+        </PropertyCard>
+
+        {/* Linked Files */}
+        <PropertyCard
+          icon={<FileCode2 className="w-5 h-5" />}
+          label="Linked Files"
+          value={
+            task.linkedFiles && task.linkedFiles.length > 0
+              ? `${task.linkedFiles.length} file(s)`
+              : 'None Linked'
+          }
+          isActive={isAddingFile}
+          onClick={() => setIsAddingFile(!isAddingFile)}
+        >
+          {isAddingFile && (
+            <div onClick={(e) => e.stopPropagation()} className="p-1 space-y-2">
+              {task.linkedFiles?.map((file, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span
+                    className="flex-1 text-[10px] bg-surface-primary px-1.5 py-1 rounded border border-border-primary text-text-secondary font-mono truncate"
+                    title={file}
+                  >
+                    {file}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const updated = (task.linkedFiles || []).filter((_, i) => i !== idx);
+                      onChange('linkedFiles', updated);
+                    }}
+                    className="text-text-muted hover:text-red-400 p-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <form onSubmit={handleAddFile} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newFileText}
+                  onChange={(e) => setNewFileText(e.target.value)}
+                  placeholder="src/components/..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!newFileText.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
         </PropertyCard>
 
         {/* Labels */}

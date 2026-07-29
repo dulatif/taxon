@@ -132,8 +132,22 @@ Hello World`);
       };
 
       const tasks: Task[] = [
-        { id: 'task-1', title: 'Task 1', sprintId: 'sprint-1', priority: 'High' } as Task,
-        { id: 'task-2', title: 'Task 2', sprintId: 'sprint-2', priority: 'Medium' } as Task,
+        {
+          id: 'task-1',
+          title: 'Task 1',
+          sprintId: 'sprint-1',
+          priority: 'High',
+          status: 'To Do',
+          completed: false,
+        } as Task,
+        {
+          id: 'task-2',
+          title: 'Task 2',
+          sprintId: 'sprint-2',
+          priority: 'Medium',
+          status: 'To Do',
+          completed: false,
+        } as Task,
       ];
 
       const markdown = sprintToMarkdown(sprint, tasks);

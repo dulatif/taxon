@@ -40,13 +40,17 @@ export default function WorkLogView({
   const tasksWithCompletion = useMemo(() => {
     return tasks.map((t) => ({
       ...t,
-      _completedAt: taskCompletionMap.get(t.id),
+      _completedAt:
+        taskCompletionMap.get(t.id) ||
+        (t.completed || t.status === 'Done'
+          ? t.archivedAt || t.dueDate || new Date().toISOString()
+          : undefined),
     }));
   }, [tasks, taskCompletionMap]);
 
   // Only consider completed tasks that have a logged completion date
   const completedTasks = useMemo(
-    () => tasksWithCompletion.filter((t) => t.completed && t._completedAt),
+    () => tasksWithCompletion.filter((t) => (t.completed || t.status === 'Done') && t._completedAt),
     [tasksWithCompletion],
   );
 

@@ -79,7 +79,14 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
   );
 
   const handleEditProject = useCallback(
-    (projectId: string, name: string, description: string, category?: string, dueDate?: string) => {
+    (
+      projectId: string,
+      name: string,
+      description: string,
+      category?: string,
+      dueDate?: string,
+      workspacePaths?: string[],
+    ) => {
       setProjects((prev) =>
         prev.map((p) => {
           if (p.id === projectId) {
@@ -89,6 +96,7 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
               description,
               ...(category ? { category } : {}),
               ...(dueDate !== undefined ? { dueDate } : {}),
+              ...(workspacePaths !== undefined ? { workspacePaths } : {}),
             };
             saveProject(up);
             return up;

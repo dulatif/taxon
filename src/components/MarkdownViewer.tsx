@@ -6,36 +6,42 @@ import remarkGfm from 'remark-gfm';
 export const markdownComponents: Record<string, unknown> = {
   h1: ({ node: _node, ...props }: Record<string, unknown>) => (
     <h1
-      className="text-2xl font-black text-white mt-6 mb-4 border-b border-[#27272A] pb-2 tracking-tight font-sans"
+      className="text-2xl font-black text-text-primary mt-6 mb-4 border-b border-border-primary pb-2 tracking-tight font-sans"
       {...props}
     />
   ),
   h2: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight font-sans" {...props} />
+    <h2
+      className="text-xl font-bold text-text-primary mt-6 mb-3 tracking-tight font-sans"
+      {...props}
+    />
   ),
   h3: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h3 className="text-lg font-bold text-[#E4E4E7] mt-5 mb-2 font-sans" {...props} />
+    <h3 className="text-lg font-bold text-text-primary mt-5 mb-2 font-sans" {...props} />
   ),
   h4: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h4 className="text-base font-semibold text-[#D4D4D8] mt-4 mb-2 font-mono" {...props} />
+    <h4 className="text-base font-semibold text-text-primary mt-4 mb-2 font-mono" {...props} />
   ),
   p: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <p className="text-sm text-[#C4C7C8] leading-relaxed mb-4" {...props} />
+    <p className="text-sm text-text-muted leading-relaxed mb-4" {...props} />
   ),
   a: ({ node: _node, ...props }: Record<string, unknown>) => (
     <a
-      className="text-blue-400 hover:text-blue-300 underline underline-offset-4"
+      className="text-interactive-primary hover:text-interactive-primary/80 underline underline-offset-4"
       target="_blank"
       rel="noopener noreferrer"
       {...props}
     />
   ),
   ul: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <ul className="list-disc list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2" {...props} />
+    <ul
+      className="list-disc list-inside space-y-1.5 text-sm text-text-muted mb-4 pl-2"
+      {...props}
+    />
   ),
   ol: ({ node: _node, ...props }: Record<string, unknown>) => (
     <ol
-      className="list-decimal list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2"
+      className="list-decimal list-inside space-y-1.5 text-sm text-text-muted mb-4 pl-2"
       {...props}
     />
   ),
@@ -44,13 +50,13 @@ export const markdownComponents: Record<string, unknown> = {
   ),
   blockquote: ({ node: _node, ...props }: Record<string, unknown>) => (
     <blockquote
-      className="border-l-4 border-blue-500/60 bg-[#141313] px-4 py-3 rounded-r-lg text-sm text-[#A1A1AA] italic mb-4"
+      className="border-l-4 border-interactive-primary/60 bg-surface-primary px-4 py-3 rounded-r-lg text-sm text-text-muted italic mb-4"
       {...props}
     />
   ),
   pre: ({ node: _node, ...props }: Record<string, unknown>) => (
     <pre
-      className="bg-[#141313] border border-[#27272A] rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-cyan-300 shadow-inner"
+      className="bg-surface-primary border border-border-primary rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-interactive-primary shadow-inner"
       {...props}
     />
   ),
@@ -66,7 +72,7 @@ export const markdownComponents: Record<string, unknown> = {
     }
     return (
       <code
-        className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono"
+        className="bg-surface-primary border border-border-primary text-interactive-primary rounded px-1.5 py-0.5 text-xs font-mono"
         {...props}
       >
         {children as ReactNode}
@@ -74,30 +80,30 @@ export const markdownComponents: Record<string, unknown> = {
     );
   },
   table: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <div className="overflow-x-auto my-4 border border-[#27272A] rounded-xl">
+    <div className="overflow-x-auto my-4 border border-border-primary rounded-xl">
       <table className="w-full text-left text-xs border-collapse" {...props} />
     </div>
   ),
   thead: ({ node: _node, ...props }: Record<string, unknown>) => (
     <thead
-      className="bg-[#141313] border-b border-[#27272A] text-white font-mono uppercase tracking-wider"
+      className="bg-surface-primary border-b border-border-primary text-text-primary font-mono uppercase tracking-wider"
       {...props}
     />
   ),
   tbody: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <tbody className="divide-y divide-[#27272A]/50" {...props} />
+    <tbody className="divide-y divide-border-primary/50" {...props} />
   ),
   tr: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <tr className="hover:bg-white/5 transition-colors" {...props} />
+    <tr className="hover:bg-surface-hover transition-colors" {...props} />
   ),
   th: ({ node: _node, ...props }: Record<string, unknown>) => (
     <th className="px-4 py-2.5 font-bold" {...props} />
   ),
   td: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <td className="px-4 py-2.5 text-[#C4C7C8]" {...props} />
+    <td className="px-4 py-2.5 text-text-muted" {...props} />
   ),
   hr: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <hr className="border-[#27272A] my-6" {...props} />
+    <hr className="border-border-primary my-6" {...props} />
   ),
 };
 

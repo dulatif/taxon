@@ -21,7 +21,9 @@ import {
 } from '../services/vaultScanner';
 import type { DocumentFile, Project, RecurrenceRule, Sprint, Task, VaultEntry } from '../types';
 import ConfirmDialog from './ConfirmDialog/ConfirmDialog';
+import CustomSelect from './CustomSelect';
 import DocumentPanel from './DocumentPanel';
+import KanbanView from './KanbanView';
 import SprintPanel from './SprintPanel';
 
 interface ProjectDetailViewProps {
@@ -42,6 +44,7 @@ interface ProjectDetailViewProps {
   onDeleteSprint?: (sprintId: string) => void;
   onAssignTaskToSprint?: (taskId: string, sprintId: string | null) => void;
   onSprintRollover?: (sprintId: string, targetSprintId: string | null) => void;
+  onMoveTaskStatus: (taskId: string, newStatus: Task['status']) => void;
   onToggleTask: (id: string) => void;
   onAddTask: (
     title: string,
@@ -58,6 +61,7 @@ interface ProjectDetailViewProps {
     description: string,
     category?: string,
     dueDate?: string,
+    workspacePaths?: string[],
   ) => void;
   onDeleteProject: (projectId: string) => void;
   onAddFile: (projectId: string, name: string, size: string, type: DocumentFile['type']) => void;
@@ -99,12 +103,15 @@ export default function ProjectDetailView({
   onDeleteSprint,
   onAssignTaskToSprint,
   onSprintRollover,
+  onMoveTaskStatus,
   refreshAllData,
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<TaskSortType>('custom');
   const [dueDateFilter, setDueDateFilter] = useState<string>('all');
   const [taskTab, setTaskTab] = useState<TaskTabType>('todo');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
     const activeSprint = sprints?.find((s) => s.projectId === project.id && s.status === 'Active');
     return activeSprint ? activeSprint.id : 'all';
@@ -259,9 +266,12 @@ export default function ProjectDetailView({
 
   const projectTasksAll = tasks.filter((t) => t.projectId === project.id);
   const projectTasks = projectTasksAll.filter((t) => {
-    if (selectedSprintId === 'all') return true;
-    if (selectedSprintId === 'backlog') return !t.sprintId;
-    return t.sprintId === selectedSprintId;
+    const matchesSprint =
+      selectedSprintId === 'all' ||
+      (selectedSprintId === 'backlog' ? !t.sprintId : t.sprintId === selectedSprintId);
+    const matchesSearch =
+      !searchQuery.trim() || t.title.toLowerCase().includes(searchQuery.trim().toLowerCase());
+    return matchesSprint && matchesSearch;
   });
 
   const unarchivedProjectTasks = projectTasksAll.filter((t) => !t.archived);
@@ -289,10 +299,9 @@ export default function ProjectDetailView({
   };
 
   const projectFiles = files.filter((f) => f.projectId === project.id);
-
-  const activeTasks = projectTasks.filter((t) => !t.completed && !t.archived);
-  const completedTasks = projectTasks.filter((t) => t.completed && !t.archived);
-  const archivedTasks = projectTasks.filter((t) => t.archived);
+  const completedTasks = projectTasks.filter(
+    (t) => (t.completed || t.status === 'Done') && !t.archived,
+  );
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 md:px-8 py-6 space-y-6">
@@ -313,169 +322,234 @@ export default function ProjectDetailView({
         onDeleteProjectClick={() => setIsDeleteConfirmOpen(true)}
       />
 
-      <div className="grid grid-cols-12 gap-8">
-        {/* Left Column: Tasks & Sprints */}
-        <div className="col-span-12 lg:col-span-8 space-y-6">
-          {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (
-            <SprintPanel
-              projectId={project.id}
-              sprints={sprints}
-              tasks={tasks}
-              onCreateSprint={onCreateSprint}
-              onEditSprint={onEditSprint}
-              onCompleteSprintTrigger={(s) => setSprintToComplete(s)}
-              onDeleteSprint={onDeleteSprint}
-              selectedSprintId={selectedSprintId}
-              onSelectSprint={setSelectedSprintId}
+      {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (
+        <SprintPanel
+          projectId={project.id}
+          sprints={sprints}
+          tasks={tasks}
+          onCreateSprint={onCreateSprint}
+          onEditSprint={onEditSprint}
+          onCompleteSprintTrigger={(s) => setSprintToComplete(s)}
+          onDeleteSprint={onDeleteSprint}
+          selectedSprintId={selectedSprintId}
+          onSelectSprint={setSelectedSprintId}
+        />
+      )}
+
+      {/* Standalone Filter Toolbar */}
+      {sprints && (
+        <div className="flex items-center justify-between pb-2 mb-2 border-b border-border-primary/40 text-xs font-mono">
+          <div className="flex items-center gap-2">
+            <div className="flex bg-surface-primary border border-border-primary rounded-lg p-0.5 mr-2">
+              <button
+                type="button"
+                onClick={() => setViewMode('list')}
+                className={`px-3 py-1 rounded-md transition-colors text-xs font-semibold ${viewMode === 'list' ? 'bg-interactive-primary text-interactive-primary-text' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                List
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('kanban')}
+                className={`px-3 py-1 rounded-md transition-colors text-xs font-semibold ${viewMode === 'kanban' ? 'bg-interactive-primary text-interactive-primary-text' : 'text-text-muted hover:text-text-primary'}`}
+              >
+                Kanban
+              </button>
+            </div>
+            <span className="text-text-muted">Filter by Sprint:</span>
+            <CustomSelect
+              value={selectedSprintId}
+              onChange={(v) => setSelectedSprintId(v as string)}
+              options={[
+                { value: 'all', label: 'All Sprints' },
+                { value: 'backlog', label: 'Backlog (No Sprint)' },
+                ...sprints
+                  .filter((s) => s.projectId === project.id)
+                  .map((s) => ({ value: s.id, label: s.name })),
+              ]}
+              size="sm"
             />
-          )}
-
-          <div className="bg-surface-secondary border border-border-primary rounded-xl p-6">
-            {sprints && (
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-border-primary/40 text-xs font-mono">
-                <div className="flex items-center gap-2">
-                  <span className="text-text-muted">Filter by Sprint:</span>
-                  <select
-                    value={selectedSprintId}
-                    onChange={(e) => setSelectedSprintId(e.target.value)}
-                    className="bg-surface-primary border border-border-primary rounded px-2.5 py-1 text-text-primary text-xs focus:outline-none focus:border-interactive-primary cursor-pointer"
-                  >
-                    <option value="all">All Tasks</option>
-                    <option value="backlog">Backlog (Unassigned)</option>
-                    {sprints
-                      .filter((s) => s.projectId === project.id)
-                      .map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.name} ({s.status})
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                {selectedSprintId !== 'all' && (
-                  <button
-                    onClick={() => setSelectedSprintId('all')}
-                    className="text-interactive-primary hover:underline text-[11px] cursor-pointer"
-                  >
-                    Clear filter
-                  </button>
-                )}
-              </div>
-            )}
-
-            <ProjectTabs
-              taskTab={taskTab}
-              onChangeTab={setTaskTab}
-              selectedSort={selectedSort}
-              onChangeSort={setSelectedSort}
-              dueDateFilter={dueDateFilter}
-              onChangeDueDateFilter={setDueDateFilter}
-              counts={{
-                active: activeTasks.length,
-                completed: completedTasks.length,
-                archived: archivedTasks.length,
-              }}
-            />
-
-            <ProjectTaskList
-              tasks={tasks}
-              projectTasks={projectTasks}
-              project={project}
-              sprints={sprints}
-              taskTab={taskTab}
-              selectedSort={selectedSort}
-              dueDateFilter={dueDateFilter}
-              onToggleTask={onToggleTask}
-              onReorderTasks={onReorderTasks}
-              onSelectTask={onSelectTask}
-              onAssignTaskToSprint={onAssignTaskToSprint}
-              onArchiveTask={onArchiveTask}
-              onUnarchiveTask={onUnarchiveTask}
-              onSetTaskToDelete={setTaskToDelete}
-            />
-
-            {taskTab === 'todo' && (
-              <form onSubmit={handleAddTaskSubmit} className="mt-4">
-                <div className="flex items-center gap-3 px-3 py-2 bg-surface-primary border border-border-primary/80 rounded-lg focus-within:border-white/30 transition-all">
-                  <Plus className="w-4 h-4 text-text-muted" />
-                  <input
-                    type="text"
-                    className="bg-transparent border-none focus:outline-none text-xs text-text-primary placeholder:text-text-muted/60 w-full"
-                    placeholder="Add a new task..."
-                    value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newTaskTitle.trim()}
-                    className="bg-interactive-primary text-interactive-primary-text hover:bg-interactive-primary/90 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
-                  >
-                    Create
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {taskTab === 'completed' && completedTasks.length > 0 && (
-              <div className="mt-4 pt-3 border-t border-border-primary/60 flex justify-end">
-                <button
-                  type="button"
-                  onClick={() =>
-                    onArchiveAllCompleted?.(
-                      project.id,
-                      completedTasks.map((t) => t.id),
-                    )
-                  }
-                  className="bg-surface-primary text-text-primary border border-border-primary font-medium text-xs px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
-                >
-                  <Archive className="w-3.5 h-3.5" />
-                  <span>Archive All Completed ({completedTasks.length})</span>
-                </button>
-              </div>
-            )}
           </div>
         </div>
+      )}
 
-        {/* Right Column: Files & Documents */}
-        <div className="col-span-12 lg:col-span-4 space-y-6">
-          <ProjectFiles
-            project={project}
-            projectFiles={projectFiles}
-            vaultEntries={vaultEntries}
-            selectedDocumentPath={selectedDocument?.path}
-            onSetVaultDirectory={handleSetVaultDirectory}
-            onSelectFile={(entry) => {
-              setSelectedDocument(entry);
-              setIsDocumentPanelOpen(true);
-            }}
-            onDeleteVaultDoc={setDocToDelete}
-            onCreateVaultDoc={handleCreateVaultDoc}
-            onRefreshVault={refreshVault}
-            onAddNativeFile={handleNativeAddFile}
-            onDeleteNativeFile={onDeleteFile}
-          />
-          <AgentSyncPanel
-            project={project}
-            syncState={syncState}
-            agentEntries={agentEntries}
-            isExporting={isExporting}
-            isScanning={isScanning}
-            hasVaultPath={!!project.vaultPath}
-            auditSummary={auditSummary}
-            error={error}
-            onExport={exportToAgent}
-            onImport={handleScanForChanges}
-            onCleanUpArchived={cleanUpArchived}
-            onCopyContextSnapshot={copyContextSnapshot}
-            onOpenAuditLog={openAuditLog}
-            onInstallGitHook={installGitHook}
-            onSetVaultDirectory={handleSetVaultDirectory}
-            onSelectFile={(entry) => {
-              setSelectedDocument(entry);
-              setIsDocumentPanelOpen(true);
-            }}
-            onRefreshEntries={refreshAgentEntries}
-          />
+      <div className="grid grid-cols-12 gap-8">
+        {/* Main Content Column */}
+        <div className={`col-span-12 ${viewMode === 'list' ? 'lg:col-span-8' : ''} space-y-6`}>
+          {viewMode === 'list' ? (
+            <div className="bg-surface-secondary border border-border-primary rounded-xl p-6">
+              {selectedSprintId !== 'all' && (
+                <button
+                  onClick={() => setSelectedSprintId('all')}
+                  className="text-interactive-primary hover:underline text-[11px] cursor-pointer"
+                >
+                  Clear filter
+                </button>
+              )}
+              <ProjectTabs
+                taskTab={taskTab}
+                onChangeTab={setTaskTab}
+                selectedSort={selectedSort}
+                onChangeSort={setSelectedSort}
+                dueDateFilter={dueDateFilter}
+                onChangeDueDateFilter={setDueDateFilter}
+                counts={{
+                  all: projectTasksAll.filter((t) => !t.archived).length,
+                  todo: projectTasksAll.filter((t) => t.status === 'To Do' && !t.archived).length,
+                  inProgress: projectTasksAll.filter(
+                    (t) => t.status === 'In Progress' && !t.archived,
+                  ).length,
+                  needToTest: projectTasksAll.filter(
+                    (t) => t.status === 'Need to Test' && !t.archived,
+                  ).length,
+                  completed: projectTasksAll.filter(
+                    (t) => (t.completed || t.status === 'Done') && !t.archived,
+                  ).length,
+                  archived: projectTasksAll.filter((t) => t.archived).length,
+                }}
+                searchQuery={searchQuery}
+                onChangeSearchQuery={setSearchQuery}
+              />
+
+              <ProjectTaskList
+                tasks={tasks}
+                projectTasks={projectTasks}
+                project={project}
+                sprints={sprints}
+                taskTab={taskTab}
+                selectedSort={selectedSort}
+                dueDateFilter={dueDateFilter}
+                onToggleTask={onToggleTask}
+                onReorderTasks={onReorderTasks}
+                onSelectTask={onSelectTask}
+                onAssignTaskToSprint={onAssignTaskToSprint}
+                onArchiveTask={onArchiveTask}
+                onUnarchiveTask={onUnarchiveTask}
+                onSetTaskToDelete={setTaskToDelete}
+              />
+
+              {taskTab === 'todo' && (
+                <form onSubmit={handleAddTaskSubmit} className="mt-4">
+                  <div className="flex items-center gap-3 px-3 py-2 bg-surface-primary border border-border-primary/80 rounded-lg focus-within:border-white/30 transition-all">
+                    <Plus className="w-4 h-4 text-text-muted" />
+                    <input
+                      type="text"
+                      className="bg-transparent border-none focus:outline-none text-xs text-text-primary placeholder:text-text-muted/60 w-full"
+                      placeholder="Add a new task..."
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                    />
+                    <button
+                      type="submit"
+                      disabled={!newTaskTitle.trim()}
+                      className="bg-interactive-primary text-interactive-primary-text hover:bg-interactive-primary/90 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
+                    >
+                      Create
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {taskTab === 'completed' && completedTasks.length > 0 && (
+                <div className="mt-4 pt-3 border-t border-border-primary/60 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      onArchiveAllCompleted?.(
+                        project.id,
+                        completedTasks.map((t) => t.id),
+                      )
+                    }
+                    className="bg-surface-primary text-text-primary border border-border-primary font-medium text-xs px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Archive className="w-3.5 h-3.5" />
+                    <span>Archive All Completed ({completedTasks.length})</span>
+                  </button>
+                </div>
+              )}
+
+              {taskTab === 'Need to Test' &&
+                projectTasks.some((t) => t.status === 'Need to Test' && !t.archived) && (
+                  <div className="mt-4 pt-3 border-t border-border-primary/60 flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const toComplete = projectTasks.filter(
+                          (t) => t.status === 'Need to Test' && !t.archived,
+                        );
+                        toComplete.forEach((task) => {
+                          onMoveTaskStatus(task.id, 'Done');
+                          if (!task.completed) {
+                            onToggleTask(task.id);
+                          }
+                        });
+                      }}
+                      className="bg-surface-primary text-text-primary border border-border-primary font-medium text-xs px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    >
+                      <span>Mark All as Completed</span>
+                    </button>
+                  </div>
+                )}
+            </div>
+          ) : (
+            <div className="w-full">
+              <KanbanView
+                projects={[project]}
+                tasks={projectTasks}
+                sprints={sprints}
+                onMoveTaskStatus={onMoveTaskStatus}
+                onAddTaskToProject={onAddTask}
+                onSelectTask={onSelectTask}
+                onAssignTaskToSprint={onAssignTaskToSprint}
+                hideToolbar={true}
+              />
+            </div>
+          )}
         </div>
+
+        {/* Right Column: Documents & Agent */}
+        {viewMode === 'list' && (
+          <div className="col-span-12 lg:col-span-4 space-y-6">
+            <ProjectFiles
+              project={project}
+              projectFiles={projectFiles}
+              vaultEntries={vaultEntries}
+              selectedDocumentPath={selectedDocument?.path}
+              onSetVaultDirectory={handleSetVaultDirectory}
+              onSelectFile={(entry) => {
+                setSelectedDocument(entry);
+                setIsDocumentPanelOpen(true);
+              }}
+              onDeleteVaultDoc={setDocToDelete}
+              onCreateVaultDoc={handleCreateVaultDoc}
+              onRefreshVault={refreshVault}
+              onAddNativeFile={handleNativeAddFile}
+              onDeleteNativeFile={onDeleteFile}
+            />
+            <AgentSyncPanel
+              project={project}
+              syncState={syncState}
+              agentEntries={agentEntries}
+              isExporting={isExporting}
+              isScanning={isScanning}
+              hasVaultPath={!!project.vaultPath}
+              auditSummary={auditSummary}
+              error={error}
+              onExport={exportToAgent}
+              onImport={handleScanForChanges}
+              onCleanUpArchived={cleanUpArchived}
+              onCopyContextSnapshot={copyContextSnapshot}
+              onOpenAuditLog={openAuditLog}
+              onInstallGitHook={installGitHook}
+              onSetVaultDirectory={handleSetVaultDirectory}
+              onSelectFile={(entry) => {
+                setSelectedDocument(entry);
+                setIsDocumentPanelOpen(true);
+              }}
+              onRefreshEntries={refreshAgentEntries}
+            />
+          </div>
+        )}
       </div>
 
       {isDeleteConfirmOpen && (

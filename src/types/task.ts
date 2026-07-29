@@ -33,4 +33,6 @@ export interface Task {
   recurrence?: RecurrenceRule;
   archived?: boolean;
   archivedAt?: string;
+  workspacePath?: string;
+  linkedFiles?: string[];
 }

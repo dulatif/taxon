@@ -2,7 +2,8 @@ import { exists, mkdir, readDir, readTextFile, remove, writeTextFile } from '@ta
 import type { Project, Sprint, SubTask, Task } from '../types';
 import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
 import { getTodayStr } from '../utils/format-date';
-import { saveAuditLogEntry, saveSprint, saveTask } from './database';
+import { createLogEntry } from './activityLogger';
+import { saveActivityLogEntry, saveAuditLogEntry, saveSprint, saveTask } from './database';
 
 // AGENT-102: YAML frontmatter parser
 function joinPath(parent: string, child: string): string {
@@ -108,6 +109,8 @@ export function taskToMarkdown(task: Task): string {
     sortOrder: task.sortOrder,
     archived: task.archived,
     archivedAt: task.archivedAt,
+    workspacePath: task.workspacePath,
+    linkedFiles: task.linkedFiles,
   };
 
   let markdown = serializeFrontmatter(frontmatterData);
@@ -174,6 +177,8 @@ export function markdownToTask(markdown: string, projectId: string): Task {
     sortOrder: (data.sortOrder as number) || 0,
     archived: (data.archived as boolean) || false,
     archivedAt: data.archivedAt as string | undefined,
+    workspacePath: data.workspacePath as string | undefined,
+    linkedFiles: (data.linkedFiles as string[]) || [],
   } as Task;
 }
 
@@ -292,13 +297,22 @@ export function markdownToProject(markdown: string): Partial<Project> {
 
 // AGENT-107: AGENTS.md and CLAUDE.md templates
 export function generateAgentInstructions(project: Project): string {
+  let workspacesSection = '';
+  if (project.workspacePaths && project.workspacePaths.length > 0) {
+    workspacesSection = `\n## Local Workspaces\nThis project spans the following local repositories:\n`;
+    for (const p of project.workspacePaths) {
+      workspacesSection += `- \`${p}\`\n`;
+    }
+    workspacesSection += `\n**Agent Instruction**: You are authorized to freely read, explore, and modify code within any of the above local repositories to accomplish your assigned tasks.\n`;
+  }
+
   return `# Taxon Project — AI Agent Integration
 
 This directory is managed by **Taxon**, a project & task management app.
 Task data is synced via files in the \`.taxon/\` directory.
 
 Project Name: ${project.name}
-
+${workspacesSection}
 ## Directory Structure
 - \`.taxon/project.md\` — Project metadata (read-only context)
 - \`.taxon/tasks/\` — One markdown file per task
@@ -368,6 +382,7 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Ensure YAML syntax is strictly valid.
 - Subtasks must strictly use the format \`- [ ] Title\` or \`- [x] Title\`.
 - IDs must be unique across all tasks/sprints in the entire database, so use truly random alphanumeric strings.
+- You can optionally set \`workspacePath\` to one of the project's Local Workspaces, and \`linkedFiles\` to an array of relative file paths within that workspace to point to specific code.
 - Version: 1.0.0
 `;
 }
@@ -443,7 +458,9 @@ export async function exportProjectToAgent(
   await mkdir(sprintsPath, { recursive: true });
   await mkdir(logsPath, { recursive: true });
 
-  const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+  const projectTasks = tasks.filter(
+    (t) => t.projectId === project.id && !t.archived && !t.completed && t.status !== 'Done',
+  );
   const projectSprints = sprints.filter((s) => s.projectId === project.id);
 
   await writeTextFile(
@@ -635,6 +652,8 @@ function normalizeTask(task: Task): Task {
     sortOrder: task.sortOrder || 0,
     archived: task.archived || false,
     dueDate: task.dueDate || undefined,
+    workspacePath: task.workspacePath || undefined,
+    linkedFiles: task.linkedFiles || [],
   };
 }
 
@@ -665,7 +684,25 @@ export function diffAgentChanges(
   for (const agentTask of agentTasks) {
     const existingTask = allTasksMap.get(agentTask.id);
 
-    // Prevent AI agents from marking tasks as 'Done' directly.
+    const statusRank: Record<Task['status'], number> = {
+      'To Do': 0,
+      'In Progress': 1,
+      'Need to Test': 2,
+      Done: 3,
+    };
+
+    if (existingTask) {
+      const existingRank = statusRank[existingTask.status] ?? 0;
+      const agentRank = statusRank[agentTask.status] ?? 0;
+
+      // Prevent task status regression (moving backward in status workflow)
+      if (existingTask.completed || existingTask.status === 'Done' || existingRank > agentRank) {
+        agentTask.status = existingTask.status;
+        agentTask.completed = existingTask.completed;
+      }
+    }
+
+    // Prevent AI agents from marking tasks as 'Done' directly if not already done.
     if (agentTask.status === 'Done' || agentTask.completed) {
       const wasAlreadyDone =
         existingTask && (existingTask.status === 'Done' || existingTask.completed);
@@ -688,6 +725,9 @@ export function diffAgentChanges(
       agentTask.reminders = existingTask.reminders;
       agentTask.deadline = existingTask.deadline;
       agentTask.recurrence = existingTask.recurrence;
+      if (existingTask.dueDate && (!agentTask.dueDate || agentTask.dueDate.trim() === '')) {
+        agentTask.dueDate = existingTask.dueDate;
+      }
       if (agentTask.timeEffort === undefined) agentTask.timeEffort = existingTask.timeEffort;
       if (agentTask.timeSpent === 0) agentTask.timeSpent = existingTask.timeSpent;
       if (agentTask.sortOrder === 0) agentTask.sortOrder = existingTask.sortOrder;
@@ -764,6 +804,10 @@ export async function applyAgentChanges(
 
   for (const task of diff.newTasks) {
     await saveTask(task);
+    if (task.completed || task.status === 'Done') {
+      const logEntry = createLogEntry(task.id, task.title);
+      await saveActivityLogEntry(logEntry).catch(console.error);
+    }
     const entry: AuditLogEntry = {
       id: generateShortId(),
       projectId,
@@ -780,6 +824,10 @@ export async function applyAgentChanges(
 
   for (const modified of diff.modifiedTasks) {
     await saveTask(modified.after);
+    if (modified.after.completed || modified.after.status === 'Done') {
+      const logEntry = createLogEntry(modified.after.id, modified.after.title);
+      await saveActivityLogEntry(logEntry).catch(console.error);
+    }
     const diffSummary: Record<string, { before: string; after: string }> = {};
     for (const field of modified.changedFields) {
       diffSummary[field] = {

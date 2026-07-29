@@ -17,4 +17,5 @@ export interface Project {
   dueDate?: string;
   sortOrder?: number;
   vaultPath?: string;
+  workspacePaths?: string[];
 }

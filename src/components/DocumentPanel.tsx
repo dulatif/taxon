@@ -141,12 +141,12 @@ export default function DocumentPanel({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="relative w-full max-w-2xl h-full bg-[#0A0A0A] border-l border-[#27272A] shadow-2xl flex flex-col pointer-events-auto z-10 text-white font-sans overflow-hidden"
+          className="relative w-full max-w-2xl h-full bg-surface-elevated border-l border-border-primary shadow-2xl flex flex-col pointer-events-auto z-10 text-text-primary font-sans overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] bg-[#0A0A0A] shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary bg-surface-elevated shrink-0">
             <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
-              <div className="p-2 rounded-lg bg-[#141313] border border-[#27272A] shrink-0">
+              <div className="p-2 rounded-lg bg-surface-primary border border-border-primary shrink-0">
                 {isCode ? (
                   <FileCode className="w-4 h-4 text-cyan-400" />
                 ) : (
@@ -155,13 +155,13 @@ export default function DocumentPanel({
               </div>
               <div className="min-w-0">
                 <h3
-                  className="text-sm font-bold text-white truncate tracking-tight font-sans"
+                  className="text-sm font-bold text-text-primary truncate tracking-tight font-sans"
                   title={entry.name}
                 >
                   {entry.name}
                 </h3>
                 <p
-                  className="text-[10px] text-[#8E9192] font-mono truncate mt-0.5"
+                  className="text-[10px] text-text-muted font-mono truncate mt-0.5"
                   title={entry.path}
                 >
                   {entry.path}
@@ -171,14 +171,14 @@ export default function DocumentPanel({
 
             <div className="flex items-center gap-2 shrink-0">
               {/* View / Edit Mode Toggle Button */}
-              <div className="bg-[#141313] p-1 rounded-lg border border-[#27272A] flex items-center gap-1">
+              <div className="bg-surface-primary p-1 rounded-lg border border-border-primary flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleToggleMode('view')}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                     mode === 'view'
-                      ? 'bg-white text-black font-bold shadow'
-                      : 'text-[#8E9192] hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow'
+                      : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
@@ -189,8 +189,8 @@ export default function DocumentPanel({
                   onClick={() => handleToggleMode('edit')}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                     mode === 'edit'
-                      ? 'bg-white text-black font-bold shadow'
-                      : 'text-[#8E9192] hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow'
+                      : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ export default function DocumentPanel({
                 type="button"
                 onClick={handleClose}
                 title="Close Document (Auto-Saves)"
-                className="p-2 text-[#8E9192] hover:text-white hover:bg-[#141313] rounded-lg transition-colors cursor-pointer"
+                className="p-2 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -211,10 +211,10 @@ export default function DocumentPanel({
           </div>
 
           {/* Document Content / Editor Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin bg-black/30">
+          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin bg-surface-app/30">
             {isLoading ? (
-              <div className="h-full flex flex-col items-center justify-center text-[#8E9192] space-y-3">
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
+              <div className="h-full flex flex-col items-center justify-center text-text-muted space-y-3">
+                <Loader2 className="w-6 h-6 animate-spin text-text-primary" />
                 <span className="text-xs font-mono uppercase tracking-wider">
                   Loading document...
                 </span>
@@ -233,13 +233,13 @@ export default function DocumentPanel({
                   setSaveStatus('dirty');
                 }}
                 placeholder="Write your markdown or text document here..."
-                className="w-full h-full min-h-[420px] bg-[#0E0E0F] border border-[#27272A] rounded-xl p-4 text-xs font-mono text-[#E4E4E7] leading-relaxed focus:outline-none focus:border-white/40 resize-none shadow-inner"
+                className="w-full h-full min-h-[420px] bg-surface-secondary border border-border-primary rounded-xl p-4 text-xs font-mono text-text-primary leading-relaxed focus:outline-none focus:border-interactive-primary/40 resize-none shadow-inner"
               />
             )}
           </div>
 
           {/* Footer Bar */}
-          <div className="px-6 py-3 border-t border-[#27272A] bg-[#0A0A0A] flex items-center justify-between gap-4 shrink-0">
+          <div className="px-6 py-3 border-t border-border-primary bg-surface-elevated flex items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-2 text-xs font-mono">
               {saveStatus === 'saving' && (
                 <span className="flex items-center gap-1.5 text-amber-400">
@@ -272,7 +272,7 @@ export default function DocumentPanel({
                 <button
                   type="button"
                   onClick={() => handleSave()}
-                  className="ml-2 bg-white/10 hover:bg-white/20 text-white px-2 py-0.5 rounded flex items-center gap-1 text-[10px] cursor-pointer"
+                  className="ml-2 bg-interactive-primary/10 hover:bg-interactive-primary/20 text-interactive-primary px-2 py-0.5 rounded flex items-center gap-1 text-[10px] cursor-pointer"
                 >
                   <Save className="w-3 h-3" /> Save Now
                 </button>
@@ -292,7 +292,7 @@ export default function DocumentPanel({
                     console.error('Failed to open file in external editor:', e);
                   }
                 }}
-                className="flex items-center gap-1.5 bg-[#141313] hover:bg-[#201F1F] border border-[#27272A] text-[#C4C7C8] hover:text-white text-xs font-mono px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 bg-surface-primary hover:bg-surface-hover border border-border-primary text-text-muted hover:text-text-primary text-xs font-mono px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Open in external editor</span>

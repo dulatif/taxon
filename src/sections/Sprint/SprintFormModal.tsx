@@ -1,5 +1,6 @@
 import { Edit3, Sparkles, X } from 'lucide-react';
 import { motion } from 'motion/react';
+import CustomSelect from '../../components/CustomSelect';
 import type { Sprint } from '../../types';
 import SprintDatePicker from './SprintDatePicker';
 
@@ -38,6 +39,12 @@ export default function SprintFormModal({
     e.preventDefault();
     onSubmit();
   };
+
+  const statusOptions: { value: Sprint['status']; label: string }[] = [
+    { value: 'Planned', label: 'Planned' },
+    { value: 'Active', label: 'Active' },
+    { value: 'Completed', label: 'Completed' },
+  ];
 
   return (
     <motion.form
@@ -85,15 +92,13 @@ export default function SprintFormModal({
         {isEdit && setStatus && status && (
           <div>
             <label className="block text-[11px] font-mono text-text-muted mb-1">Status</label>
-            <select
+            <CustomSelect
               value={status}
-              onChange={(e) => setStatus(e.target.value as Sprint['status'])}
-              className="w-full bg-surface-primary border border-border-primary rounded px-2.5 py-1.5 text-xs text-text-primary focus:outline-none focus:border-interactive-primary cursor-pointer"
-            >
-              <option value="Planned">Planned</option>
-              <option value="Active">Active</option>
-              <option value="Completed">Completed</option>
-            </select>
+              onChange={(v) => setStatus(v as Sprint['status'])}
+              options={statusOptions}
+              buttonClassName="w-full justify-between"
+              size="sm"
+            />
           </div>
         )}
 

@@ -73,7 +73,13 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
                   : undefined,
               };
             }
-            const updatedTask = { ...t, completed: true, status: 'Done' as const };
+            const effectiveDueDate = !t.dueDate ? getTodayStr() : t.dueDate;
+            const updatedTask = {
+              ...t,
+              completed: true,
+              status: 'Done' as const,
+              dueDate: effectiveDueDate,
+            };
             saveTask(updatedTask);
             return updatedTask;
           }
@@ -127,10 +133,12 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
                 };
               }
             }
+            const effectiveDueDate = willComplete && !t.dueDate ? getTodayStr() : t.dueDate;
             const updatedTask = {
               ...t,
               completed: willComplete,
               status: willComplete ? ('Done' as const) : ('To Do' as const),
+              dueDate: effectiveDueDate,
             };
             saveTask(updatedTask);
             return updatedTask;
@@ -167,10 +175,14 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
 
   const handleUpdateTaskDetail = useCallback(
     (updatedTask: Task) => {
-      setTasks((prev) => prev.map((t) => (t.id === updatedTask.id ? updatedTask : t)));
-      saveTask(updatedTask);
-      if (updatedTask.projectId) {
-        setTimeout(() => options?.onProjectProgressChanged?.(updatedTask.projectId!), 50);
+      const taskToSave = { ...updatedTask };
+      if ((taskToSave.completed || taskToSave.status === 'Done') && !taskToSave.dueDate) {
+        taskToSave.dueDate = getTodayStr();
+      }
+      setTasks((prev) => prev.map((t) => (t.id === taskToSave.id ? taskToSave : t)));
+      saveTask(taskToSave);
+      if (taskToSave.projectId) {
+        setTimeout(() => options?.onProjectProgressChanged?.(taskToSave.projectId!), 50);
       }
     },
     [options],
@@ -204,10 +216,12 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
                 };
               }
             }
+            const effectiveDueDate = willComplete && !t.dueDate ? getTodayStr() : t.dueDate;
             const updatedTask = {
               ...t,
               status: newStatus,
               completed: willComplete,
+              dueDate: effectiveDueDate,
             };
             saveTask(updatedTask);
             return updatedTask;

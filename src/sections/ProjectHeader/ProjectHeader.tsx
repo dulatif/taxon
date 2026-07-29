@@ -1,4 +1,5 @@
-import { CalendarIcon, CheckCircle, Edit, Trash2 } from 'lucide-react';
+import { open } from '@tauri-apps/plugin-dialog';
+import { CalendarIcon, CheckCircle, Edit, Folder, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
@@ -14,6 +15,7 @@ interface ProjectHeaderProps {
     description: string,
     category?: string,
     dueDate?: string,
+    workspacePaths?: string[],
   ) => void;
   onCompleteProject: (projectId: string) => void;
   onDeleteProjectClick: () => void;
@@ -32,13 +34,36 @@ export default function ProjectHeader({
   const [editDesc, setEditDesc] = useState(project.description);
   const [editCategory, setEditCategory] = useState(project.category);
   const [editDueDate] = useState(project.dueDate || '');
+  const [editWorkspacePaths, setEditWorkspacePaths] = useState<string[]>(
+    project.workspacePaths || [],
+  );
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [isCustomCategoryMode, setIsCustomCategoryMode] = useState(false);
+
+  const handleAddWorkspacePath = async () => {
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: true,
+        title: 'Select Workspace Directories',
+      });
+      if (selected) {
+        const pathsToAdd = Array.isArray(selected) ? selected : [selected];
+        setEditWorkspacePaths((prev) => Array.from(new Set([...prev, ...pathsToAdd])));
+      }
+    } catch (err) {
+      console.error('Failed to open directory dialog', err);
+    }
+  };
+
+  const handleRemoveWorkspacePath = (pathToRemove: string) => {
+    setEditWorkspacePaths((prev) => prev.filter((p) => p !== pathToRemove));
+  };
 
   const handleSaveProjectEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editName.trim()) return;
-    onEditProject(project.id, editName, editDesc, editCategory, editDueDate);
+    onEditProject(project.id, editName, editDesc, editCategory, editDueDate, editWorkspacePaths);
     setIsEditingProj(false);
   };
 
@@ -50,13 +75,13 @@ export default function ProjectHeader({
             type="text"
             value={editName}
             onChange={(e) => setEditName(e.target.value)}
-            className="bg-black text-text-primary border border-border-primary text-xl font-bold rounded p-2 w-full focus:outline-none focus:border-white"
+            className="bg-surface-primary text-text-primary border border-border-primary text-xl font-bold rounded p-2 w-full focus:outline-none focus:border-white"
             required
           />
           <textarea
             value={editDesc}
             onChange={(e) => setEditDesc(e.target.value)}
-            className="bg-black text-text-secondary border border-border-primary text-sm rounded p-2 w-full h-20 focus:outline-none focus:border-white"
+            className="bg-surface-primary text-text-secondary border border-border-primary text-sm rounded p-2 w-full h-20 focus:outline-none focus:border-white"
           />
           <div className="grid grid-cols-2 gap-4">
             <div className="relative">
@@ -66,7 +91,7 @@ export default function ProjectHeader({
               <button
                 type="button"
                 onClick={() => setIsDatePickerOpen(!isDatePickerOpen)}
-                className="bg-black border border-border-primary text-xs text-text-primary rounded p-2 w-full focus:outline-none focus:border-white flex items-center justify-between cursor-pointer"
+                className="bg-surface-primary border border-border-primary text-xs text-text-primary rounded p-2 w-full focus:outline-none focus:border-white flex items-center justify-between cursor-pointer"
               >
                 {editDueDate ? (
                   <span className="font-semibold">{formatDisplayDate(editDueDate)}</span>
@@ -87,7 +112,7 @@ export default function ProjectHeader({
                   value={editCategory}
                   onChange={(e) => setEditCategory(e.target.value)}
                   placeholder="Custom Category"
-                  className="bg-black border border-border-primary text-xs text-text-primary rounded p-2 w-full focus:outline-none focus:border-white"
+                  className="bg-surface-primary border border-border-primary text-xs text-text-primary rounded p-2 w-full focus:outline-none focus:border-white"
                   autoFocus
                 />
               ) : (
@@ -101,7 +126,7 @@ export default function ProjectHeader({
                       setEditCategory(e.target.value);
                     }
                   }}
-                  className="bg-black border border-border-primary text-xs text-text-primary rounded p-2 w-full focus:outline-none focus:border-white appearance-none"
+                  className="bg-surface-primary border border-border-primary text-xs text-text-primary rounded p-2 w-full focus:outline-none focus:border-white appearance-none"
                 >
                   {availableCategories.map((cat) => (
                     <option key={cat} value={cat}>
@@ -112,6 +137,45 @@ export default function ProjectHeader({
                 </select>
               )}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted font-mono">
+                Workspace Repositories
+              </label>
+              <button
+                type="button"
+                onClick={handleAddWorkspacePath}
+                className="flex items-center gap-1 text-[10px] font-bold text-interactive-primary hover:text-interactive-primary/80 transition-colors uppercase tracking-wider font-mono cursor-pointer"
+              >
+                <Plus className="w-3 h-3" /> Add Directory
+              </button>
+            </div>
+            {editWorkspacePaths.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {editWorkspacePaths.map((p) => (
+                  <div
+                    key={p}
+                    className="flex items-center gap-1.5 bg-surface-primary border border-border-primary rounded px-2 py-1 text-xs text-text-secondary"
+                  >
+                    <Folder className="w-3 h-3 text-text-muted" />
+                    <span className="truncate max-w-[200px]" title={p}>
+                      {p.split('/').pop() || p}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveWorkspacePath(p)}
+                      className="text-text-muted hover:text-red-400 p-0.5 ml-1 transition-colors cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-text-muted italic">No workspace directories linked.</p>
+            )}
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
@@ -155,6 +219,24 @@ export default function ProjectHeader({
               <p className="text-text-secondary text-sm max-w-2xl leading-relaxed whitespace-pre-wrap">
                 {project.description}
               </p>
+
+              {project.workspacePaths && project.workspacePaths.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-wider font-mono mr-1">
+                    Workspaces:
+                  </span>
+                  {project.workspacePaths.map((p) => (
+                    <span
+                      key={p}
+                      title={p}
+                      className="flex items-center gap-1.5 text-xs text-text-secondary bg-surface-primary border border-border-primary/50 px-2 py-1 rounded shadow-sm"
+                    >
+                      <Folder className="w-3 h-3 text-text-muted" />
+                      {p.split('/').pop() || p}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-2">

@@ -341,6 +341,7 @@ export default function App() {
             onDeleteSprint={handleDeleteSprint}
             onAssignTaskToSprint={handleAssignTaskToSprint}
             onSprintRollover={handleSprintRollover}
+            onMoveTaskStatus={handleMoveTaskStatus}
             onToggleTask={handleToggleTask}
             onAddTask={handleAddTask}
             onDeleteTask={handleDeleteTask}

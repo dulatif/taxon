@@ -28,7 +28,8 @@ export const initDb = (): Promise<Database> => {
             dueDays INTEGER,
             dueDate TEXT,
             sortOrder INTEGER,
-            vaultPath TEXT
+            vaultPath TEXT,
+            workspacePaths TEXT
         );
       `)
         .catch(() => {});
@@ -171,6 +172,11 @@ export const initDb = (): Promise<Database> => {
         // Column already exists
       }
       try {
+        await database.execute('ALTER TABLE projects ADD COLUMN workspacePaths TEXT');
+      } catch {
+        // Column already exists
+      }
+      try {
         await database.execute('ALTER TABLE tasks ADD COLUMN archived BOOLEAN');
       } catch {
         // Column already exists
@@ -186,18 +192,35 @@ export const initDb = (): Promise<Database> => {
   return dbPromise;
 };
 
-// --- Projects ---
 export const getProjects = async (): Promise<Project[]> => {
   const d = await initDb();
-  return d.select<Project[]>(
+  const rawProjects = await d.select<Record<string, unknown>[]>(
     'SELECT * FROM projects ORDER BY COALESCE(sortOrder, 999999) ASC, id ASC',
   );
+
+  const parseJSON = (val: unknown) => {
+    if (typeof val === 'string' && val.trim().startsWith('[')) {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  };
+
+  return rawProjects.map((p) => ({
+    ...p,
+    workspacePaths: parseJSON(p.workspacePaths),
+  })) as unknown as Project[];
 };
 
 export const saveProject = async (p: Project) => {
   const d = await initDb();
+  const workspacePathsStr = p.workspacePaths ? JSON.stringify(p.workspacePaths) : null;
+
   await d.execute(
-    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate, workspacePaths) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
     [
       p.id ?? null,
       p.name ?? null,
@@ -208,6 +231,7 @@ export const saveProject = async (p: Project) => {
       p.sortOrder ?? null,
       p.vaultPath ?? null,
       p.dueDate ?? null,
+      workspacePathsStr,
     ],
   );
 };

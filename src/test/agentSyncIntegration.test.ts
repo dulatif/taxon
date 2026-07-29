@@ -59,6 +59,8 @@ vi.mock('../services/database', () => {
       db.sprints[sprint.id] = sprint;
     }),
     saveAuditLogEntry: vi.fn(async () => {}),
+    getActivityLog: vi.fn(async () => []),
+    saveActivityLogEntry: vi.fn(async () => {}),
     _getMockDb: () => db,
     _resetMockDb: () => {
       db.tasks = {};
@@ -194,6 +196,33 @@ New task added by agent.
     expect(diff.modifiedTasks.length).toBe(1);
     expect(diff.modifiedTasks[0]!.changedFields).toContain('priority');
     expect(diff.modifiedTasks[0]!.after.priority).toBe('High');
+  });
+
+  it('should preserve existing task dueDate when imported task has empty dueDate', async () => {
+    const existingTasksWithDueDate: Task[] = [
+      {
+        ...mockTasks[0]!,
+        dueDate: '2026-07-30',
+      },
+    ];
+
+    const importedTaskWithNoDueDate: Task[] = [
+      {
+        ...mockTasks[0]!,
+        dueDate: '',
+      },
+    ];
+
+    const diff = diffAgentChanges(
+      mockProject.id,
+      existingTasksWithDueDate,
+      mockSprints,
+      importedTaskWithNoDueDate,
+      [],
+    );
+
+    expect(diff.modifiedTasks.length).toBe(0);
+    expect(importedTaskWithNoDueDate[0]!.dueDate).toBe('2026-07-30');
   });
 
   it('should ignore deleted files in the diff', async () => {
