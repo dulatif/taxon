@@ -139,7 +139,7 @@ export default function Sidebar({
         {timerIsRunning && currentView !== 'dashboard' && timerSeconds !== undefined && (
           <div
             onClick={onLaunchFocusMode}
-            className="bg-surface-secondary hover:bg-surface-hover border border-border-primary/50 hover:border-border-primary/80 rounded-lg p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
+            className="bg-surface-secondary hover:bg-surface-hover border border-border-primary/50 hover:border-border-primary/80 rounded-md p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
             title="Click to open full screen Focus Mode"
           >
             <div className="flex items-center justify-between mb-1">
@@ -177,7 +177,7 @@ export default function Sidebar({
               key={item.id}
               onClick={() => onViewChange(item.id)}
               id={`nav-${item.id}`}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md font-sans tracking-tight text-sm transition-all duration-200 ${
                 currentView === item.id
                   ? 'text-text-primary font-bold bg-surface-hover'
                   : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary'

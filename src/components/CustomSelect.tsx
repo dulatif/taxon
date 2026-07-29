@@ -59,9 +59,9 @@ export default function CustomSelect<T extends string = string>({
   }, [isOpen]);
 
   const sizeClasses = {
-    xs: 'px-2 py-1 text-xs',
-    sm: 'px-3 py-1.5 text-xs',
-    md: 'px-3.5 py-2 text-sm',
+    xs: 'px-2 py-1.5 text-xs',
+    sm: 'px-3 py-2 text-xs',
+    md: 'px-3.5 py-2.5 text-sm',
   };
 
   return (
@@ -73,7 +73,7 @@ export default function CustomSelect<T extends string = string>({
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className={`flex items-center justify-between gap-2.5 font-mono text-left rounded-lg border transition-all cursor-pointer bg-surface-primary text-text-primary border-border-primary hover:border-interactive-primary/50 focus:outline-none focus:border-interactive-primary focus:ring-1 focus:ring-interactive-primary/50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${buttonClassName}`}
+        className={`flex items-center justify-between gap-2.5 font-mono text-left rounded-sm border transition-all cursor-pointer bg-surface-primary text-text-primary border-border-primary hover:border-interactive-primary/50 focus:outline-none focus:border-interactive-primary focus:ring-1 focus:ring-interactive-primary/50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${buttonClassName}`}
       >
         <span className="flex items-center gap-1.5 truncate">
           {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
@@ -93,7 +93,7 @@ export default function CustomSelect<T extends string = string>({
 
       {isOpen && (
         <div
-          className={`absolute top-full left-0 mt-1 z-50 min-w-[160px] max-h-60 overflow-y-auto bg-surface-secondary border border-border-primary/80 rounded-xl shadow-xl py-1 backdrop-blur-md transition-all animate-in fade-in duration-100 ${dropdownClassName}`}
+          className={`absolute top-full left-0 mt-1 z-50 min-w-[160px] max-h-60 overflow-y-auto bg-surface-secondary border border-border-primary/80 rounded-md shadow-xl py-1 backdrop-blur-md transition-all animate-in fade-in duration-100 ${dropdownClassName}`}
         >
           {options.map((option) => {
             const isSelected = option.value === value;

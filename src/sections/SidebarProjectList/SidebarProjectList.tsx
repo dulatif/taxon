@@ -67,7 +67,7 @@ export default function SidebarProjectList({
                 {/* Accordion Header */}
                 <div
                   onClick={() => toggleCategory(cat)}
-                  className="flex items-center justify-between px-3 py-1.5 cursor-pointer group rounded-lg hover:bg-surface-secondary transition-colors select-none"
+                  className="flex items-center justify-between px-3 py-1.5 cursor-pointer group rounded-md hover:bg-surface-secondary transition-colors select-none"
                 >
                   <div className="flex items-center gap-2 overflow-hidden">
                     <ChevronRight
@@ -134,7 +134,7 @@ export default function SidebarProjectList({
                                       role="button"
                                       tabIndex={0}
                                       onClick={() => onProjectSelect(project.id)}
-                                      className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-lg font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis cursor-grab active:cursor-grabbing select-none ${
+                                      className={`w-full flex items-center gap-3 px-3 py-1.5 rounded-md font-sans text-sm text-left transition-colors whitespace-nowrap overflow-hidden text-ellipsis cursor-grab active:cursor-grabbing select-none ${
                                         snapshot.isDragging
                                           ? 'bg-surface-hover text-text-primary ring-1 ring-white/30 shadow-lg z-50'
                                           : isSelected
@@ -168,7 +168,7 @@ export default function SidebarProjectList({
       <button
         onClick={onAddProjectClick}
         id="btn-new-project-sidebar"
-        className="w-full flex items-center gap-3 px-3 py-2 mt-4 text-xs text-text-secondary/70 hover:text-text-primary hover:bg-surface-secondary transition-colors rounded-lg group text-left border border-dashed border-border-primary hover:border-white/30 cursor-pointer"
+        className="w-full flex items-center gap-3 px-3 py-2 mt-4 text-xs text-text-secondary/70 hover:text-text-primary hover:bg-surface-secondary transition-colors rounded-md group text-left border border-dashed border-border-primary hover:border-white/30 cursor-pointer"
       >
         <Plus className="w-3.5 h-3.5" />
         <span>New Project</span>

@@ -250,14 +250,14 @@ export default function ProjectHeader({
                 {project.category !== 'Completed' && (
                   <button
                     onClick={() => onCompleteProject(project.id)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-green-500/10 border border-green-500/30 text-green-400 hover:bg-green-500/20 hover:text-green-300 rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(74,222,128,0.2)] cursor-pointer"
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/20 hover:text-green-700 dark:hover:text-green-300 rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(74,222,128,0.2)] cursor-pointer"
                   >
                     <CheckCircle className="w-4 h-4" /> Complete
                   </button>
                 )}
                 <button
                   onClick={onDeleteProjectClick}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(248,113,113,0.2)] cursor-pointer"
+                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/20 hover:text-red-700 dark:hover:text-red-300 rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(248,113,113,0.2)] cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" /> Delete
                 </button>

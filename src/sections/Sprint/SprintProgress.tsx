@@ -57,10 +57,10 @@ export default function SprintProgress({
           </span>
           {isOverdue && (
             <span
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 shadow-sm"
               title="Sprint has exceeded its end date!"
             >
-              <AlertTriangle className="w-3 h-3 text-amber-400 animate-bounce" />
+              <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 animate-bounce" />
               EXCEEDED DUE DATE
             </span>
           )}
@@ -74,7 +74,7 @@ export default function SprintProgress({
               <span
                 className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded border ${
                   isOverdue
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
                     : 'bg-interactive-primary/10 text-interactive-primary border-interactive-primary/30'
                 }`}
               >
