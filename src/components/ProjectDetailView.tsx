@@ -498,7 +498,9 @@ export default function ProjectDetailView({
                 tasks={projectTasks}
                 sprints={sprints}
                 onMoveTaskStatus={onMoveTaskStatus}
-                onAddTaskToProject={onAddTask}
+                onAddTaskToProject={(title, projId, sprintId) =>
+                  onAddTask(title, projId, undefined, undefined, sprintId)
+                }
                 onSelectTask={onSelectTask}
                 onAssignTaskToSprint={onAssignTaskToSprint}
                 hideToolbar={true}
