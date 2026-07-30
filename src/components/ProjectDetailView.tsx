@@ -350,7 +350,7 @@ export default function ProjectDetailView({
                 size="sm"
                 variant={viewMode === 'list' ? 'primary' : 'ghost'}
                 onClick={() => setViewMode('list')}
-                className="text-xs font-semibold"
+                className="text-xs font-semibold px-4"
               >
                 List
               </Button>
@@ -359,7 +359,7 @@ export default function ProjectDetailView({
                 size="sm"
                 variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
                 onClick={() => setViewMode('kanban')}
-                className="text-xs font-semibold"
+                className="text-xs font-semibold px-4"
               >
                 Kanban
               </Button>
@@ -378,6 +378,30 @@ export default function ProjectDetailView({
               size="sm"
             />
           </div>
+
+          {/* Right side of toolbar for Vault/Agent tabs when in list mode */}
+          {viewMode === 'list' && (
+            <div className="flex bg-surface-primary border border-border-primary rounded-lg p-0.5">
+              <Button
+                type="button"
+                size="sm"
+                variant={sidebarTab === 'vault' ? 'primary' : 'ghost'}
+                onClick={() => setSidebarTab('vault')}
+                className="text-[11px] font-bold px-3"
+              >
+                Project Vault
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={sidebarTab === 'agent' ? 'primary' : 'ghost'}
+                onClick={() => setSidebarTab('agent')}
+                className="text-[11px] font-bold px-3"
+              >
+                AI Agent Sync
+              </Button>
+            </div>
+          )}
         </div>
       )}
 
@@ -528,31 +552,6 @@ export default function ProjectDetailView({
         {/* Right Column: Documents & Agent */}
         {viewMode === 'list' && (
           <div className="col-span-12 lg:col-span-4 space-y-6">
-            <div className="flex bg-surface-primary border border-border-primary rounded-lg p-1">
-              <button
-                type="button"
-                className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-md transition-all cursor-pointer ${
-                  sidebarTab === 'vault'
-                    ? 'bg-surface-secondary text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.1)] border border-border-primary/50'
-                    : 'text-text-muted hover:text-text-primary border border-transparent'
-                }`}
-                onClick={() => setSidebarTab('vault')}
-              >
-                Project Vault
-              </button>
-              <button
-                type="button"
-                className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-md transition-all cursor-pointer ${
-                  sidebarTab === 'agent'
-                    ? 'bg-surface-secondary text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.1)] border border-border-primary/50'
-                    : 'text-text-muted hover:text-text-primary border border-transparent'
-                }`}
-                onClick={() => setSidebarTab('agent')}
-              >
-                AI Agent Sync
-              </button>
-            </div>
-
             {sidebarTab === 'vault' ? (
               <ProjectFiles
                 project={project}
