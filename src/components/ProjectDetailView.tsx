@@ -112,6 +112,7 @@ export default function ProjectDetailView({
   const [dueDateFilter, setDueDateFilter] = useState<string>('all');
   const [taskTab, setTaskTab] = useState<TaskTabType>('todo');
   const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [sidebarTab, setSidebarTab] = useState<'vault' | 'agent'>('vault');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
     const activeSprint = sprints?.find((s) => s.projectId === project.id && s.status === 'Active');
@@ -527,44 +528,72 @@ export default function ProjectDetailView({
         {/* Right Column: Documents & Agent */}
         {viewMode === 'list' && (
           <div className="col-span-12 lg:col-span-4 space-y-6">
-            <ProjectFiles
-              project={project}
-              projectFiles={projectFiles}
-              vaultEntries={vaultEntries}
-              selectedDocumentPath={selectedDocument?.path}
-              onSetVaultDirectory={handleSetVaultDirectory}
-              onSelectFile={(entry) => {
-                setSelectedDocument(entry);
-                setIsDocumentPanelOpen(true);
-              }}
-              onDeleteVaultDoc={setDocToDelete}
-              onCreateVaultDoc={handleCreateVaultDoc}
-              onRefreshVault={refreshVault}
-              onAddNativeFile={handleNativeAddFile}
-              onDeleteNativeFile={onDeleteFile}
-            />
-            <AgentSyncPanel
-              project={project}
-              syncState={syncState}
-              agentEntries={agentEntries}
-              isExporting={isExporting}
-              isScanning={isScanning}
-              hasVaultPath={!!project.vaultPath}
-              auditSummary={auditSummary}
-              error={error}
-              onExport={exportToAgent}
-              onImport={handleScanForChanges}
-              onCleanUpArchived={cleanUpArchived}
-              onCopyContextSnapshot={copyContextSnapshot}
-              onOpenAuditLog={openAuditLog}
-              onInstallGitHook={installGitHook}
-              onSetVaultDirectory={handleSetVaultDirectory}
-              onSelectFile={(entry) => {
-                setSelectedDocument(entry);
-                setIsDocumentPanelOpen(true);
-              }}
-              onRefreshEntries={refreshAgentEntries}
-            />
+            <div className="flex bg-surface-primary border border-border-primary rounded-lg p-1">
+              <button
+                type="button"
+                className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-md transition-all cursor-pointer ${
+                  sidebarTab === 'vault'
+                    ? 'bg-surface-secondary text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.1)] border border-border-primary/50'
+                    : 'text-text-muted hover:text-text-primary border border-transparent'
+                }`}
+                onClick={() => setSidebarTab('vault')}
+              >
+                Project Vault
+              </button>
+              <button
+                type="button"
+                className={`flex-1 py-1.5 text-xs font-bold font-mono rounded-md transition-all cursor-pointer ${
+                  sidebarTab === 'agent'
+                    ? 'bg-surface-secondary text-text-primary shadow-[0_1px_2px_rgba(0,0,0,0.1)] border border-border-primary/50'
+                    : 'text-text-muted hover:text-text-primary border border-transparent'
+                }`}
+                onClick={() => setSidebarTab('agent')}
+              >
+                AI Agent Sync
+              </button>
+            </div>
+
+            {sidebarTab === 'vault' ? (
+              <ProjectFiles
+                project={project}
+                projectFiles={projectFiles}
+                vaultEntries={vaultEntries}
+                selectedDocumentPath={selectedDocument?.path}
+                onSetVaultDirectory={handleSetVaultDirectory}
+                onSelectFile={(entry) => {
+                  setSelectedDocument(entry);
+                  setIsDocumentPanelOpen(true);
+                }}
+                onDeleteVaultDoc={setDocToDelete}
+                onCreateVaultDoc={handleCreateVaultDoc}
+                onRefreshVault={refreshVault}
+                onAddNativeFile={handleNativeAddFile}
+                onDeleteNativeFile={onDeleteFile}
+              />
+            ) : (
+              <AgentSyncPanel
+                project={project}
+                syncState={syncState}
+                agentEntries={agentEntries}
+                isExporting={isExporting}
+                isScanning={isScanning}
+                hasVaultPath={!!project.vaultPath}
+                auditSummary={auditSummary}
+                error={error}
+                onExport={exportToAgent}
+                onImport={handleScanForChanges}
+                onCleanUpArchived={cleanUpArchived}
+                onCopyContextSnapshot={copyContextSnapshot}
+                onOpenAuditLog={openAuditLog}
+                onInstallGitHook={installGitHook}
+                onSetVaultDirectory={handleSetVaultDirectory}
+                onSelectFile={(entry) => {
+                  setSelectedDocument(entry);
+                  setIsDocumentPanelOpen(true);
+                }}
+                onRefreshEntries={refreshAgentEntries}
+              />
+            )}
           </div>
         )}
       </div>

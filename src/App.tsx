@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import CalendarView from './components/CalendarView';
 import DashboardView from './components/DashboardView';
@@ -45,6 +45,14 @@ export default function App() {
     setCurrentView,
   } = useAppNavigation();
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+
+  // --- Scroll Reset ---
+  useEffect(() => {
+    const mainContent = document.getElementById('main-scroll-container');
+    if (mainContent) {
+      mainContent.scrollTop = 0;
+    }
+  }, [currentView, selectedProjectId]);
 
   // --- Modal Dialog States ---
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
