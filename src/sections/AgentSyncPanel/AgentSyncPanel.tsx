@@ -122,7 +122,7 @@ export default function AgentSyncPanel({
   };
 
   return (
-    <div className="bg-surface-secondary border border-border-primary rounded-xl p-6 mt-6">
+    <div className="bg-surface-secondary border border-border-primary rounded-xl p-6">
       <div className="flex justify-between items-center mb-4 pb-2 border-b border-border-primary/50">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider font-mono flex items-center gap-2">
           <Bot className="w-4 h-4 text-emerald-400" />
