@@ -1,7 +1,9 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { Archive, CheckSquare, RotateCcw, Square, Trash2 } from 'lucide-react';
-import CustomSelect from '../../components/CustomSelect';
+import { useEffect, useState } from 'react';
+import Button from '../../components/Button';
+
 import type { Project, Sprint, Task } from '../../types';
 import type { TaskSortType, TaskTabType } from '../ProjectTabs/ProjectTabs';
 
@@ -26,18 +28,22 @@ export default function ProjectTaskList({
   tasks,
   projectTasks,
   project,
-  sprints,
   taskTab,
   selectedSort,
   dueDateFilter,
   onToggleTask,
   onReorderTasks,
   onSelectTask,
-  onAssignTaskToSprint,
   onArchiveTask,
   onUnarchiveTask,
   onSetTaskToDelete,
 }: ProjectTaskListProps) {
+  const [visibleCount, setVisibleCount] = useState(10);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setVisibleCount(10);
+  }, [project.id, taskTab]);
   const filterByDueDate = (list: Task[]) => {
     if (dueDateFilter === 'all') return list;
     if (dueDateFilter === 'unscheduled') return list.filter((t) => !t.dueDate);
@@ -83,6 +89,7 @@ export default function ProjectTaskList({
   };
 
   const sortedTasks = sortTasksHelper(currentFilteredTasks);
+  const visibleTasks = sortedTasks.slice(0, visibleCount);
 
   const handleDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
@@ -132,15 +139,6 @@ export default function ProjectTaskList({
     onReorderTasks([...reorderedProjectTasks, ...otherTasks]);
   };
 
-  const sprintOptions = [
-    { value: '__backlog__', label: 'Backlog' },
-    ...(sprints
-      ? sprints
-          .filter((s) => s.projectId === project.id)
-          .map((s) => ({ value: s.id, label: s.name }))
-      : []),
-  ];
-
   const emptyMessages: Record<string, string> = {
     all: 'No tasks found.',
     todo: 'No active tasks. Use the field below to add one!',
@@ -167,165 +165,166 @@ export default function ProjectTaskList({
                 {emptyMessages[taskTab] || 'No tasks matching current filter.'}
               </div>
             ) : (
-              sortedTasks.map((task, index) => (
-                <Draggable
-                  key={task.id}
-                  draggableId={task.id}
-                  index={index}
-                  isDragDisabled={selectedSort !== 'custom'}
-                >
-                  {(provided, snapshot) => (
-                    <li
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
-                      {...provided.dragHandleProps}
-                      id={`task-item-${task.id}`}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => onSelectTask?.(task)}
-                      className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${
-                        snapshot.isDragging
-                          ? 'bg-surface-hover text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
-                          : 'hover:bg-surface-secondary/10'
-                      }`}
-                    >
-                      <div className="flex items-start gap-4 flex-1 mr-4">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onToggleTask(task.id);
-                          }}
-                          className={`shrink-0 mt-0.5 transition-colors cursor-pointer ${
-                            task.completed || task.status === 'Done'
-                              ? 'text-green-400 hover:text-green-300'
-                              : 'text-text-muted hover:text-text-primary'
-                          }`}
-                        >
-                          {task.completed || task.status === 'Done' ? (
-                            <CheckSquare className="w-4 h-4" />
-                          ) : (
-                            <Square className="w-4 h-4" />
-                          )}
-                        </button>
-
-                        <div className="flex-1 min-w-0 flex items-start gap-2">
-                          <div
-                            className={`w-1.5 h-1.5 rounded-full shrink-0 mt-[6px] ${
-                              task.priority === 'Critical'
-                                ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]'
-                                : task.priority === 'High'
-                                  ? 'bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.5)]'
-                                  : task.priority === 'Medium'
-                                    ? 'bg-blue-400'
-                                    : 'bg-gray-500/50'
-                            }`}
-                            title={`Priority: ${task.priority || 'None'}`}
-                          />
-                          <p
-                            className={`text-xs font-semibold leading-relaxed ${
+              <>
+                {visibleTasks.map((task, index) => (
+                  <Draggable
+                    key={task.id}
+                    draggableId={task.id}
+                    index={index}
+                    isDragDisabled={selectedSort !== 'custom'}
+                  >
+                    {(provided, snapshot) => (
+                      <li
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        id={`task-item-${task.id}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelectTask?.(task)}
+                        className={`flex items-start justify-between py-3 px-3 rounded-lg transition-colors group cursor-grab active:cursor-grabbing select-none border border-transparent ${
+                          snapshot.isDragging
+                            ? 'bg-surface-hover text-white ring-1 ring-white/30 shadow-lg z-50 border-white/20'
+                            : 'hover:bg-surface-secondary/10'
+                        }`}
+                      >
+                        <div className="flex items-start gap-4 flex-1 mr-4">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onToggleTask(task.id);
+                            }}
+                            className={`shrink-0 mt-0.5 transition-colors cursor-pointer ${
                               task.completed || task.status === 'Done'
-                                ? 'line-through text-text-muted'
-                                : 'text-text-primary'
+                                ? 'text-green-400 hover:text-green-300'
+                                : 'text-text-muted hover:text-text-primary'
                             }`}
                           >
-                            {task.title}
-                          </p>
-                        </div>
-                      </div>
+                            {task.completed || task.status === 'Done' ? (
+                              <CheckSquare className="w-4 h-4" />
+                            ) : (
+                              <Square className="w-4 h-4" />
+                            )}
+                          </button>
 
-                      <div className="flex items-center gap-3 shrink-0">
-                        {sprints && !task.archived && (
-                          <div onClick={(e) => e.stopPropagation()}>
-                            <CustomSelect
-                              value={task.sprintId || '__backlog__'}
-                              onChange={(v) =>
-                                onAssignTaskToSprint?.(task.id, v === '__backlog__' ? null : v)
-                              }
-                              options={sprintOptions}
-                              size="xs"
-                              buttonClassName="text-blue-400 border-blue-500/30 text-[9px]"
+                          <div className="flex-1 min-w-0 flex items-start gap-2">
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full shrink-0 mt-[6px] ${
+                                task.priority === 'Critical'
+                                  ? 'bg-red-400 shadow-[0_0_6px_rgba(248,113,113,0.6)]'
+                                  : task.priority === 'High'
+                                    ? 'bg-orange-400 shadow-[0_0_6px_rgba(251,146,60,0.5)]'
+                                    : task.priority === 'Medium'
+                                      ? 'bg-blue-400'
+                                      : 'bg-gray-500/50'
+                              }`}
+                              title={`Priority: ${task.priority || 'None'}`}
                             />
+                            <p
+                              className={`text-xs font-semibold leading-relaxed ${
+                                task.completed || task.status === 'Done'
+                                  ? 'line-through text-text-muted'
+                                  : 'text-text-primary'
+                              }`}
+                            >
+                              {task.title}
+                            </p>
                           </div>
-                        )}
-                        {task.duration && !task.archived && (
-                          <span className="text-[9px] font-mono font-semibold bg-surface-primary px-1.5 py-0.5 rounded border border-border-primary/50 text-text-muted">
-                            {task.duration}
-                          </span>
-                        )}
-                        {task.subtasks && task.subtasks.length > 0 && (
-                          <div
-                            className="flex items-center justify-center shrink-0"
-                            title={`${task.subtasks.filter((st) => st.completed).length}/${task.subtasks.length} subtasks`}
-                          >
-                            <svg viewBox="0 0 36 36" className="w-4 h-4 -rotate-90">
-                              <circle
-                                cx="18"
-                                cy="18"
-                                r="15.9155"
-                                fill="none"
-                                className="stroke-border-primary"
-                                strokeWidth="4.5"
-                              />
-                              <circle
-                                cx="18"
-                                cy="18"
-                                r="15.9155"
-                                fill="none"
-                                className={
-                                  task.subtasks.filter((st) => st.completed).length ===
-                                  task.subtasks.length
-                                    ? 'stroke-green-400'
-                                    : 'stroke-interactive-primary'
-                                }
-                                strokeWidth="4.5"
-                                strokeDasharray={`${(task.subtasks.filter((st) => st.completed).length / task.subtasks.length) * 100}, 100`}
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                        {!task.archived ? (
+                        </div>
+
+                        <div className="flex items-center gap-3 shrink-0">
+                          {task.duration && !task.archived && (
+                            <span className="text-[9px] font-mono font-semibold bg-surface-primary px-1.5 py-0.5 rounded border border-border-primary/50 text-text-muted">
+                              {task.duration}
+                            </span>
+                          )}
+                          {task.subtasks && task.subtasks.length > 0 && (
+                            <div
+                              className="flex items-center justify-center shrink-0"
+                              title={`${task.subtasks.filter((st) => st.completed).length}/${task.subtasks.length} subtasks`}
+                            >
+                              <svg viewBox="0 0 36 36" className="w-4 h-4 -rotate-90">
+                                <circle
+                                  cx="18"
+                                  cy="18"
+                                  r="15.9155"
+                                  fill="none"
+                                  className="stroke-border-primary"
+                                  strokeWidth="4.5"
+                                />
+                                <circle
+                                  cx="18"
+                                  cy="18"
+                                  r="15.9155"
+                                  fill="none"
+                                  className={
+                                    task.subtasks.filter((st) => st.completed).length ===
+                                    task.subtasks.length
+                                      ? 'stroke-green-400'
+                                      : 'stroke-interactive-primary'
+                                  }
+                                  strokeWidth="4.5"
+                                  strokeDasharray={`${(task.subtasks.filter((st) => st.completed).length / task.subtasks.length) * 100}, 100`}
+                                  strokeLinecap="round"
+                                />
+                              </svg>
+                            </div>
+                          )}
+                          {!task.archived ? (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onArchiveTask?.(task.id);
+                              }}
+                              className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Archive task"
+                            >
+                              <Archive className="w-3.5 h-3.5" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onUnarchiveTask?.(task.id);
+                              }}
+                              className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                              title="Unarchive task"
+                            >
+                              <RotateCcw className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
-                              onArchiveTask?.(task.id);
+                              onSetTaskToDelete(task);
                             }}
-                            className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                            title="Archive task"
+                            className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            title="Delete task item"
                           >
-                            <Archive className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3.5 h-3.5" />
                           </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onUnarchiveTask?.(task.id);
-                            }}
-                            className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                            title="Unarchive task"
-                          >
-                            <RotateCcw className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onSetTaskToDelete(task);
-                          }}
-                          className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                          title="Delete task item"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </li>
-                  )}
-                </Draggable>
-              ))
+                        </div>
+                      </li>
+                    )}
+                  </Draggable>
+                ))}
+
+                {visibleCount < sortedTasks.length && !snapshot.isDraggingOver && (
+                  <div className="pt-2 pb-1 flex justify-center">
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setVisibleCount((prev) => prev + 10)}
+                    >
+                      Show More
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
             {provided.placeholder}
           </ul>

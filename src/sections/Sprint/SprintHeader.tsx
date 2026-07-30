@@ -1,4 +1,5 @@
 import { ChevronDown, ChevronUp, Plus, Rocket } from 'lucide-react';
+import Button from '../../components/Button';
 import type { Sprint } from '../../types';
 
 interface SprintHeaderProps {
@@ -41,13 +42,15 @@ export default function SprintHeader({
       </button>
 
       <div className="flex items-center gap-2">
-        <button
+        <Button
           onClick={onNewSprint}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-interactive-primary/10 hover:bg-interactive-primary/20 text-interactive-primary border border-interactive-primary/30 text-xs font-semibold font-mono transition-colors cursor-pointer"
+          variant="outline"
+          size="sm"
+          className="bg-interactive-primary/10 hover:bg-interactive-primary/20 text-interactive-primary border-interactive-primary/30"
         >
           <Plus className="w-3.5 h-3.5" />
           <span>New Sprint</span>
-        </button>
+        </Button>
       </div>
     </div>
   );

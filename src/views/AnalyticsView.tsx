@@ -162,6 +162,33 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     return 'bg-text-primary border-text-primary shadow-[0_0_8px_rgba(255,255,255,0.4)]';
   };
 
+  const currentWeekActivity = useMemo(() => {
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday
+    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() + diffToMonday);
+
+    return days.map((dayName, i) => {
+      const date = new Date(startOfWeek);
+      date.setDate(startOfWeek.getDate() + i);
+      const dateStr = date.toISOString().substring(0, 10);
+      const isToday = date.getTime() === today.getTime();
+
+      const matchingAct = dailyActivity.find((d) => d.date === dateStr);
+
+      return {
+        day: dayName,
+        date: dateStr,
+        hours: matchingAct ? matchingAct.hours : 0,
+        completions: matchingAct ? matchingAct.completions : 0,
+        isToday,
+      };
+    });
+  }, [dailyActivity]);
+
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 space-y-6">
       <div className="bg-surface-primary border border-border-primary rounded-xl p-6 space-y-8">
@@ -260,7 +287,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
             Current Week Strategic Load
           </h3>
           <div className="h-44 flex items-end justify-between gap-4">
-            {dailyActivity.map((d, i) => (
+            {currentWeekActivity.map((d, i) => (
               <div
                 key={i}
                 className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"

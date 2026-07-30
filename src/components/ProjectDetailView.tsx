@@ -20,6 +20,7 @@ import {
   writeDocument,
 } from '../services/vaultScanner';
 import type { DocumentFile, Project, RecurrenceRule, Sprint, Task, VaultEntry } from '../types';
+import Button from './Button';
 import ConfirmDialog from './ConfirmDialog/ConfirmDialog';
 import CustomSelect from './CustomSelect';
 import DocumentPanel from './DocumentPanel';
@@ -305,13 +306,15 @@ export default function ProjectDetailView({
 
   return (
     <div className="max-w-7xl mx-auto w-full px-4 md:px-8 py-6 space-y-6">
-      <button
+      <Button
+        variant="secondary"
+        size="sm"
         onClick={onBackToProjects}
-        className="flex items-center gap-2 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors uppercase tracking-wider font-mono bg-surface-secondary hover:bg-surface-hover px-3 py-1.5 rounded-lg border border-border-primary w-fit cursor-pointer"
+        className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider font-mono w-fit"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         <span>All projects</span>
-      </button>
+      </Button>
 
       <ProjectHeader
         project={project}
@@ -341,20 +344,24 @@ export default function ProjectDetailView({
         <div className="flex items-center justify-between pb-2 mb-2 border-b border-border-primary/40 text-xs font-mono">
           <div className="flex items-center gap-2">
             <div className="flex bg-surface-primary border border-border-primary rounded-lg p-0.5 mr-2">
-              <button
+              <Button
                 type="button"
+                size="sm"
+                variant={viewMode === 'list' ? 'primary' : 'ghost'}
                 onClick={() => setViewMode('list')}
-                className={`px-3 py-1 rounded-md transition-colors text-xs font-semibold ${viewMode === 'list' ? 'bg-interactive-primary text-interactive-primary-text' : 'text-text-muted hover:text-text-primary'}`}
+                className="text-xs font-semibold"
               >
                 List
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="sm"
+                variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
                 onClick={() => setViewMode('kanban')}
-                className={`px-3 py-1 rounded-md transition-colors text-xs font-semibold ${viewMode === 'kanban' ? 'bg-interactive-primary text-interactive-primary-text' : 'text-text-muted hover:text-text-primary'}`}
+                className="text-xs font-semibold"
               >
                 Kanban
-              </button>
+              </Button>
             </div>
             <span className="text-text-muted">Filter by Sprint:</span>
             <CustomSelect
@@ -379,12 +386,14 @@ export default function ProjectDetailView({
           {viewMode === 'list' ? (
             <div className="bg-surface-secondary border border-border-primary rounded-xl p-6">
               {selectedSprintId !== 'all' && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => setSelectedSprintId('all')}
-                  className="text-interactive-primary hover:underline text-[11px] cursor-pointer"
+                  className="text-interactive-primary hover:underline text-[11px] p-0 h-auto"
                 >
                   Clear filter
-                </button>
+                </Button>
               )}
               <ProjectTabs
                 taskTab={taskTab}
@@ -439,40 +448,46 @@ export default function ProjectDetailView({
                       value={newTaskTitle}
                       onChange={(e) => setNewTaskTitle(e.target.value)}
                     />
-                    <button
+                    <Button
                       type="submit"
+                      variant="primary"
+                      size="sm"
                       disabled={!newTaskTitle.trim()}
-                      className="bg-interactive-primary text-interactive-primary-text hover:bg-interactive-primary/90 text-[10px] font-bold px-2 py-1 rounded disabled:opacity-40"
+                      className="text-[10px] px-2 py-1"
                     >
                       Create
-                    </button>
+                    </Button>
                   </div>
                 </form>
               )}
 
               {taskTab === 'completed' && completedTasks.length > 0 && (
                 <div className="mt-4 pt-3 border-t border-border-primary/60 flex justify-end">
-                  <button
+                  <Button
                     type="button"
+                    variant="secondary"
+                    size="sm"
                     onClick={() =>
                       onArchiveAllCompleted?.(
                         project.id,
                         completedTasks.map((t) => t.id),
                       )
                     }
-                    className="bg-surface-primary text-text-primary border border-border-primary font-medium text-xs px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                    className="flex items-center gap-1.5 shadow-sm"
                   >
                     <Archive className="w-3.5 h-3.5" />
                     <span>Archive All Completed ({completedTasks.length})</span>
-                  </button>
+                  </Button>
                 </div>
               )}
 
               {taskTab === 'Need to Test' &&
                 projectTasks.some((t) => t.status === 'Need to Test' && !t.archived) && (
                   <div className="mt-4 pt-3 border-t border-border-primary/60 flex justify-end">
-                    <button
+                    <Button
                       type="button"
+                      variant="secondary"
+                      size="sm"
                       onClick={() => {
                         const toComplete = projectTasks.filter(
                           (t) => t.status === 'Need to Test' && !t.archived,
@@ -484,10 +499,10 @@ export default function ProjectDetailView({
                           }
                         });
                       }}
-                      className="bg-surface-primary text-text-primary border border-border-primary font-medium text-xs px-4 py-2 rounded-lg hover:bg-surface-hover transition-colors flex items-center gap-1.5 cursor-pointer shadow-sm"
+                      className="flex items-center gap-1.5 shadow-sm"
                     >
                       <span>Mark All as Completed</span>
-                    </button>
+                    </Button>
                   </div>
                 )}
             </div>

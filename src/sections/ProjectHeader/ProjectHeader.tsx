@@ -1,6 +1,7 @@
 import { open } from '@tauri-apps/plugin-dialog';
 import { CalendarIcon, CheckCircle, Edit, Folder, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
+import Button from '../../components/Button';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
 import { formatDisplayDate } from '../../utils/format-date';
@@ -144,13 +145,15 @@ export default function ProjectHeader({
               <label className="block text-[10px] font-bold uppercase tracking-wider text-text-muted font-mono">
                 Workspace Repositories
               </label>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="sm"
                 onClick={handleAddWorkspacePath}
-                className="flex items-center gap-1 text-[10px] font-bold text-interactive-primary hover:text-interactive-primary/80 transition-colors uppercase tracking-wider font-mono cursor-pointer"
+                className="text-interactive-primary p-0 h-auto inline text-[10px]"
               >
                 <Plus className="w-3 h-3" /> Add Directory
-              </button>
+              </Button>
             </div>
             {editWorkspacePaths.length > 0 ? (
               <div className="flex flex-wrap gap-2">
@@ -179,19 +182,12 @@ export default function ProjectHeader({
           </div>
 
           <div className="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              onClick={() => setIsEditingProj(false)}
-              className="px-4 py-2 text-xs font-semibold text-text-muted hover:text-text-primary transition-colors cursor-pointer"
-            >
+            <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditingProj(false)}>
               Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 text-xs font-bold bg-interactive-primary text-interactive-primary-text rounded-lg hover:bg-interactive-primary/90 transition-colors cursor-pointer"
-            >
+            </Button>
+            <Button type="submit" variant="primary" size="sm">
               Save Changes
-            </button>
+            </Button>
           </div>
         </form>
       ) : (
@@ -241,26 +237,17 @@ export default function ProjectHeader({
 
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsEditingProj(true)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-surface-secondary border border-border-primary hover:border-white/20 text-text-muted hover:text-text-primary rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] cursor-pointer"
-                >
+                <Button variant="secondary" size="sm" onClick={() => setIsEditingProj(true)}>
                   <Edit className="w-3.5 h-3.5" /> Edit
-                </button>
+                </Button>
                 {project.category !== 'Completed' && (
-                  <button
-                    onClick={() => onCompleteProject(project.id)}
-                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold bg-green-500/10 border border-green-500/30 text-green-600 dark:text-green-400 hover:bg-green-500/20 hover:text-green-700 dark:hover:text-green-300 rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(74,222,128,0.2)] cursor-pointer"
-                  >
+                  <Button variant="success" size="sm" onClick={() => onCompleteProject(project.id)}>
                     <CheckCircle className="w-4 h-4" /> Complete
-                  </button>
+                  </Button>
                 )}
-                <button
-                  onClick={onDeleteProjectClick}
-                  className="flex items-center gap-2 px-3 py-1.5 text-xs font-semibold bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 hover:bg-red-500/20 hover:text-red-700 dark:hover:text-red-300 rounded-lg transition-all shadow-[inset_0_1px_1px_rgba(248,113,113,0.2)] cursor-pointer"
-                >
+                <Button variant="danger" size="sm" onClick={onDeleteProjectClick}>
                   <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
+                </Button>
               </div>
             </div>
           </div>
@@ -274,7 +261,7 @@ export default function ProjectHeader({
             </div>
             <div className="w-full bg-surface-secondary border border-border-primary h-2 rounded-full overflow-hidden shadow-inner">
               <div
-                className="bg-blue-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(59,130,246,0.5)]"
+                className="bg-interactive-primary h-full rounded-full transition-all duration-500 ease-out"
                 style={{ width: `${calculatedProgress}%` }}
               />
             </div>

@@ -105,8 +105,9 @@ export function updateDailyActivityWithCompletion(
   activity: DailyActivity[],
   hoursIncrement: number = 0,
 ): DailyActivity[] {
+  const todayStr = new Date().toISOString().substring(0, 10);
   return activity.map((act) => {
-    if (act.isToday) {
+    if (act.date === todayStr || act.isToday) {
       return {
         ...act,
         hours: Number((act.hours + hoursIncrement).toFixed(3)),
@@ -133,6 +134,7 @@ export function getCompletionsToday(log: ActivityLogEntry[]): number {
  * Calculate total focused hours from daily activity (recorded via Pomodoro timer).
  */
 export function getFocusedHoursToday(activity: DailyActivity[]): number {
-  const todayAct = activity.find((a) => a.isToday);
+  const todayStr = new Date().toISOString().substring(0, 10);
+  const todayAct = activity.find((a) => a.date === todayStr || a.isToday);
   return todayAct ? Number(todayAct.hours.toFixed(1)) : 0;
 }

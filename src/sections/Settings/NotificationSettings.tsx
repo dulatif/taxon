@@ -1,3 +1,10 @@
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from '@tauri-apps/plugin-notification';
+import { useEffect, useState } from 'react';
+
 interface NotificationSettingsProps {
   soundAlerts: boolean;
   toggleSetting: (key: 'soundAlerts') => void;
@@ -7,6 +14,27 @@ export default function NotificationSettings({
   soundAlerts,
   toggleSetting,
 }: NotificationSettingsProps) {
+  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    isPermissionGranted().then(setHasPermission).catch(console.error);
+  }, []);
+
+  const handleRequestPermission = async () => {
+    try {
+      const permission = await requestPermission();
+      setHasPermission(permission === 'granted');
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleTestNotification = () => {
+    sendNotification({
+      title: 'Taxon Pomodoro',
+      body: 'Focus session completed! Time for a short break.',
+    });
+  };
   return (
     <div className="space-y-4">
       <div>
@@ -39,6 +67,33 @@ export default function NotificationSettings({
             }`}
           />
         </button>
+      </div>
+
+      <div className="flex items-center justify-between p-3.5 bg-surface-secondary border border-border-primary/80 rounded-lg mt-4">
+        <div>
+          <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">
+            Desktop Notifications
+          </h4>
+          <p className="text-[10px] text-text-muted mt-0.5">
+            Native OS alerts for timer events and completions.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {hasPermission === false && (
+            <button
+              onClick={handleRequestPermission}
+              className="text-xs font-medium text-text-primary bg-surface-tertiary hover:bg-surface-hover px-3 py-1.5 rounded-sm border border-border-primary/50 transition-colors"
+            >
+              Request Permission
+            </button>
+          )}
+          <button
+            onClick={handleTestNotification}
+            className="text-xs font-medium text-interactive-primary-text bg-interactive-primary hover:bg-interactive-primary-hover px-3 py-1.5 rounded-sm shadow-sm transition-colors"
+          >
+            Test
+          </button>
+        </div>
       </div>
     </div>
   );

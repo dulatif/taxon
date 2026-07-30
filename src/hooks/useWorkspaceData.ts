@@ -343,8 +343,13 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         focusTickCounterRef.current = 0;
       }
       setDailyActivity((prev) => {
+        const today = new Date();
+        const todayStr = today.toISOString().substring(0, 10);
+
+        let found = false;
         const acts = prev.map((act) => {
-          if (act.isToday) {
+          if (act.date === todayStr || act.isToday) {
+            found = true;
             return {
               ...act,
               hours: Number((act.hours + 1 / 3600).toFixed(4)),
@@ -352,8 +357,25 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
           }
           return act;
         });
-        const todayAct = acts.find((a) => a.isToday);
-        if (todayAct) saveActivity(todayAct);
+
+        if (!found) {
+          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+          const newAct = {
+            id: `act_${Date.now()}`,
+            day: days[today.getDay()],
+            date: todayStr,
+            hours: Number((1 / 3600).toFixed(4)),
+            completions: 0,
+            isToday: true,
+          };
+          acts.push(newAct);
+          saveActivity(newAct);
+        } else {
+          // Save the matched activity (either matches by date or was flagged isToday)
+          const todayAct = acts.find((a) => a.date === todayStr || a.isToday);
+          if (todayAct) saveActivity(todayAct);
+        }
+
         return acts;
       });
     },

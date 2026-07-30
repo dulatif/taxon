@@ -144,7 +144,7 @@ export default function SprintProgress({
         </div>
         <div className="w-full h-2 bg-surface-primary border border-border-primary rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-interactive-primary to-cyan-400 transition-all duration-500"
+            className="h-full bg-interactive-primary transition-all duration-500"
             style={{ width: `${stats.percentage}%` }}
           />
         </div>
