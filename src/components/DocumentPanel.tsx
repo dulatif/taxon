@@ -13,10 +13,8 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import type { VaultEntry } from '../types';
-import { markdownComponents } from './MarkdownViewer';
+import MarkdownViewer from './MarkdownViewer';
 
 interface DocumentPanelProps {
   isOpen: boolean;
@@ -221,9 +219,7 @@ export default function DocumentPanel({
               </div>
             ) : mode === 'view' ? (
               <div className="max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                  {content || '*Document is empty*'}
-                </ReactMarkdown>
+                <MarkdownViewer content={content || '*Document is empty*'} />
               </div>
             ) : (
               <textarea

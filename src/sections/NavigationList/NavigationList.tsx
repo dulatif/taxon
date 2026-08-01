@@ -42,10 +42,10 @@ export default function NavigationList({
 }: NavigationListProps) {
   const getItemClass = (id: string) => {
     const isPrimary = currentView === id && selectedProjectId === null;
-    return `w-full flex items-center gap-3 px-3 py-2 rounded-md font-sans tracking-tight text-sm transition-all duration-200 ${
+    return `group flex items-center px-3 py-2 rounded-md text-[13px] transition-colors w-full cursor-pointer ${
       isPrimary
-        ? 'text-text-primary font-bold bg-surface-hover'
-        : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary'
+        ? 'bg-surface-active text-text-primary font-bold'
+        : 'text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 font-medium'
     }`;
   };
 
@@ -58,8 +58,10 @@ export default function NavigationList({
           onClick={() => onViewChange(item.id)}
           className={getItemClass(item.id)}
         >
-          <item.icon className="w-4 h-4" />
-          <span>{item.label}</span>
+          <div className="flex items-center gap-3">
+            <item.icon className="w-4 h-4 shrink-0" />
+            <span>{item.label}</span>
+          </div>
         </button>
       ))}
     </nav>

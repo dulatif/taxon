@@ -9,6 +9,7 @@
   --color-surface-tertiary: var(--surface-tertiary);
   --color-surface-elevated: var(--surface-elevated);
   --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
 
   /* Border colors */
   --color-border-primary: var(--border-primary);

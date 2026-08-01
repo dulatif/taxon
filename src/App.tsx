@@ -246,15 +246,10 @@ export default function App() {
           activeFocusTaskTitle={focusTimer.activeFocusTask?.title}
           onLaunchFocusMode={focusTimer.launchFocusMode}
           onToggleTimer={focusTimer.toggleTimer}
-        />
-      }
-      header={
-        <AppHeader
-          title={getHeaderTitle()}
           onOpenSpotlight={() => setIsSpotlightOpen(true)}
-          onLaunchFocusMode={focusTimer.launchFocusMode}
         />
       }
+      header={<AppHeader title={getHeaderTitle()} onLaunchFocusMode={focusTimer.launchFocusMode} />}
       focusMode={
         <Render in={focusTimer.isFocusModeActive}>
           <FocusModeView
