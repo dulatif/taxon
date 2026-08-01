@@ -34,7 +34,7 @@ export default function ProjectHeader({
   const [editName, setEditName] = useState(project.name);
   const [editDesc, setEditDesc] = useState(project.description);
   const [editCategory, setEditCategory] = useState(project.category);
-  const [editDueDate] = useState(project.dueDate || '');
+  const [editDueDate, setEditDueDate] = useState(project.dueDate || '');
   const [editWorkspacePaths, setEditWorkspacePaths] = useState<string[]>(
     project.workspacePaths || [],
   );
@@ -237,7 +237,19 @@ export default function ProjectHeader({
 
             <div className="flex flex-col gap-2">
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={() => setIsEditingProj(true)}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => {
+                    setEditName(project.name);
+                    setEditDesc(project.description);
+                    setEditCategory(project.category);
+                    setEditDueDate(project.dueDate || '');
+                    setEditWorkspacePaths(project.workspacePaths || []);
+                    setIsCustomCategoryMode(false);
+                    setIsEditingProj(true);
+                  }}
+                >
                   <Edit className="w-3.5 h-3.5" /> Edit
                 </Button>
                 {project.category !== 'Completed' && (

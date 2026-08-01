@@ -942,12 +942,17 @@ export function generateContextSnapshot(
 ): string {
   const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
 
+  const activeSprint = sprints.find((s) => s.projectId === project.id && s.status === 'Active');
+
   const activeTasks = projectTasks.filter(
-    (t) => t.status === 'In Progress' || t.status === 'To Do',
+    (t) =>
+      (t.status === 'In Progress' || t.status === 'To Do') &&
+      activeSprint &&
+      t.sprintId === activeSprint.id,
   );
 
   if (activeTasks.length === 0) {
-    return `## Project: ${project.name}\n\n*No active tasks*\n`;
+    return `## Project: ${project.name}\n\n*No active sprint tasks*\n`;
   }
 
   // Group by sprint

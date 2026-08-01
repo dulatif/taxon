@@ -362,14 +362,14 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
           const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
           const newAct = {
             id: `act_${Date.now()}`,
-            day: days[today.getDay()],
+            day: days[today.getDay()] || 'Sun',
             date: todayStr,
             hours: Number((1 / 3600).toFixed(4)),
             completions: 0,
             isToday: true,
           };
-          acts.push(newAct);
-          saveActivity(newAct);
+          acts.push(newAct as DailyActivity);
+          saveActivity(newAct as DailyActivity);
         } else {
           // Save the matched activity (either matches by date or was flagged isToday)
           const todayAct = acts.find((a) => a.date === todayStr || a.isToday);

@@ -118,6 +118,7 @@ export default function WorkLogView({
                   isEmbedded={true}
                   isReadOnly={true}
                   defaultGrouped={false}
+                  showProjectName={true}
                 />
               ) : (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">

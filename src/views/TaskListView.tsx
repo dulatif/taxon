@@ -43,6 +43,7 @@ interface TaskListViewProps {
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
   isReadOnly?: boolean;
+  showProjectName?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -139,6 +140,7 @@ export default function TaskListView({
   onDeleteTask,
   onSelectTask,
   isReadOnly,
+  showProjectName,
 }: TaskListViewProps) {
   const isSimpleView = isInboxView || isRecurringView;
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
@@ -505,6 +507,7 @@ export default function TaskListView({
                       onDeleteTask={onDeleteTask}
                       onSelectTask={onSelectTask}
                       isReadOnly={isReadOnly}
+                      showProjectName={showProjectName}
                     />
                   );
                 })}
@@ -526,6 +529,8 @@ export default function TaskListView({
                       onDeleteTask={onDeleteTask}
                       onSelectTask={onSelectTask}
                       isReadOnly={isReadOnly}
+                      showProjectName={showProjectName}
+                      projectName={projects.find((p) => p.id === task.projectId)?.name}
                     />
                   ))}
                 </AnimatePresence>

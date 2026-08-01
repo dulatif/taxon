@@ -1,4 +1,4 @@
-import { Calendar, Check, Repeat, Tag, Trash2 } from 'lucide-react';
+import { Calendar, Check, Folder, Repeat, Tag, Trash2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import type { RecurrenceRule, Task } from '../../types';
 import { getDueDateLabel, PRIORITY_COLORS } from '../../utils/taskFilters';
@@ -89,6 +89,8 @@ interface TaskListItemProps {
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
   isReadOnly?: boolean;
+  showProjectName?: boolean;
+  projectName?: string;
 }
 
 export default function TaskListItem({
@@ -98,6 +100,8 @@ export default function TaskListItem({
   onDeleteTask,
   onSelectTask,
   isReadOnly,
+  showProjectName,
+  projectName,
 }: TaskListItemProps) {
   return (
     <motion.div
@@ -135,14 +139,23 @@ export default function TaskListItem({
             {task.title}
           </span>
           <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-            <PriorityBadge priority={task.priority} />
-            <DueDateBadge dueDate={task.dueDate} />
-            <RecurrenceBadge recurrence={task.recurrence} />
-            {task.labels && task.labels.length > 0 && (
-              <span className="inline-flex items-center gap-1 text-[9px] text-text-muted bg-black/30 border border-border-primary/50 px-1.5 py-0.5 rounded">
-                <Tag className="w-2.5 h-2.5" />
-                {task.labels[0]}
+            {showProjectName ? (
+              <span className="inline-flex items-center gap-1 text-[10px] text-text-muted bg-surface-primary border border-border-primary/50 px-2 py-0.5 rounded-md shadow-sm font-medium">
+                <Folder className="w-2.5 h-2.5" />
+                {projectName || 'No Project'}
               </span>
+            ) : (
+              <>
+                <PriorityBadge priority={task.priority} />
+                <DueDateBadge dueDate={task.dueDate} />
+                <RecurrenceBadge recurrence={task.recurrence} />
+                {task.labels && task.labels.length > 0 && (
+                  <span className="inline-flex items-center gap-1 text-[9px] text-text-muted bg-black/30 border border-border-primary/50 px-1.5 py-0.5 rounded">
+                    <Tag className="w-2.5 h-2.5" />
+                    {task.labels[0]}
+                  </span>
+                )}
+              </>
             )}
           </div>
         </div>
