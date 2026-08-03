@@ -176,6 +176,11 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
   const handleUpdateTaskDetail = useCallback(
     (updatedTask: Task) => {
       const taskToSave = { ...updatedTask };
+      if (taskToSave.status === 'Done') {
+        taskToSave.completed = true;
+      } else if (taskToSave.status) {
+        taskToSave.completed = false;
+      }
       if ((taskToSave.completed || taskToSave.status === 'Done') && !taskToSave.dueDate) {
         taskToSave.dueDate = getTodayStr();
       }

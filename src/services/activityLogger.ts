@@ -127,7 +127,6 @@ export function updateDailyActivityWithCompletion(
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     const today = new Date();
     result.push({
-      id: `act_${Date.now()}`,
       day: days[today.getDay()] || 'Sun',
       date: todayStr,
       hours: Number(hoursIncrement.toFixed(3)),

@@ -519,9 +519,6 @@ export default function ProjectDetailView({
                         );
                         toComplete.forEach((task) => {
                           onMoveTaskStatus(task.id, 'Done');
-                          if (!task.completed) {
-                            onToggleTask(task.id);
-                          }
                         });
                       }}
                       className="flex items-center gap-1.5 shadow-sm"

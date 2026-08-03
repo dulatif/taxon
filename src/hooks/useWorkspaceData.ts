@@ -367,7 +367,6 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
 
         if (!found) {
           const newAct: DailyActivity = {
-            id: `act_${Date.now()}`,
             day: days[today.getDay()] || 'Sun',
             date: todayStr,
             hours: Number((1 / 3600).toFixed(4)),
