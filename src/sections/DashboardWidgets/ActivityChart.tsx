@@ -1,3 +1,5 @@
+import { useMemo } from 'react';
+import { getCurrentWeekActivity } from '../../services/activityLogger';
 import type { DailyActivity } from '../../types';
 
 interface ActivityChartProps {
@@ -5,9 +7,11 @@ interface ActivityChartProps {
 }
 
 export default function ActivityChart({ dailyActivity }: ActivityChartProps) {
+  const currentWeek = useMemo(() => getCurrentWeekActivity(dailyActivity), [dailyActivity]);
+
   return (
     <div className="flex items-end justify-between gap-2 h-24 pt-2">
-      {dailyActivity.map((act, i) => {
+      {currentWeek.map((act, i) => {
         // Max hours for scale is 6 hours
         const percentage = Math.min((act.hours / 6) * 100, 100);
         return (
@@ -15,12 +19,12 @@ export default function ActivityChart({ dailyActivity }: ActivityChartProps) {
             key={i}
             className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end group cursor-pointer"
           >
-            <div className="text-[9px] font-mono font-medium text-text-muted opacity-0 group-hover:opacity-100 transition-opacity mb-0.5">
-              {act.hours}h
+            <div className="text-[9px] font-mono font-medium text-text-muted opacity-0 group-hover:opacity-100 transition-opacity mb-0.5 whitespace-nowrap">
+              {act.hours > 0 ? `${(act.hours * 60).toFixed(0)}m` : '0m'}
             </div>
             <div className="w-full relative rounded-t-sm h-full flex items-end">
               <div
-                style={{ height: `${percentage}%` }}
+                style={{ height: `${Math.max(percentage, 4)}%` }}
                 className={`w-full rounded-t-sm transition-all duration-500 hover:opacity-150 ${
                   act.isToday
                     ? 'bg-white shadow-[0_0_8px_rgba(255,255,255,0.4)]'

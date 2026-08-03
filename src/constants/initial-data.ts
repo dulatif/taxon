@@ -1,15 +1,11 @@
 import type { DailyActivity, DocumentFile, Project, SettingsState, Sprint, Task } from '../types';
-
-// Helper to format date as YYYY-MM-DD
-function formatDate(d: Date): string {
-  return d.toISOString().substring(0, 10);
-}
+import { formatDateStr } from '../utils/format-date';
 
 // Generate future date string
 function futureDate(daysFromNow: number): string {
   const d = new Date();
   d.setDate(d.getDate() + daysFromNow);
-  return formatDate(d);
+  return formatDateStr(d);
 }
 
 export const INITIAL_PROJECTS: Project[] = [
@@ -307,23 +303,28 @@ export const INITIAL_FILES: DocumentFile[] = [
 function generateWeeklyActivity(): DailyActivity[] {
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date();
-  const dayOfWeek = today.getDay(); // 0 = Sunday
+  today.setHours(0, 0, 0, 0);
+  const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday
+  const todayDateStr = formatDateStr(today);
+  const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  const startOfWeek = new Date(today);
+  startOfWeek.setDate(today.getDate() + diffToMonday);
   const result: DailyActivity[] = [];
 
   // Generate Mon–Sun activity for the current week
-  for (let i = 1; i <= 7; i++) {
-    const targetDay = i % 7; // Mon=1, Tue=2, ..., Sun=0
-    const diff = targetDay - dayOfWeek;
-    const date = new Date(today);
-    date.setDate(today.getDate() + diff);
+  for (let i = 0; i < 7; i++) {
+    const date = new Date(startOfWeek);
+    date.setDate(startOfWeek.getDate() + i);
+    const dateStr = formatDateStr(date);
+    const targetDay = date.getDay();
 
-    const isToday = diff === 0;
-    const isPast = diff < 0;
-    const isFuture = diff > 0;
+    const isToday = dateStr === todayDateStr;
+    const isPast = date < today;
+    const isFuture = date > today;
 
     result.push({
       day: days[targetDay]!,
-      date: formatDate(date),
+      date: dateStr,
       hours: isFuture
         ? 0
         : isPast

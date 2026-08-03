@@ -24,6 +24,7 @@ import {
   saveTask,
 } from '../services/database';
 import type { ActivityLogEntry, DailyActivity, Sprint, Task } from '../types';
+import { getTodayStr } from '../utils/format-date';
 import { useCategoryActions } from './useCategoryActions';
 import { useDataExport } from './useDataExport';
 import { useProjectActions } from './useProjectActions';
@@ -343,24 +344,29 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
         focusTickCounterRef.current = 0;
       }
       setDailyActivity((prev) => {
+        const todayStr = getTodayStr();
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         const today = new Date();
-        const todayStr = today.toISOString().substring(0, 10);
 
         let found = false;
         const acts = prev.map((act) => {
-          if (act.date === todayStr || act.isToday) {
+          if ((act.date || act.day) === todayStr) {
             found = true;
             return {
               ...act,
+              date: todayStr,
               hours: Number((act.hours + 1 / 3600).toFixed(4)),
+              isToday: true,
             };
+          }
+          if (act.isToday) {
+            return { ...act, isToday: false };
           }
           return act;
         });
 
         if (!found) {
-          const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-          const newAct = {
+          const newAct: DailyActivity = {
             id: `act_${Date.now()}`,
             day: days[today.getDay()] || 'Sun',
             date: todayStr,
@@ -368,12 +374,11 @@ export function useWorkspaceData(options?: UseWorkspaceDataOptions) {
             completions: 0,
             isToday: true,
           };
-          acts.push(newAct as DailyActivity);
-          saveActivity(newAct as DailyActivity);
+          acts.push(newAct);
+          saveActivity(newAct).catch(console.error);
         } else {
-          // Save the matched activity (either matches by date or was flagged isToday)
-          const todayAct = acts.find((a) => a.date === todayStr || a.isToday);
-          if (todayAct) saveActivity(todayAct);
+          const todayAct = acts.find((a) => (a.date || a.day) === todayStr);
+          if (todayAct) saveActivity(todayAct).catch(console.error);
         }
 
         return acts;

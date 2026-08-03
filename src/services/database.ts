@@ -65,7 +65,8 @@ export const initDb = (): Promise<Database> => {
       await database
         .execute(`
         CREATE TABLE IF NOT EXISTS activity (
-            day TEXT PRIMARY KEY,
+            date TEXT PRIMARY KEY,
+            day TEXT,
             hours REAL,
             completions INTEGER,
             isToday BOOLEAN
@@ -185,6 +186,38 @@ export const initDb = (): Promise<Database> => {
         await database.execute('ALTER TABLE tasks ADD COLUMN archivedAt TEXT');
       } catch {
         // Column already exists
+      }
+      try {
+        const tableInfo = await database.select<{ name: string; pk: number }[]>(
+          'PRAGMA table_info(activity)',
+        );
+        const dateCol = tableInfo.find((c) => c.name === 'date');
+        if (!dateCol || dateCol.pk !== 1) {
+          await database.execute(`
+            CREATE TABLE IF NOT EXISTS activity_new (
+                date TEXT PRIMARY KEY,
+                day TEXT,
+                hours REAL,
+                completions INTEGER,
+                isToday BOOLEAN
+            );
+          `);
+          if (dateCol) {
+            await database.execute(`
+              INSERT OR REPLACE INTO activity_new (date, day, hours, completions, isToday)
+              SELECT COALESCE(date, day), day, hours, completions, isToday FROM activity;
+            `);
+          } else {
+            await database.execute(`
+              INSERT OR REPLACE INTO activity_new (date, day, hours, completions, isToday)
+              SELECT day, day, hours, completions, isToday FROM activity;
+            `);
+          }
+          await database.execute('DROP TABLE activity;');
+          await database.execute('ALTER TABLE activity_new RENAME TO activity;');
+        }
+      } catch {
+        // Migration handled or table doesn't exist yet
       }
       return database;
     })();
@@ -409,16 +442,20 @@ export const getActivity = async (): Promise<DailyActivity[]> => {
   const d = await initDb();
   const raw = await d.select<Record<string, unknown>[]>('SELECT * FROM activity');
   return raw.map((a) => ({
-    ...a,
+    date: (a.date as string) || (a.day as string) || '',
+    day: (a.day as string) || '',
+    hours: typeof a.hours === 'number' ? a.hours : Number(a.hours) || 0,
+    completions: typeof a.completions === 'number' ? a.completions : Number(a.completions) || 0,
     isToday: !!a.isToday,
-  })) as unknown as DailyActivity[];
+  })) as DailyActivity[];
 };
 
 export const saveActivity = async (a: DailyActivity) => {
   const d = await initDb();
+  const dateKey = a.date || a.day;
   await d.execute(
-    'INSERT OR REPLACE INTO activity (day, hours, completions, isToday) VALUES ($1, $2, $3, $4)',
-    [a.day ?? null, a.hours ?? 0, a.completions ?? 0, a.isToday ? 1 : 0],
+    'INSERT OR REPLACE INTO activity (date, day, hours, completions, isToday) VALUES ($1, $2, $3, $4, $5)',
+    [dateKey ?? null, a.day ?? null, a.hours ?? 0, a.completions ?? 0, a.isToday ? 1 : 0],
   );
 };
 

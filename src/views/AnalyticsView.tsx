@@ -1,7 +1,8 @@
 import { Calendar, CheckCircle2, Clock, Flame, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { aggregateActivityData } from '../services/activityLogger';
+import { aggregateActivityData, getCurrentWeekActivity } from '../services/activityLogger';
 import type { ActivityLogEntry, DailyActivity, Task } from '../types';
+import { formatDateStr } from '../utils/format-date';
 
 interface AnalyticsViewProps {
   tasks: Task[];
@@ -41,13 +42,15 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
     const logMap = new Map<string, number>();
     for (const entry of activityLog) {
-      const dateKey = entry.completedAt.substring(0, 10);
-      logMap.set(dateKey, (logMap.get(dateKey) || 0) + 1);
+      if (entry.completedAt) {
+        const dateKey = formatDateStr(new Date(entry.completedAt));
+        logMap.set(dateKey, (logMap.get(dateKey) || 0) + 1);
+      }
     }
 
     const dailyMap = new Map<string, { completions: number; hours: number }>();
     for (const d of dailyActivity) {
-      dailyMap.set(d.date, { completions: d.completions, hours: d.hours });
+      dailyMap.set(d.date || d.day, { completions: d.completions, hours: d.hours });
     }
 
     // Determine start date: align to Sunday ~365 days ago
@@ -68,7 +71,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     let colIndex = 0;
 
     while (curDate <= today) {
-      const dateStr = curDate.toISOString().substring(0, 10);
+      const dateStr = formatDateStr(curDate);
       const monthIndex = curDate.getMonth();
       const dayOfWeek = curDate.getDay();
 
@@ -162,32 +165,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     return 'bg-text-primary border-text-primary shadow-[0_0_8px_rgba(255,255,255,0.4)]';
   };
 
-  const currentWeekActivity = useMemo(() => {
-    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday
-    const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-    const startOfWeek = new Date(today);
-    startOfWeek.setDate(today.getDate() + diffToMonday);
-
-    return days.map((dayName, i) => {
-      const date = new Date(startOfWeek);
-      date.setDate(startOfWeek.getDate() + i);
-      const dateStr = date.toISOString().substring(0, 10);
-      const isToday = date.getTime() === today.getTime();
-
-      const matchingAct = dailyActivity.find((d) => d.date === dateStr);
-
-      return {
-        day: dayName,
-        date: dateStr,
-        hours: matchingAct ? matchingAct.hours : 0,
-        completions: matchingAct ? matchingAct.completions : 0,
-        isToday,
-      };
-    });
-  }, [dailyActivity]);
+  const currentWeekActivity = useMemo(() => getCurrentWeekActivity(dailyActivity), [dailyActivity]);
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 space-y-6">
