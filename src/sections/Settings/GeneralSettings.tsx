@@ -156,6 +156,21 @@ export default function GeneralSettings({
           </button>
         </div>
       </div>
+
+      {/* Application Info */}
+      <div className="flex items-center justify-between p-3.5 bg-surface-secondary border border-border-primary/80 rounded-lg">
+        <div>
+          <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">
+            Application Info
+          </h4>
+          <p className="text-[10px] text-text-muted mt-0.5">Taxon Desktop Task & Project Manager</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="bg-surface-primary border border-border-primary/80 text-[11px] font-mono font-bold text-text-primary px-2.5 py-1 rounded">
+            v1.0.0
+          </span>
+        </div>
+      </div>
     </div>
   );
 }
