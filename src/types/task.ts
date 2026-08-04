@@ -35,4 +35,6 @@ export interface Task {
   archivedAt?: string;
   workspacePath?: string;
   linkedFiles?: string[];
+  dependsOn?: string[];
+  moduleGroup?: string;
 }

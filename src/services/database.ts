@@ -141,6 +141,10 @@ export const initDb = (): Promise<Database> => {
         'deadline',
         'subtasks',
         'recurrence',
+        'workspacePath',
+        'linkedFiles',
+        'dependsOn',
+        'moduleGroup',
       ];
       for (const col of cols) {
         try {
@@ -319,6 +323,10 @@ export const getTasks = async (): Promise<Task[]> => {
       reminders: parseJSON(t.reminders),
       subtasks: parseJSON(t.subtasks),
       recurrence: parseJSON(t.recurrence),
+      linkedFiles: parseJSON(t.linkedFiles),
+      dependsOn: parseJSON(t.dependsOn),
+      workspacePath: (t.workspacePath as string) || undefined,
+      moduleGroup: (t.moduleGroup as string) || undefined,
       timeEffort: timeEffortNum,
       timeSpent: timeSpentNum,
       archived: !!t.archived,
@@ -333,9 +341,11 @@ export const saveTask = async (t: Task) => {
   const remindersStr = t.reminders ? JSON.stringify(t.reminders) : null;
   const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
   const recurrenceStr = t.recurrence ? JSON.stringify(t.recurrence) : null;
+  const linkedFilesStr = t.linkedFiles ? JSON.stringify(t.linkedFiles) : null;
+  const dependsOnStr = t.dependsOn ? JSON.stringify(t.dependsOn) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)',
     [
       t.id ?? null,
       t.projectId ?? null,
@@ -357,6 +367,10 @@ export const saveTask = async (t: Task) => {
       recurrenceStr,
       t.archived ? 1 : 0,
       t.archivedAt ?? null,
+      t.workspacePath ?? null,
+      linkedFilesStr,
+      dependsOnStr,
+      t.moduleGroup ?? null,
     ],
   );
 };
