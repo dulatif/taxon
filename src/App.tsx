@@ -281,6 +281,7 @@ export default function App() {
             task={selectedDetailTask}
             projects={projects}
             sprints={sprints}
+            allTasks={tasks}
             onClose={() => setSelectedDetailTaskId(null)}
             onUpdateTask={handleUpdateTaskDetail}
             onDeleteTask={handleDeleteTask}

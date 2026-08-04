@@ -11,6 +11,7 @@ interface TaskDetailViewProps {
   task: Task | null;
   projects: Project[];
   sprints?: Sprint[];
+  allTasks?: Task[];
   onClose: () => void;
   onUpdateTask: (updatedTask: Task) => void;
   onDeleteTask: (taskId: string) => void;
@@ -21,6 +22,7 @@ export default function TaskDetailView({
   task,
   projects,
   sprints,
+  allTasks = [],
   onClose,
   onUpdateTask,
   onDeleteTask,
@@ -147,6 +149,7 @@ export default function TaskDetailView({
                 task={editedTask}
                 projects={projects}
                 sprints={sprints || []}
+                allTasks={allTasks}
                 onChange={handleFieldChange}
               />
 

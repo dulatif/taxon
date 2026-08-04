@@ -6,11 +6,13 @@ import {
   Flag,
   Folder,
   FolderOpen,
+  GitFork,
+  Layers,
   Repeat,
   Rocket,
   Tag,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DatePicker from '../../components/DatePicker/DatePicker';
 import RecurrencePicker from '../../components/RecurrencePicker/RecurrencePicker';
 import PropertyCard from '../../elements/PropertyCard';
@@ -42,6 +44,7 @@ interface TaskPropertyGridProps {
   task: Task;
   projects: Project[];
   sprints: Sprint[];
+  allTasks?: Task[];
   onChange: <K extends keyof Task>(field: K, value: Task[K]) => void;
 }
 
@@ -49,6 +52,7 @@ export default function TaskPropertyGrid({
   task,
   projects,
   sprints,
+  allTasks = [],
   onChange,
 }: TaskPropertyGridProps) {
   const [activePropertyEdit, setActivePropertyEdit] = useState<string | null>(null);
@@ -56,6 +60,8 @@ export default function TaskPropertyGrid({
   const [newLabelText, setNewLabelText] = useState('');
   const [isAddingFile, setIsAddingFile] = useState(false);
   const [newFileText, setNewFileText] = useState('');
+  const [moduleGroupInput, setModuleGroupInput] = useState(task.moduleGroup || '');
+  const [customDepInput, setCustomDepInput] = useState('');
 
   const currentProject = projects.find((p) => p.id === task.projectId);
   const projectSprints = sprints.filter(
@@ -87,6 +93,66 @@ export default function TaskPropertyGrid({
       onChange('linkedFiles', [...currentFiles, newFileText.trim()]);
     }
     setNewFileText('');
+  };
+
+  const existingModuleGroups = useMemo(() => {
+    const groups = new Set<string>();
+    for (const t of allTasks) {
+      if (t.moduleGroup?.trim()) {
+        groups.add(t.moduleGroup.trim());
+      }
+    }
+    return Array.from(groups).sort();
+  }, [allTasks]);
+
+  const candidateDependencies = useMemo(() => {
+    return allTasks.filter(
+      (t) => !t.archived && t.id !== task.id && (!task.projectId || t.projectId === task.projectId),
+    );
+  }, [allTasks, task.id, task.projectId]);
+
+  const getDependencyLabel = (depId: string) => {
+    const found = allTasks.find(
+      (t) =>
+        t.id === depId ||
+        t.id.slice(-6) === depId ||
+        `TASK-${t.id.slice(-6)}` === depId ||
+        `TASK-${t.id}` === depId,
+    );
+    return found ? `${found.title} (${found.id.slice(-6)})` : depId;
+  };
+
+  const handleToggleDependency = (depIdOrTask: Task) => {
+    const current = task.dependsOn || [];
+    const formattedId = `TASK-${depIdOrTask.id.slice(-6)}`;
+    const isPresent = current.some(
+      (d) => d === formattedId || d === depIdOrTask.id || d === depIdOrTask.id.slice(-6),
+    );
+
+    if (isPresent) {
+      const updated = current.filter(
+        (d) => d !== formattedId && d !== depIdOrTask.id && d !== depIdOrTask.id.slice(-6),
+      );
+      onChange('dependsOn', updated);
+    } else {
+      onChange('dependsOn', [...current, formattedId]);
+    }
+  };
+
+  const handleRemoveDependency = (depToRemove: string) => {
+    const updated = (task.dependsOn || []).filter((d) => d !== depToRemove);
+    onChange('dependsOn', updated);
+  };
+
+  const handleAddCustomDependency = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customDepInput.trim()) return;
+    const current = task.dependsOn || [];
+    const val = customDepInput.trim();
+    if (!current.includes(val)) {
+      onChange('dependsOn', [...current, val]);
+    }
+    setCustomDepInput('');
   };
 
   return (
@@ -168,6 +234,188 @@ export default function TaskPropertyGrid({
                 </button>
               ))}
           </div>
+        </PropertyCard>
+
+        {/* Module Group (Workflow) */}
+        <PropertyCard
+          icon={<Layers className="w-5 h-5" />}
+          label="Module Group"
+          value={task.moduleGroup || 'Ungrouped'}
+          isActive={activePropertyEdit === 'moduleGroup'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'moduleGroup' ? null : 'moduleGroup')
+          }
+        >
+          {activePropertyEdit === 'moduleGroup' && (
+            <div onClick={(e) => e.stopPropagation()} className="p-2 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={moduleGroupInput}
+                  onChange={(e) => setModuleGroupInput(e.target.value)}
+                  placeholder="e.g. Auth, Frontend, CLI..."
+                  className="w-full bg-surface-secondary border border-border-primary text-xs text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange('moduleGroup', moduleGroupInput.trim() || undefined);
+                    setActivePropertyEdit(null);
+                  }}
+                  className="bg-white text-black font-bold text-xs px-2.5 py-1.5 rounded cursor-pointer"
+                >
+                  Save
+                </button>
+                {task.moduleGroup && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange('moduleGroup', undefined);
+                      setModuleGroupInput('');
+                      setActivePropertyEdit(null);
+                    }}
+                    className="bg-red-500/10 text-red-400 border border-red-500/30 text-xs px-2 py-1.5 rounded hover:bg-red-500/20"
+                    title="Clear Module"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {existingModuleGroups.length > 0 && (
+                <div className="pt-1 border-t border-border-primary/60">
+                  <div className="text-[10px] text-text-muted font-mono uppercase mb-1">
+                    Existing Modules:
+                  </div>
+                  <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                    {existingModuleGroups.map((group) => (
+                      <button
+                        key={group}
+                        type="button"
+                        onClick={() => {
+                          onChange('moduleGroup', group);
+                          setModuleGroupInput(group);
+                          setActivePropertyEdit(null);
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                          task.moduleGroup === group
+                            ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                            : 'bg-surface-secondary text-text-muted border-border-primary hover:text-text-primary'
+                        }`}
+                      >
+                        {group}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </PropertyCard>
+
+        {/* Depends On (Workflow DAG) */}
+        <PropertyCard
+          icon={<GitFork className="w-5 h-5" />}
+          label="Depends On"
+          value={
+            task.dependsOn && task.dependsOn.length > 0
+              ? `${task.dependsOn.length} dependency`
+              : 'None (Root Task)'
+          }
+          isActive={activePropertyEdit === 'dependsOn'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'dependsOn' ? null : 'dependsOn')
+          }
+        >
+          {activePropertyEdit === 'dependsOn' && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 space-y-2 max-h-60 overflow-y-auto"
+            >
+              {/* Active dependencies chips */}
+              {task.dependsOn && task.dependsOn.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-[10px] text-text-muted font-mono uppercase">
+                    Active Dependencies:
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {task.dependsOn.map((dep) => (
+                      <div
+                        key={dep}
+                        className="flex items-center justify-between gap-1 text-[11px] bg-surface-secondary px-2 py-1 rounded border border-border-primary text-text-secondary"
+                      >
+                        <span className="truncate">{getDependencyLabel(dep)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDependency(dep)}
+                          className="text-text-muted hover:text-red-400 p-0.5 text-xs"
+                          title="Remove dependency"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Candidate tasks in project */}
+              <div className="pt-1 border-t border-border-primary/60">
+                <div className="text-[10px] text-text-muted font-mono uppercase mb-1">
+                  Add Dependency:
+                </div>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {candidateDependencies.map((cand) => {
+                    const formattedId = `TASK-${cand.id.slice(-6)}`;
+                    const isSelected = (task.dependsOn || []).some(
+                      (d) => d === formattedId || d === cand.id || d === cand.id.slice(-6),
+                    );
+                    return (
+                      <button
+                        key={cand.id}
+                        type="button"
+                        onClick={() => handleToggleDependency(cand)}
+                        className={`w-full text-left flex items-center justify-between p-1.5 rounded text-xs transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary/20 text-primary-foreground border border-primary/40'
+                            : 'hover:bg-surface-hover text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <span className="truncate flex-1">{cand.title}</span>
+                        <span className="text-[10px] font-mono opacity-60 shrink-0 ml-1">
+                          {cand.id.slice(-6)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {candidateDependencies.length === 0 && (
+                    <div className="text-[10px] text-text-muted italic text-center p-2">
+                      No other tasks in this project.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Custom ID manual input */}
+              <form onSubmit={handleAddCustomDependency} className="flex items-center gap-1.5 pt-1">
+                <input
+                  type="text"
+                  value={customDepInput}
+                  onChange={(e) => setCustomDepInput(e.target.value)}
+                  placeholder="Or enter TASK-xxxxxx..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                />
+                <button
+                  type="submit"
+                  disabled={!customDepInput.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-2.5 py-1 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
         </PropertyCard>
 
         {/* Date */}

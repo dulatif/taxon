@@ -1,6 +1,6 @@
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
-import { AlertTriangle, Archive, ArrowLeft, Plus } from 'lucide-react';
+import { AlertTriangle, Archive, ArrowLeft, GitFork, Plus } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useAgentSync } from '../hooks/useAgentSync';
 import AgentImportModal from '../modals/AgentImportModal';
@@ -26,6 +26,7 @@ import CustomSelect from './CustomSelect';
 import DocumentPanel from './DocumentPanel';
 import KanbanView from './KanbanView';
 import SprintPanel from './SprintPanel';
+import { WorkflowView } from './Workflow/WorkflowView';
 
 interface ProjectDetailViewProps {
   project: Project;
@@ -111,7 +112,7 @@ export default function ProjectDetailView({
   const [selectedSort, setSelectedSort] = useState<TaskSortType>('custom');
   const [dueDateFilter, setDueDateFilter] = useState<string>('all');
   const [taskTab, setTaskTab] = useState<TaskTabType>('todo');
-  const [viewMode, setViewMode] = useState<'list' | 'kanban'>('list');
+  const [viewMode, setViewMode] = useState<'list' | 'kanban' | 'workflow'>('list');
   const [sidebarTab, setSidebarTab] = useState<'vault' | 'agent'>('vault');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
@@ -147,6 +148,7 @@ export default function ProjectDetailView({
     scanForChanges,
     confirmImport,
     cancelImport,
+    autoImportChanges,
     cleanUpArchived,
     copyContextSnapshot,
     openAuditLog,
@@ -350,7 +352,7 @@ export default function ProjectDetailView({
                 size="sm"
                 variant={viewMode === 'list' ? 'primary' : 'ghost'}
                 onClick={() => setViewMode('list')}
-                className="text-xs font-semibold px-4"
+                className="text-xs font-semibold px-3"
               >
                 List
               </Button>
@@ -359,9 +361,19 @@ export default function ProjectDetailView({
                 size="sm"
                 variant={viewMode === 'kanban' ? 'primary' : 'ghost'}
                 onClick={() => setViewMode('kanban')}
-                className="text-xs font-semibold px-4"
+                className="text-xs font-semibold px-3"
               >
                 Kanban
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={viewMode === 'workflow' ? 'primary' : 'ghost'}
+                onClick={() => setViewMode('workflow')}
+                className="text-xs font-semibold px-3 flex items-center gap-1.5"
+              >
+                <GitFork className="w-3.5 h-3.5" />
+                <span>Workflow</span>
               </Button>
             </div>
             <span className="text-text-muted">Filter by Sprint:</span>
@@ -528,7 +540,7 @@ export default function ProjectDetailView({
                   </div>
                 )}
             </div>
-          ) : (
+          ) : viewMode === 'kanban' ? (
             <div className="w-full">
               <KanbanView
                 projects={[project]}
@@ -541,6 +553,22 @@ export default function ProjectDetailView({
                 onSelectTask={onSelectTask}
                 onAssignTaskToSprint={onAssignTaskToSprint}
                 hideToolbar={true}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-[680px] rounded-xl border border-border-primary overflow-hidden shadow-xs bg-background">
+              <WorkflowView
+                project={project}
+                tasks={projectTasksAll.filter((t) => !t.archived)}
+                sprints={sprints}
+                selectedSprintId={selectedSprintId}
+                onSelectSprint={setSelectedSprintId}
+                onSelectTask={onSelectTask}
+                onAutoSync={autoImportChanges}
+                onAddTask={() => {
+                  setViewMode('list');
+                  setTaskTab('todo');
+                }}
               />
             </div>
           )}
