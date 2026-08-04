@@ -111,6 +111,8 @@ export function taskToMarkdown(task: Task): string {
     archivedAt: task.archivedAt,
     workspacePath: task.workspacePath,
     linkedFiles: task.linkedFiles,
+    dependsOn: task.dependsOn,
+    moduleGroup: task.moduleGroup,
   };
 
   let markdown = serializeFrontmatter(frontmatterData);
@@ -179,6 +181,8 @@ export function markdownToTask(markdown: string, projectId: string): Task {
     archivedAt: data.archivedAt as string | undefined,
     workspacePath: data.workspacePath as string | undefined,
     linkedFiles: (data.linkedFiles as string[]) || [],
+    dependsOn: (data.dependsOn as string[]) || [],
+    moduleGroup: data.moduleGroup as string | undefined,
   } as Task;
 }
 
@@ -654,6 +658,8 @@ function normalizeTask(task: Task): Task {
     dueDate: task.dueDate || undefined,
     workspacePath: task.workspacePath || undefined,
     linkedFiles: task.linkedFiles || [],
+    dependsOn: task.dependsOn || [],
+    moduleGroup: task.moduleGroup || undefined,
   };
 }
 
@@ -665,12 +671,17 @@ function normalizeSprint(sprint: Sprint): Sprint {
   };
 }
 
+export interface DiffAgentChangesOptions {
+  allowStatusRegression?: boolean;
+}
+
 export function diffAgentChanges(
   projectId: string,
   allTasks: Task[],
   allSprints: Sprint[],
   agentTasks: Task[],
   agentSprints: Sprint[],
+  options?: DiffAgentChangesOptions,
 ): AgentDiffResult {
   const newTasks: Task[] = [];
   const modifiedTasks: { before: Task; after: Task; changedFields: string[] }[] = [];
@@ -680,6 +691,11 @@ export function diffAgentChanges(
 
   const allTasksMap = new Map(allTasks.map((t) => [t.id, t]));
   const allSprintsMap = new Map(allSprints.map((s) => [s.id, s]));
+
+  const isDev =
+    options?.allowStatusRegression !== undefined
+      ? options.allowStatusRegression
+      : (import.meta.env?.DEV ?? process.env.NODE_ENV !== 'production');
 
   for (const agentTask of agentTasks) {
     const existingTask = allTasksMap.get(agentTask.id);
@@ -695,10 +711,13 @@ export function diffAgentChanges(
       const existingRank = statusRank[existingTask.status] ?? 0;
       const agentRank = statusRank[agentTask.status] ?? 0;
 
-      // Prevent task status regression (moving backward in status workflow)
-      if (existingTask.completed || existingTask.status === 'Done' || existingRank > agentRank) {
-        agentTask.status = existingTask.status;
-        agentTask.completed = existingTask.completed;
+      // Prevent task status regression (moving backward in status workflow) in production.
+      // In DEV / testing mode, allow markdown files to freely update or reset task status.
+      if (!isDev) {
+        if (existingTask.completed || existingTask.status === 'Done' || existingRank > agentRank) {
+          agentTask.status = existingTask.status;
+          agentTask.completed = existingTask.completed;
+        }
       }
     }
 
@@ -706,7 +725,7 @@ export function diffAgentChanges(
     if (agentTask.status === 'Done' || agentTask.completed) {
       const wasAlreadyDone =
         existingTask && (existingTask.status === 'Done' || existingTask.completed);
-      if (!wasAlreadyDone) {
+      if (!wasAlreadyDone && !isDev) {
         agentTask.status = 'Need to Test';
         agentTask.completed = false;
       }

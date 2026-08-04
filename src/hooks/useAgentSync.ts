@@ -1,6 +1,6 @@
 import { exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { Command } from '@tauri-apps/plugin-shell';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   applyAgentChanges,
   cleanUpArchivedFiles,
@@ -334,6 +334,93 @@ export function useAgentSync(
     }
   };
 
+  const isAutoSyncingRef = useRef(false);
+
+  const autoImportChanges = useCallback(async () => {
+    if (!project?.vaultPath || isImporting || isScanning || isExporting || isAutoSyncingRef.current)
+      {return;}
+
+    isAutoSyncingRef.current = true;
+    try {
+      const {
+        tasks: agentTasks,
+        sprints: agentSprints,
+        warnings,
+      } = await scanAgentDirectory(project.vaultPath, project.id);
+
+      const diff = diffAgentChanges(project.id, tasks, sprints, agentTasks, agentSprints);
+      diff.warnings.push(...warnings);
+
+      const hasChanges =
+        diff.newTasks.length > 0 ||
+        diff.modifiedTasks.length > 0 ||
+        diff.newSprints.length > 0 ||
+        diff.modifiedSprints.length > 0;
+
+      if (!hasChanges) return;
+
+      const result = await applyAgentChanges(diff, project.id);
+
+      const newState: AgentSyncState = syncState
+        ? { ...syncState }
+        : {
+            exportedTaskCount: 0,
+            exportedSprintCount: 0,
+            lastExportedAt: null,
+            lastImportedAt: null,
+          };
+
+      newState.lastImportedAt = new Date().toISOString();
+      await saveAgentSyncState(project.id, newState);
+      setSyncState(newState);
+
+      if (project.vaultPath && result.auditEntries.length > 0) {
+        try {
+          const allEntries = await getAuditLog(project.id, 200);
+          const changelogContent = generateChangelog(allEntries);
+          await writeTextFile(`${project.vaultPath}/.taxon/CHANGELOG.md`, changelogContent);
+        } catch (err) {
+          console.error('Failed to write CHANGELOG.md', err);
+        }
+      }
+
+      await refreshAuditSummary();
+      await refreshAllData();
+      await refreshAgentEntries();
+    } catch (err) {
+      console.error('Auto sync error:', err);
+    } finally {
+      isAutoSyncingRef.current = false;
+    }
+  }, [
+    project,
+    isImporting,
+    isScanning,
+    isExporting,
+    tasks,
+    sprints,
+    syncState,
+    refreshAuditSummary,
+    refreshAllData,
+    refreshAgentEntries,
+  ]);
+
+  const autoImportRef = useRef(autoImportChanges);
+  useEffect(() => {
+    autoImportRef.current = autoImportChanges;
+  }, [autoImportChanges]);
+
+  // Periodic auto-sync when vaultPath is active (polls every 3s)
+  useEffect(() => {
+    if (!project?.vaultPath) return;
+
+    const intervalId = setInterval(() => {
+      autoImportRef.current();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [project?.vaultPath]);
+
   return {
     syncState,
     agentDiff,
@@ -349,6 +436,7 @@ export function useAgentSync(
     scanForChanges,
     confirmImport,
     cancelImport,
+    autoImportChanges,
     cleanUpArchived,
     copyContextSnapshot,
     openAuditLog,

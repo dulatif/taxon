@@ -95,6 +95,10 @@ Hello World`);
         sortOrder: 1,
         archived: false,
         duration: '',
+        workspacePath: '/mnt/Linux/Projects/taxon',
+        linkedFiles: ['src/App.tsx'],
+        dependsOn: ['TASK-111111', 'TASK-222222'],
+        moduleGroup: 'Authentication',
         subtasks: [
           { id: 'sub-1', title: 'Subtask 1', completed: true },
           { id: 'sub-2', title: 'Subtask 2', completed: false },
@@ -102,6 +106,9 @@ Hello World`);
       };
 
       const markdown = taskToMarkdown(task);
+      expect(markdown).toContain('dependsOn: [TASK-111111, TASK-222222]');
+      expect(markdown).toContain('moduleGroup: Authentication');
+
       const parsedTask = markdownToTask(markdown, 'proj-1');
 
       expect(parsedTask.title).toBe(task.title);
@@ -109,6 +116,8 @@ Hello World`);
       expect(parsedTask.priority).toBe(task.priority);
       expect(parsedTask.status).toBe(task.status);
       expect(parsedTask.labels).toEqual(task.labels);
+      expect(parsedTask.dependsOn).toEqual(['TASK-111111', 'TASK-222222']);
+      expect(parsedTask.moduleGroup).toBe('Authentication');
       expect(parsedTask.timeEffort).toBe(task.timeEffort);
       expect(parsedTask.timeSpent).toBe(task.timeSpent);
       expect(parsedTask.subtasks!.length).toBe(2);
@@ -116,6 +125,22 @@ Hello World`);
       expect(parsedTask.subtasks![0]!.completed).toBe(true);
       expect(parsedTask.subtasks![1]!.title).toBe('Subtask 2');
       expect(parsedTask.subtasks![1]!.completed).toBe(false);
+    });
+
+    it('should parse markdown task without dependsOn or moduleGroup gracefully', () => {
+      const markdown = `---
+id: task-abc
+title: Simple Task
+priority: Medium
+status: To Do
+completed: false
+---
+## Description
+No workflow metadata
+`;
+      const parsed = markdownToTask(markdown, 'proj-1');
+      expect(parsed.dependsOn).toEqual([]);
+      expect(parsed.moduleGroup).toBeUndefined();
     });
   });
 
