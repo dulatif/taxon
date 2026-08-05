@@ -57,6 +57,18 @@ export default function HelpView() {
                 Esc
               </kbd>
             </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Start / Pause Focus Timer</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                ⌘⇧P / Ctrl+Shift+P
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Stop Focus Timer</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                ⌘⇧S / Ctrl+Shift+S
+              </kbd>
+            </div>
           </div>
 
           {/* Project Detail View Shortcuts */}

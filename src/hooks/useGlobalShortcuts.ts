@@ -5,12 +5,16 @@ interface UseGlobalShortcutsOptions {
   onQuickAddTask: () => void;
   onLaunchFocusMode: () => void;
   onOpenSpotlight: () => void;
+  onStartPauseTimer: () => void;
+  onStopTimer: () => void;
 }
 
 export function useGlobalShortcuts({
   onQuickAddTask,
   onLaunchFocusMode,
   onOpenSpotlight,
+  onStartPauseTimer,
+  onStopTimer,
 }: UseGlobalShortcutsOptions) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -25,12 +29,18 @@ export function useGlobalShortcuts({
         } else if (key === 'f') {
           e.preventDefault();
           onLaunchFocusMode();
+        } else if (key === 'p' && e.shiftKey) {
+          e.preventDefault();
+          onStartPauseTimer();
+        } else if (key === 's' && e.shiftKey) {
+          e.preventDefault();
+          onStopTimer();
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onOpenSpotlight]);
+  }, [onOpenSpotlight, onQuickAddTask, onLaunchFocusMode, onStartPauseTimer, onStopTimer]);
 
   useEffect(() => {
     const setupShortcuts = async () => {
@@ -54,6 +64,18 @@ export function useGlobalShortcuts({
             onLaunchFocusMode();
           }
         });
+
+        await register('CommandOrControl+Shift+P', (e) => {
+          if (e.state === 'Pressed') {
+            onStartPauseTimer();
+          }
+        });
+
+        await register('CommandOrControl+Shift+S', (e) => {
+          if (e.state === 'Pressed') {
+            onStopTimer();
+          }
+        });
       } catch (err) {
         console.error('Failed to register global shortcuts:', err);
       }
@@ -64,5 +86,5 @@ export function useGlobalShortcuts({
     return () => {
       unregisterAll().catch(console.error);
     };
-  }, [onQuickAddTask, onLaunchFocusMode, onOpenSpotlight]);
+  }, [onQuickAddTask, onLaunchFocusMode, onOpenSpotlight, onStartPauseTimer, onStopTimer]);
 }

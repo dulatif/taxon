@@ -141,6 +141,15 @@ export default function App() {
       document.getElementById('header-focus-mode')?.click();
     },
     onOpenSpotlight: () => setIsSpotlightOpen(true),
+    onStartPauseTimer: () => {
+      if (!focusTimer.timerIsRunning) {
+        focusTimer.unlinkTask();
+      }
+      focusTimer.toggleTimer();
+    },
+    onStopTimer: () => {
+      focusTimer.resetTimer();
+    },
   });
 
   const { settings } = useSettings();
