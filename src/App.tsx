@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
 
 import CalendarView from './components/CalendarView';
 import DashboardView from './components/DashboardView';
@@ -45,6 +46,7 @@ export default function App() {
     setCurrentView,
   } = useAppNavigation();
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [selectedSprintFilterId, setSelectedSprintFilterId] = useState<string | undefined>(undefined);
 
   // --- Scroll Reset ---
   useEffect(() => {
@@ -97,6 +99,8 @@ export default function App() {
     setImportPendingJson,
     onTickFocusTime,
     handleReorderProjects,
+    handleTogglePinProject,
+    handleReorderPinnedProjects,
     handleReorderTasks,
     handleSetVaultPath,
     handleArchiveTask,
@@ -226,8 +230,10 @@ export default function App() {
   }
 
   return (
-    <AppLayout
-      titleBar={<TitleBar />}
+    <>
+      <Toaster theme="dark" position="bottom-right" />
+      <AppLayout
+        titleBar={<TitleBar />}
       sidebar={
         <Sidebar
           currentView={currentView}
@@ -241,6 +247,8 @@ export default function App() {
             setIsAddProjectOpen(true);
           }}
           onReorderProjects={handleReorderProjects}
+          onTogglePinProject={handleTogglePinProject}
+          onReorderPinnedProjects={handleReorderPinnedProjects}
           timerSeconds={focusTimer.timerSeconds}
           timerIsRunning={focusTimer.timerIsRunning}
           activeFocusTaskTitle={focusTimer.activeFocusTask?.title}
@@ -365,6 +373,8 @@ export default function App() {
             onUnarchiveTask={handleUnarchiveTask}
             onArchiveAllCompleted={handleArchiveAllCompleted}
             refreshAllData={refreshAllData}
+            initialSprintId={selectedSprintFilterId}
+            onTogglePinProject={handleTogglePinProject}
           />
         )}
       </Render>
@@ -493,8 +503,16 @@ export default function App() {
         onClose={() => setIsSpotlightOpen(false)}
         tasks={tasks}
         projects={projects}
+        sprints={sprints}
         onToggleTask={handleToggleTask}
-        onSelectProject={selectProject}
+        onSelectProject={(projId) => {
+          selectProject(projId);
+          setSelectedSprintFilterId(undefined);
+        }}
+        onSelectProjectSprint={(projId, sprintId) => {
+          selectProject(projId);
+          setSelectedSprintFilterId(sprintId);
+        }}
         onSelectTask={(id) => setSelectedDetailTaskId(id)}
         onNavigate={navigateTo}
         onQuickAddTask={() => setIsQuickAddTaskOpen(true)}
@@ -503,5 +521,6 @@ export default function App() {
         }}
       />
     </AppLayout>
+    </>
   );
 }
