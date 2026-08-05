@@ -182,6 +182,16 @@ export const initDb = (): Promise<Database> => {
         // Column already exists
       }
       try {
+        await database.execute('ALTER TABLE projects ADD COLUMN pinned BOOLEAN');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN pinnedSortOrder INTEGER');
+      } catch {
+        // Column already exists
+      }
+      try {
         await database.execute('ALTER TABLE tasks ADD COLUMN archived BOOLEAN');
       } catch {
         // Column already exists
@@ -248,6 +258,8 @@ export const getProjects = async (): Promise<Project[]> => {
 
   return rawProjects.map((p) => ({
     ...p,
+    pinned: !!p.pinned,
+    pinnedSortOrder: typeof p.pinnedSortOrder === 'number' ? p.pinnedSortOrder : undefined,
     workspacePaths: parseJSON(p.workspacePaths),
   })) as unknown as Project[];
 };
@@ -257,7 +269,7 @@ export const saveProject = async (p: Project) => {
   const workspacePathsStr = p.workspacePaths ? JSON.stringify(p.workspacePaths) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate, workspacePaths) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate, workspacePaths, pinned, pinnedSortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
     [
       p.id ?? null,
       p.name ?? null,
@@ -269,6 +281,8 @@ export const saveProject = async (p: Project) => {
       p.vaultPath ?? null,
       p.dueDate ?? null,
       workspacePathsStr,
+      p.pinned ? 1 : 0,
+      p.pinnedSortOrder ?? null,
     ],
   );
 };

@@ -1,6 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { ChevronRight, Plus } from 'lucide-react';
+import { ChevronRight, Pin, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 import { getCategoryStyle } from '../../services/category-color';
@@ -14,6 +14,7 @@ interface SidebarProjectListProps {
   onAddProjectClick: () => void;
   onAddProjectToCategory?: (category: string) => void;
   onDragEnd: (result: DropResult) => void;
+  onTogglePinProject?: (projectId: string) => void;
 }
 
 export default function SidebarProjectList({
@@ -24,6 +25,7 @@ export default function SidebarProjectList({
   onAddProjectClick,
   onAddProjectToCategory,
   onDragEnd,
+  onTogglePinProject,
 }: SidebarProjectListProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
@@ -46,18 +48,98 @@ export default function SidebarProjectList({
     setExpandedCategories((prev) => ({ ...prev, [cat]: !prev[cat] }));
   };
 
-  return (
-    <div className="pt-3 pb-3">
-      <h3 className="px-3 mb-1.5 text-[10px] font-bold text-text-muted/50 uppercase tracking-widest">
-        projects
-      </h3>
+  const pinnedProjects = activeProjects
+    .filter((p) => p.pinned)
+    .sort((a, b) => (a.pinnedSortOrder ?? 999999) - (b.pinnedSortOrder ?? 999999));
 
-      <DragDropContext onDragEnd={onDragEnd}>
+  return (
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="pt-3 pb-3">
+        {/* Pinned Projects Block */}
+        {pinnedProjects.length > 0 && (
+          <div className="mb-4 space-y-1">
+            <div className="flex items-center justify-between px-3 py-1">
+              <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest flex items-center gap-1.5 font-mono">
+                <Pin className="w-3 h-3 fill-amber-400/20 text-amber-400" />
+                <span>Pinned ({pinnedProjects.length})</span>
+              </span>
+            </div>
+
+            <Droppable droppableId="pinned_zone" type="pinned">
+              {(provided, snapshot) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className={`space-y-0.5 pl-2 border-l border-amber-500/30 ml-4 py-0.5 min-h-[10px] rounded transition-colors ${
+                    snapshot.isDraggingOver ? 'bg-surface-secondary/50 border-white/30' : ''
+                  }`}
+                >
+                  {pinnedProjects.map((project, index) => {
+                    const isSelected = selectedProjectId === project.id;
+                    const style = getCategoryStyle(project.category);
+                    return (
+                      <Draggable
+                        key={`pinned-${project.id}`}
+                        draggableId={project.id}
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            id={`sidebar-pinned-project-${project.id}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => onProjectSelect(project.id)}
+                            className={`group flex items-center justify-between px-3 py-1.5 rounded-md text-[13px] transition-colors w-full cursor-pointer active:cursor-grabbing select-none ${
+                              snapshot.isDragging
+                                ? 'bg-surface-hover text-text-primary ring-1 ring-amber-500/50 z-50 font-bold'
+                                : isSelected
+                                  ? 'bg-surface-active text-text-primary font-bold'
+                                  : 'text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 font-medium'
+                            }`}
+                            title={`${project.name} (Pinned)`}
+                          >
+                            <div className="flex items-center gap-3 overflow-hidden min-w-0">
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`} />
+                              <span className="truncate">{project.name}</span>
+                            </div>
+
+                            {onTogglePinProject && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onTogglePinProject(project.id);
+                                }}
+                                className="opacity-0 group-hover:opacity-100 p-0.5 text-amber-400 hover:text-amber-300 transition-opacity cursor-pointer shrink-0"
+                                title="Unpin project"
+                              >
+                                <Pin className="w-3.5 h-3.5 fill-current" />
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </Draggable>
+                    );
+                  })}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </div>
+        )}
+
+        <h3 className="px-3 mb-1.5 text-[10px] font-bold text-text-muted/50 uppercase tracking-widest font-mono">
+          projects
+        </h3>
+
         <div className="space-y-1.5">
           {categories.map((cat) => {
             const catProjects = activeProjects
               .filter((p) => p.category === cat)
-              .sort((a, b) => a.name.localeCompare(b.name));
+              .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
             if (catProjects.length === 0) return null;
 
             const isExpanded = expandedCategories[cat] !== false;
@@ -108,7 +190,7 @@ export default function SidebarProjectList({
                       transition={{ duration: 0.2, ease: 'easeInOut' }}
                       className="overflow-hidden"
                     >
-                      <Droppable droppableId={`cat_${cat}`}>
+                      <Droppable droppableId={`cat_${cat}`} type="category">
                         {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
@@ -142,12 +224,32 @@ export default function SidebarProjectList({
                                       }`}
                                       title={`${project.name} (${project.category})`}
                                     >
-                                      <div className="flex items-center gap-3 overflow-hidden">
+                                      <div className="flex items-center gap-3 overflow-hidden min-w-0">
                                         <span
                                           className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`}
                                         />
                                         <span className="truncate">{project.name}</span>
                                       </div>
+
+                                      {onTogglePinProject && (
+                                        <button
+                                          type="button"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            onTogglePinProject(project.id);
+                                          }}
+                                          className={`p-0.5 transition-opacity cursor-pointer shrink-0 ${
+                                            project.pinned
+                                              ? 'text-amber-400 opacity-100'
+                                              : 'text-text-muted hover:text-amber-400 opacity-0 group-hover:opacity-100'
+                                          }`}
+                                          title={project.pinned ? 'Unpin project' : 'Pin project'}
+                                        >
+                                          <Pin
+                                            className={`w-3.5 h-3.5 ${project.pinned ? 'fill-current' : ''}`}
+                                          />
+                                        </button>
+                                      )}
                                     </div>
                                   )}
                                 </Draggable>
@@ -164,16 +266,16 @@ export default function SidebarProjectList({
             );
           })}
         </div>
-      </DragDropContext>
 
-      <button
-        onClick={onAddProjectClick}
-        id="btn-new-project-sidebar"
-        className="w-full flex items-center gap-3 px-3 py-1.5 mt-3 text-xs text-text-secondary/70 hover:text-text-primary hover:bg-surface-secondary transition-colors rounded-md group text-left border border-dashed border-border-primary hover:border-white/30 cursor-pointer"
-      >
-        <Plus className="w-3.5 h-3.5" />
-        <span>New Project</span>
-      </button>
-    </div>
+        <button
+          onClick={onAddProjectClick}
+          id="btn-new-project-sidebar"
+          className="w-full flex items-center gap-3 px-3 py-1.5 mt-3 text-xs text-text-secondary/70 hover:text-text-primary hover:bg-surface-secondary transition-colors rounded-md group text-left border border-dashed border-border-primary hover:border-white/30 cursor-pointer"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span>New Project</span>
+        </button>
+      </div>
+    </DragDropContext>
   );
 }

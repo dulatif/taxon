@@ -18,4 +18,6 @@ export interface Project {
   sortOrder?: number;
   vaultPath?: string;
   workspacePaths?: string[];
+  pinned?: boolean;
+  pinnedSortOrder?: number;
 }

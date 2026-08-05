@@ -1,5 +1,5 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { CalendarIcon, CheckCircle, Edit, Folder, Plus, Trash2, X } from 'lucide-react';
+import { CalendarIcon, CheckCircle, Edit, Folder, Pin, Plus, Trash2, X } from 'lucide-react';
 import { useState } from 'react';
 import Button from '../../components/Button';
 import { getCategoryStyle } from '../../services/category-color';
@@ -20,6 +20,7 @@ interface ProjectHeaderProps {
   ) => void;
   onCompleteProject: (projectId: string) => void;
   onDeleteProjectClick: () => void;
+  onTogglePinProject?: (projectId: string) => void;
 }
 
 export default function ProjectHeader({
@@ -29,6 +30,7 @@ export default function ProjectHeader({
   onEditProject,
   onCompleteProject,
   onDeleteProjectClick,
+  onTogglePinProject,
 }: ProjectHeaderProps) {
   const [isEditingProj, setIsEditingProj] = useState(false);
   const [editName, setEditName] = useState(project.name);
@@ -209,9 +211,25 @@ export default function ProjectHeader({
                   </span>
                 )}
               </div>
-              <h1 className="text-3xl font-extrabold text-text-primary tracking-tight">
-                {project.name}
-              </h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-extrabold text-text-primary tracking-tight">
+                  {project.name}
+                </h1>
+                {onTogglePinProject && (
+                  <button
+                    type="button"
+                    onClick={() => onTogglePinProject(project.id)}
+                    className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                      project.pinned
+                        ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 hover:bg-amber-500/20'
+                        : 'bg-surface-primary border-border-primary text-text-muted hover:text-amber-400 hover:border-amber-400/40'
+                    }`}
+                    title={project.pinned ? 'Unpin project from sidebar' : 'Pin project to sidebar'}
+                  >
+                    <Pin className={`w-4 h-4 ${project.pinned ? 'fill-current' : ''}`} />
+                  </button>
+                )}
+              </div>
               <p className="text-text-secondary text-sm max-w-2xl leading-relaxed whitespace-pre-wrap">
                 {project.description}
               </p>

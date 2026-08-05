@@ -17,6 +17,8 @@ interface SidebarProps {
   onAddProjectClick: () => void;
   onAddProjectToCategory?: (category: string) => void;
   onReorderProjects?: (projects: Project[]) => void;
+  onTogglePinProject?: (projectId: string) => void;
+  onReorderPinnedProjects?: (projects: Project[]) => void;
   timerSeconds?: number;
   timerIsRunning?: boolean;
   activeFocusTaskTitle?: string;
@@ -34,6 +36,8 @@ export default function Sidebar({
   onAddProjectClick,
   onAddProjectToCategory,
   onReorderProjects,
+  onTogglePinProject,
+  onReorderPinnedProjects,
   timerSeconds,
   timerIsRunning,
   activeFocusTaskTitle,
@@ -57,11 +61,34 @@ export default function Sidebar({
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
-    if (!destination || !onReorderProjects) return;
+    if (!destination) return;
 
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
+
+    if (source.droppableId === 'pinned_zone' && destination.droppableId === 'pinned_zone') {
+      if (!onReorderPinnedProjects) return;
+      const pinnedProjects = activeProjects
+        .filter((p) => p.pinned)
+        .sort((a, b) => (a.pinnedSortOrder ?? 999999) - (b.pinnedSortOrder ?? 999999));
+
+      const draggedProject = pinnedProjects.find((p) => p.id === draggableId);
+      if (!draggedProject) return;
+
+      pinnedProjects.splice(source.index, 1);
+      pinnedProjects.splice(destination.index, 0, draggedProject);
+
+      onReorderPinnedProjects(pinnedProjects);
+      return;
+    }
+
+    // prevent cross-zone drag for pinned
+    if (source.droppableId === 'pinned_zone' || destination.droppableId === 'pinned_zone') {
+      return;
+    }
+
+    if (!onReorderProjects) return;
 
     const sourceCat = source.droppableId.replace(/^cat_/, '');
     const destCat = destination.droppableId.replace(/^cat_/, '');
@@ -71,7 +98,9 @@ export default function Sidebar({
 
     const projectsByCategory: Record<string, Project[]> = {};
     categories.forEach((c) => {
-      projectsByCategory[c] = activeProjects.filter((p) => p.category === c);
+      projectsByCategory[c] = activeProjects
+        .filter((p) => p.category === c)
+        .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
     });
 
     if (projectsByCategory[sourceCat]) {
@@ -161,6 +190,7 @@ export default function Sidebar({
           onAddProjectClick={onAddProjectClick}
           onAddProjectToCategory={onAddProjectToCategory}
           onDragEnd={onDragEnd}
+          onTogglePinProject={onTogglePinProject}
         />
       </div>
 

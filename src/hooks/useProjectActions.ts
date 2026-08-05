@@ -150,6 +150,40 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
     deleteFile(id);
   }, []);
 
+  const handleTogglePinProject = useCallback((projectId: string) => {
+    setProjects((prev) => {
+      const pinnedCount = prev.filter((p) => p.pinned).length;
+      return prev.map((p) => {
+        if (p.id === projectId) {
+          const up = { ...p, pinned: !p.pinned };
+          if (up.pinned) {
+            up.pinnedSortOrder = pinnedCount;
+          } else {
+            up.pinnedSortOrder = undefined;
+          }
+          saveProject(up);
+          return up;
+        }
+        return p;
+      });
+    });
+  }, []);
+
+  const handleReorderPinnedProjects = useCallback((reorderedPinnedProjects: Project[]) => {
+    const updated = reorderedPinnedProjects.map((p, idx) => ({ ...p, pinnedSortOrder: idx }));
+    setProjects((prev) => {
+      const newProjects = [...prev];
+      updated.forEach((up) => {
+        const idx = newProjects.findIndex((p) => p.id === up.id);
+        if (idx !== -1) {
+          newProjects[idx] = up;
+        }
+      });
+      return newProjects;
+    });
+    updated.forEach((p) => saveProject(p));
+  }, []);
+
   return {
     projects,
     setProjects,
@@ -161,6 +195,8 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
     handleEditProject,
     handleSetVaultPath,
     handleReorderProjects,
+    handleTogglePinProject,
+    handleReorderPinnedProjects,
     handleAddFile,
     handleDeleteFile,
   };
