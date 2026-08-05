@@ -1,5 +1,6 @@
 import { Circle, Minimize2, Pause, Play, SkipForward, StopCircle, Unlink } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useEffect } from 'react';
 import type { Project, Task } from '../types';
 
 interface FocusModeViewProps {
@@ -33,6 +34,16 @@ export default function FocusModeView({
   onUnlinkTask,
   onMinimizeFocusMode,
 }: FocusModeViewProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onMinimizeFocusMode();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onMinimizeFocusMode]);
+
   const currentProject = activeTask ? projects.find((p) => p.id === activeTask.projectId) : null;
 
   // Up Next Queue contains other uncompleted tasks for this active project

@@ -51,12 +51,24 @@ export default function HelpView() {
                 ⌘F / Ctrl+F
               </kbd>
             </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Close Modals / Minimize Focus</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                Esc
+              </kbd>
+            </div>
           </div>
 
           {/* Project Detail View Shortcuts */}
           <div className="space-y-2">
             <div className="text-[11px] font-bold text-text-muted uppercase tracking-wider mb-2">
               Project Detail View Hotkeys
+            </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Focus Add Task Input</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                /
+              </kbd>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
               <span className="text-text-primary font-sans text-xs">Switch View Mode</span>
