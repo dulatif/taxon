@@ -1,6 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { CheckCircle, MoreHorizontal, MoveLeft, MoveRight, Plus } from 'lucide-react';
+import { CheckCircle, MoreHorizontal, Plus } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import type { Project, Sprint, Task } from '../types';
 
@@ -91,21 +91,6 @@ export default function KanbanView({
     setColumns([...columns, newColumnName.trim()]);
     setNewColumnName('');
     setIsAddingColumn(false);
-  };
-
-  // Move task via button click (excellent touch alternative to drag events)
-  const shiftTaskState = (
-    taskId: string,
-    currentStatus: Task['status'],
-    direction: 'left' | 'right',
-  ) => {
-    const sequence: Task['status'][] = ['To Do', 'In Progress', 'Need to Test', 'Done'];
-    const idx = sequence.indexOf(currentStatus);
-    if (direction === 'right' && idx < 3) {
-      onMoveTaskStatus(taskId, sequence[idx + 1] as Task['status']);
-    } else if (direction === 'left' && idx > 0) {
-      onMoveTaskStatus(taskId, sequence[idx - 1] as Task['status']);
-    }
   };
 
   // Styles maps for priority classes
@@ -247,68 +232,28 @@ export default function KanbanView({
                                         : 'border-border-primary hover:border-border-primary/80'
                                   } ${colName === 'Done' && !snapshot.isDragging ? 'opacity-65' : ''}`}
                                 >
-                                  {/* Priority Tag and Duration stats */}
-                                  <div className="flex justify-between items-start mb-3">
-                                    <div className="flex items-center gap-1.5 flex-wrap">
-                                      <span
-                                        className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}
-                                      >
-                                        {task.priority || 'Medium'}
-                                      </span>
-                                      {sprints && task.sprintId && (
-                                        <span
-                                          onClick={(e) => e.stopPropagation()}
-                                          className="text-[9px] font-mono bg-blue-500/15 text-blue-400 border border-blue-500/30 px-1.5 py-0.5 rounded"
-                                        >
-                                          {sprints.find((s) => s.id === task.sprintId)?.name ||
-                                            'Sprint'}
-                                        </span>
-                                      )}
-                                    </div>
-                                    <span className="text-text-muted text-[10px] font-mono leading-none bg-surface-primary/40 px-1.5 py-0.5 rounded border border-border-primary/40">
-                                      {task.duration || '25m'}
-                                    </span>
-                                  </div>
-
-                                  {/* Task text body */}
+                                  {/* Task title */}
                                   <h3
-                                    className={`text-xs font-medium leading-relaxed mb-4 text-text-primary ${colName === 'Done' ? 'line-through text-text-muted' : colName === 'Need to Test' ? 'text-orange-400' : ''}`}
+                                    className={`text-xs font-medium leading-relaxed text-text-primary ${colName === 'Done' ? 'line-through text-text-muted' : colName === 'Need to Test' ? 'text-orange-400' : ''}`}
                                   >
                                     {task.title}
                                   </h3>
 
-                                  {/* Touch Action helpers and status shift arrows */}
-                                  <div className="flex items-center justify-between border-t border-border-primary/50 pt-3 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <div className="flex gap-2">
-                                      {colName !== 'To Do' && (
-                                        <button
-                                          onClick={() =>
-                                            shiftTaskState(task.id, task.status, 'left')
-                                          }
-                                          className="p-1 rounded bg-surface-elevated border border-border-primary text-text-muted hover:text-text-primary"
-                                          title="Move Left"
-                                          aria-label="Move Left"
-                                        >
-                                          <MoveLeft className="w-3 h-3" />
-                                        </button>
-                                      )}
-                                      {colName !== 'Done' && (
-                                        <button
-                                          onClick={() =>
-                                            shiftTaskState(task.id, task.status, 'right')
-                                          }
-                                          className="p-1 rounded bg-surface-elevated border border-border-primary text-text-muted hover:text-text-primary"
-                                          title="Move Right"
-                                          aria-label="Move Right"
-                                        >
-                                          <MoveRight className="w-3 h-3" />
-                                        </button>
+                                  {/* Bottom metadata row: Priority, Time effort/duration, Done indicator */}
+                                  <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-border-primary/40">
+                                    <span
+                                      className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}
+                                    >
+                                      {task.priority || 'Medium'}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-text-muted text-[10px] font-mono leading-none bg-surface-primary/40 px-1.5 py-0.5 rounded border border-border-primary/40">
+                                        {task.duration || '25m'}
+                                      </span>
+                                      {colName === 'Done' && (
+                                        <CheckCircle className="w-3.5 h-3.5 text-text-primary" />
                                       )}
                                     </div>
-
-                                    {colName === 'Done' && (
-                                      <CheckCircle className="w-3.5 h-3.5 text-text-primary" />
-                                    )}
                                   </div>
                                 </div>
                               )}
