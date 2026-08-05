@@ -29,7 +29,8 @@ interface AgentSyncPanelProps {
   onExport: () => void;
   onImport: () => void;
   onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
-  onCopyContextSnapshot?: () => Promise<{ success: boolean; activeCount: number }>;
+  onCopyContextSnapshot?: (selectedSprintId?: string) => Promise<{ success: boolean; activeCount: number }>;
+  selectedSprintId?: string;
   onOpenAuditLog?: () => void;
   onInstallGitHook?: () => Promise<{ success: boolean; message: string }>;
   onSetVaultDirectory: () => void;
@@ -50,6 +51,7 @@ export default function AgentSyncPanel({
   onImport,
   onCleanUpArchived,
   onCopyContextSnapshot,
+  selectedSprintId,
   onOpenAuditLog,
   onInstallGitHook,
   onSetVaultDirectory,
@@ -99,7 +101,7 @@ export default function AgentSyncPanel({
 
   const handleCopySnapshot = async () => {
     if (!onCopyContextSnapshot) return;
-    const res = await onCopyContextSnapshot();
+    const res = await onCopyContextSnapshot(selectedSprintId);
     if (res.success) {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);

@@ -1,4 +1,5 @@
 import { exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
+import { toast } from 'sonner';
 import { Command } from '@tauri-apps/plugin-shell';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -233,22 +234,32 @@ export function useAgentSync(
     }
   };
 
-  const copyContextSnapshot = async (): Promise<{ success: boolean; activeCount: number }> => {
+  const copyContextSnapshot = async (
+    selectedSprintId?: string | 'all' | 'backlog',
+  ): Promise<{ success: boolean; activeCount: number }> => {
     if (!project) {
       setError('No project selected.');
       return { success: false, activeCount: 0 };
     }
 
     try {
-      const snapshot = generateContextSnapshot(project, tasks, sprints);
+      const snapshot = generateContextSnapshot(project, tasks, sprints, selectedSprintId);
       await navigator.clipboard.writeText(snapshot);
-      const activeCount = tasks.filter(
+      let targetTasks = tasks.filter(
         (t) =>
           t.projectId === project.id &&
           !t.archived &&
           (t.status === 'In Progress' || t.status === 'To Do'),
-      ).length;
-      return { success: true, activeCount };
+      );
+      if (selectedSprintId && selectedSprintId !== 'all') {
+        if (selectedSprintId === 'backlog') {
+          targetTasks = targetTasks.filter((t) => !t.sprintId);
+        } else {
+          targetTasks = targetTasks.filter((t) => t.sprintId === selectedSprintId);
+        }
+      }
+      toast.success('Sprint context copied to clipboard!');
+      return { success: true, activeCount: targetTasks.length };
     } catch (err: unknown) {
       console.error('Failed to copy context snapshot to clipboard', err);
       const errMsg = err instanceof Error ? err.message : 'Failed to copy to clipboard';

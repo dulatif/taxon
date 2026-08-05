@@ -958,8 +958,17 @@ export function generateContextSnapshot(
   project: Project,
   tasks: Task[],
   sprints: Sprint[],
+  selectedSprintId?: string | 'all' | 'backlog',
 ): string {
-  const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+  let projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+
+  if (selectedSprintId && selectedSprintId !== 'all') {
+    if (selectedSprintId === 'backlog') {
+      projectTasks = projectTasks.filter((t) => !t.sprintId);
+    } else {
+      projectTasks = projectTasks.filter((t) => t.sprintId === selectedSprintId);
+    }
+  }
 
   const activeTasks = projectTasks.filter(
     (t) => t.status === 'In Progress' || t.status === 'To Do',

@@ -357,6 +357,51 @@ No workflow metadata
       const snapshot = generateContextSnapshot(project, [], []);
       expect(snapshot).toContain('*No active tasks*');
     });
+
+    it('should filter context snapshot by selectedSprintId', () => {
+      const sprints: Sprint[] = [
+        {
+          id: 'sprint-1',
+          name: 'Sprint 1',
+          projectId: 'proj-1',
+          status: 'Active',
+          startDate: '',
+          endDate: '',
+          goal: '',
+        },
+      ];
+
+      const tasks: Task[] = [
+        {
+          id: 't1',
+          projectId: 'proj-1',
+          title: 'Sprint Task',
+          status: 'In Progress',
+          priority: 'High',
+          sprintId: 'sprint-1',
+          archived: false,
+        } as Task,
+        {
+          id: 't2',
+          projectId: 'proj-1',
+          title: 'Backlog Task',
+          status: 'To Do',
+          priority: 'Critical',
+          sprintId: undefined,
+          archived: false,
+        } as Task,
+      ];
+
+      const sprintOnlySnapshot = generateContextSnapshot(project, tasks, sprints, 'sprint-1');
+      expect(sprintOnlySnapshot).toContain('Sprint 1');
+      expect(sprintOnlySnapshot).toContain('Sprint Task');
+      expect(sprintOnlySnapshot).not.toContain('Backlog Task');
+
+      const backlogOnlySnapshot = generateContextSnapshot(project, tasks, sprints, 'backlog');
+      expect(backlogOnlySnapshot).toContain('Backlog');
+      expect(backlogOnlySnapshot).toContain('Backlog Task');
+      expect(backlogOnlySnapshot).not.toContain('Sprint Task');
+    });
   });
 
   describe('Git Hooks (Feature 3)', () => {

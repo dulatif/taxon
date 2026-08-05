@@ -76,6 +76,8 @@ interface ProjectDetailViewProps {
   onUnarchiveTask?: (id: string) => void;
   onArchiveAllCompleted?: (projectId?: string, taskIds?: string[]) => void;
   refreshAllData?: () => Promise<void>;
+  initialSprintId?: string;
+  onTogglePinProject?: (projectId: string) => void;
 }
 
 export default function ProjectDetailView({
@@ -107,6 +109,8 @@ export default function ProjectDetailView({
   onSprintRollover,
   onMoveTaskStatus,
   refreshAllData,
+  initialSprintId,
+  onTogglePinProject,
 }: ProjectDetailViewProps) {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<TaskSortType>('custom');
@@ -116,9 +120,16 @@ export default function ProjectDetailView({
   const [sidebarTab, setSidebarTab] = useState<'vault' | 'agent'>('vault');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSprintId, setSelectedSprintId] = useState<string | 'all' | 'backlog'>(() => {
+    if (initialSprintId) return initialSprintId;
     const activeSprint = sprints?.find((s) => s.projectId === project.id && s.status === 'Active');
     return activeSprint ? activeSprint.id : 'all';
   });
+
+  useEffect(() => {
+    if (initialSprintId) {
+      setSelectedSprintId(initialSprintId);
+    }
+  }, [initialSprintId]);
   const [sprintToComplete, setSprintToComplete] = useState<Sprint | null>(null);
 
   // Modal confirmations
@@ -173,6 +184,20 @@ export default function ProjectDetailView({
     setIsImportModalOpen(false);
   };
 
+  const cycleSprintFilter = () => {
+    const options: string[] = ['all', 'backlog'];
+    if (sprints) {
+      const projectSprints = sprints.filter((s) => s.projectId === project.id);
+      for (const s of projectSprints) {
+        options.push(s.id);
+      }
+    }
+    const currentIndex = options.indexOf(selectedSprintId);
+    const nextIndex = (currentIndex + 1) % options.length;
+    const targetSprint = options[nextIndex] ?? 'all';
+    setSelectedSprintId(targetSprint);
+  };
+
   const refreshVault = async () => {
     if (project.vaultPath) {
       try {
@@ -187,10 +212,79 @@ export default function ProjectDetailView({
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshVault();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.vaultPath]);
+
+  // ProjectDetail keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === 'INPUT' ||
+          target.tagName === 'TEXTAREA' ||
+          target.isContentEditable ||
+          target.getAttribute('contenteditable') === 'true')
+      ) {
+        return;
+      }
+
+      if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (e.key === '1') {
+          e.preventDefault();
+          setViewMode('list');
+          return;
+        }
+        if (e.key === '2') {
+          e.preventDefault();
+          setViewMode('kanban');
+          return;
+        }
+        if (e.key === '3') {
+          e.preventDefault();
+          setViewMode('workflow');
+          return;
+        }
+        if (e.key === '[' || e.key === ']') {
+          e.preventDefault();
+          setSidebarTab((prev) => (prev === 'vault' ? 'agent' : 'vault'));
+          return;
+        }
+        if (e.key.toLowerCase() === 's') {
+          e.preventDefault();
+          cycleSprintFilter();
+          return;
+        }
+      }
+
+      if (e.altKey && !e.ctrlKey && !e.metaKey) {
+        const key = e.key.toLowerCase();
+        if (key === 's') {
+          e.preventDefault();
+          cycleSprintFilter();
+          return;
+        }
+        if (key === 'e') {
+          e.preventDefault();
+          exportToAgent();
+          return;
+        }
+        if (key === 'i') {
+          e.preventDefault();
+          handleScanForChanges();
+          return;
+        }
+        if (key === 'c') {
+          e.preventDefault();
+          copyContextSnapshot(selectedSprintId);
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedSprintId, sprints, project.id, exportToAgent, copyContextSnapshot]);
 
   const handleSetVaultDirectory = async () => {
     try {
@@ -326,6 +420,7 @@ export default function ProjectDetailView({
         onEditProject={onEditProject}
         onCompleteProject={onCompleteProject}
         onDeleteProjectClick={() => setIsDeleteConfirmOpen(true)}
+        onTogglePinProject={onTogglePinProject}
       />
 
       {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (
@@ -608,6 +703,7 @@ export default function ProjectDetailView({
                 onImport={handleScanForChanges}
                 onCleanUpArchived={cleanUpArchived}
                 onCopyContextSnapshot={copyContextSnapshot}
+                selectedSprintId={selectedSprintId}
                 onOpenAuditLog={openAuditLog}
                 onInstallGitHook={installGitHook}
                 onSetVaultDirectory={handleSetVaultDirectory}
