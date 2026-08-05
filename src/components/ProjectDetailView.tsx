@@ -1,7 +1,7 @@
 import { open as openDialog } from '@tauri-apps/plugin-dialog';
 import { stat } from '@tauri-apps/plugin-fs';
 import { AlertTriangle, Archive, ArrowLeft, GitFork, Plus } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useAgentSync } from '../hooks/useAgentSync';
 import AgentImportModal from '../modals/AgentImportModal';
 import AuditLogModal from '../modals/AuditLogModal';
@@ -112,6 +112,7 @@ export default function ProjectDetailView({
   initialSprintId,
   onTogglePinProject,
 }: ProjectDetailViewProps) {
+  const taskInputRef = useRef<HTMLInputElement>(null);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [selectedSort, setSelectedSort] = useState<TaskSortType>('custom');
   const [dueDateFilter, setDueDateFilter] = useState<string>('all');
@@ -253,6 +254,18 @@ export default function ProjectDetailView({
         if (e.key.toLowerCase() === 's') {
           e.preventDefault();
           cycleSprintFilter();
+          return;
+        }
+        if (e.key === '/') {
+          // If we are already focused on an input or textarea, let the user type '/'
+          if (
+            document.activeElement instanceof HTMLInputElement ||
+            document.activeElement instanceof HTMLTextAreaElement
+          ) {
+            return;
+          }
+          e.preventDefault();
+          taskInputRef.current?.focus();
           return;
         }
       }
@@ -574,6 +587,7 @@ export default function ProjectDetailView({
                   <div className="flex items-center gap-3 px-3 py-2 bg-surface-primary border border-border-primary/80 rounded-lg focus-within:border-white/30 transition-all">
                     <Plus className="w-4 h-4 text-text-muted" />
                     <input
+                      ref={taskInputRef}
                       type="text"
                       className="bg-transparent border-none focus:outline-none text-xs text-text-primary placeholder:text-text-muted/60 w-full"
                       placeholder="Add a new task..."

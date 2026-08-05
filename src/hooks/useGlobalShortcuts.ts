@@ -14,9 +14,18 @@ export function useGlobalShortcuts({
 }: UseGlobalShortcutsOptions) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        onOpenSpotlight();
+      if (e.metaKey || e.ctrlKey) {
+        const key = e.key.toLowerCase();
+        if (key === 'k') {
+          e.preventDefault();
+          onOpenSpotlight();
+        } else if (key === 'n') {
+          e.preventDefault();
+          onQuickAddTask();
+        } else if (key === 'f') {
+          e.preventDefault();
+          onLaunchFocusMode();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
