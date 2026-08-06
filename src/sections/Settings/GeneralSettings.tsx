@@ -128,7 +128,7 @@ export default function GeneralSettings({
             >
               <div
                 className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                  pomodoroAutoStartBreaks ? 'bg-interactive-primary-text ml-auto' : 'bg-text-muted ml-0'
+                  pomodoroAutoStartBreaks ? 'bg-interactive-primary-text translate-x-5' : 'bg-text-muted translate-x-0'
                 }`}
               />
             </button>
@@ -148,7 +148,7 @@ export default function GeneralSettings({
             >
               <div
                 className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                  pomodoroAutoStartPomodoros ? 'bg-interactive-primary-text ml-auto' : 'bg-text-muted ml-0'
+                  pomodoroAutoStartPomodoros ? 'bg-interactive-primary-text translate-x-5' : 'bg-text-muted translate-x-0'
                 }`}
               />
             </button>
