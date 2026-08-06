@@ -236,3 +236,31 @@ export function getCurrentWeekActivity(dailyActivity: DailyActivity[]): {
     };
   });
 }
+
+/**
+ * Get the last 30 days of activity data for the line chart.
+ */
+export function getLast30DaysActivity(dailyActivity: DailyActivity[]): {
+  date: string;
+  completions: number;
+}[] {
+  const result = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // We want to generate an array of the last 30 days (including today)
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(today);
+    date.setDate(today.getDate() - i);
+    const dateStr = formatDateStr(date);
+    
+    const matchingAct = dailyActivity.find((d) => (d.date || d.day) === dateStr);
+    
+    result.push({
+      date: dateStr,
+      completions: matchingAct ? matchingAct.completions : 0,
+    });
+  }
+
+  return result;
+}

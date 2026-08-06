@@ -1,6 +1,6 @@
 import { Calendar, CheckCircle2, Clock, Flame, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { aggregateActivityData, getCurrentWeekActivity } from '../services/activityLogger';
+import { aggregateActivityData, getCurrentWeekActivity, getLast30DaysActivity } from '../services/activityLogger';
 import type { ActivityLogEntry, DailyActivity, Task } from '../types';
 import { formatDateStr } from '../utils/format-date';
 
@@ -167,6 +167,22 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
   const currentWeekActivity = useMemo(() => getCurrentWeekActivity(dailyActivity), [dailyActivity]);
 
+  // 30-Day Line Chart data
+  const last30DaysActivity = useMemo(() => getLast30DaysActivity(dailyActivity), [dailyActivity]);
+  const maxCompletions30d = useMemo(() => Math.max(1, ...last30DaysActivity.map(d => d.completions)), [last30DaysActivity]);
+
+  const polylinePoints = useMemo(() => {
+    return last30DaysActivity.map((d, i) => {
+      const x = (i / 29) * 300;
+      const y = 100 - (d.completions / maxCompletions30d) * 80; // 20 to 100
+      return `${x},${y}`;
+    }).join(' ');
+  }, [last30DaysActivity, maxCompletions30d]);
+
+  const polygonPoints = useMemo(() => {
+    return `0,100 ${polylinePoints} 300,100`;
+  }, [polylinePoints]);
+
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 space-y-6">
       <div className="bg-surface-primary border border-border-primary rounded-xl p-6 space-y-8">
@@ -261,31 +277,94 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           </div>
         </div>
 
-        {/* Weekly Strategic Activity Bar Chart */}
-        <div className="border-t border-border-primary/50 pt-6">
-          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
-            Current Week Strategic Load
-          </h3>
-          <div className="h-44 flex items-end justify-between gap-4">
-            {currentWeekActivity.map((d, i) => (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"
-              >
-                <div className="text-xs text-text-primary bg-surface-secondary border border-border-primary px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
-                  {d.completions}t / {(d.hours * 60).toFixed(0)}m
-                </div>
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-border-primary/50 pt-6">
+          {/* Weekly Strategic Activity Bar Chart */}
+          <div>
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
+              Current Week Strategic Load
+            </h3>
+            <div className="h-44 flex items-end justify-between gap-4">
+              {currentWeekActivity.map((d, i) => (
                 <div
-                  style={{ height: `${Math.max(4, (d.hours / 6) * 100)}%` }}
-                  className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-interactive-primary shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-surface-tertiary group-hover:bg-zinc-600'}`}
-                />
-                <span
-                  className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-text-primary' : 'text-text-muted'}`}
+                  key={i}
+                  className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"
                 >
-                  {d.day}
-                </span>
+                  <div className="text-xs text-text-primary bg-surface-secondary border border-border-primary px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
+                    {d.completions}t / {(d.hours * 60).toFixed(0)}m
+                  </div>
+                  <div
+                    style={{ height: `${Math.max(4, (d.hours / 6) * 100)}%` }}
+                    className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-interactive-primary shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-surface-tertiary group-hover:bg-zinc-600'}`}
+                  />
+                  <span
+                    className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-text-primary' : 'text-text-muted'}`}
+                  >
+                    {d.day}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 30-Day Task Accomplishment Line Chart */}
+          <div>
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
+              30-Day Accomplishment Trend
+            </h3>
+            <div className="h-44 w-full relative flex items-end pb-[22px]">
+              <svg viewBox="0 0 300 100" className="w-full h-full overflow-visible" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="line-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="currentColor" className="text-interactive-primary" stopOpacity="0.2" />
+                    <stop offset="100%" stopColor="currentColor" className="text-interactive-primary" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                
+                {/* Fill area */}
+                <polygon
+                  points={polygonPoints}
+                  fill="url(#line-gradient)"
+                  className="text-interactive-primary"
+                />
+                
+                {/* Line */}
+                <polyline
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-interactive-primary drop-shadow-[0_0_6px_rgba(79,70,229,0.4)]"
+                  points={polylinePoints}
+                />
+
+                {/* Points */}
+                {last30DaysActivity.map((d, i) => {
+                  const x = (i / 29) * 300;
+                  const y = 100 - (d.completions / maxCompletions30d) * 80;
+                  
+                  return (
+                    <g key={i} className="group">
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r="3.5"
+                        className="fill-surface-primary stroke-interactive-primary stroke-[2.5px] opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                      />
+                      <title>{d.date}: {d.completions} task{d.completions !== 1 ? 's' : ''}</title>
+                    </g>
+                  );
+                })}
+              </svg>
+              {/* Y-axis baseline */}
+              <div className="absolute bottom-[22px] left-0 right-0 h-[1px] bg-border-primary/50" />
+              {/* Labels */}
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] uppercase font-bold font-mono text-text-muted">
+                <span>{last30DaysActivity[0]?.date.split('-').slice(1).join('/')}</span>
+                <span>Today</span>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
