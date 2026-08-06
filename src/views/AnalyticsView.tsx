@@ -248,7 +248,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               This Month Active Days
             </span>
             <div className="text-3xl font-bold font-mono text-text-primary mt-2 flex items-center gap-2">
-              <Flame className="w-6 h-6 text-text-primary fill-current animate-pulse" />
+              <Calendar className="w-6 h-6 text-text-primary" />
               <span>
                 {analyticsData.thisMonthActiveDays} Day{analyticsData.thisMonthActiveDays !== 1 ? 's' : ''}
               </span>
