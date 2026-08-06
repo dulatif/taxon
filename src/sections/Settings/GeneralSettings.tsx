@@ -122,13 +122,13 @@ export default function GeneralSettings({
             <button
               type="button"
               onClick={() => toggleSetting('pomodoroAutoStartBreaks')}
-              className={`w-9 h-5 rounded-full relative transition-colors ${
+              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
                 pomodoroAutoStartBreaks ? 'bg-interactive-primary' : 'bg-surface-primary border border-border-primary'
               }`}
             >
               <div
-                className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                  pomodoroAutoStartBreaks ? 'translate-x-4.5' : 'translate-x-1 opacity-50'
+                className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                  pomodoroAutoStartBreaks ? 'bg-interactive-primary-text ml-auto' : 'bg-text-muted ml-0'
                 }`}
               />
             </button>
@@ -142,13 +142,13 @@ export default function GeneralSettings({
             <button
               type="button"
               onClick={() => toggleSetting('pomodoroAutoStartPomodoros')}
-              className={`w-9 h-5 rounded-full relative transition-colors ${
+              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
                 pomodoroAutoStartPomodoros ? 'bg-interactive-primary' : 'bg-surface-primary border border-border-primary'
               }`}
             >
               <div
-                className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${
-                  pomodoroAutoStartPomodoros ? 'translate-x-4.5' : 'translate-x-1 opacity-50'
+                className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                  pomodoroAutoStartPomodoros ? 'bg-interactive-primary-text ml-auto' : 'bg-text-muted ml-0'
                 }`}
               />
             </button>
