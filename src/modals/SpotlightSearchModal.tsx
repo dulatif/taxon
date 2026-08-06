@@ -12,15 +12,18 @@ import {
   Inbox,
   Layers,
   LayoutDashboard,
+  Moon,
   Plus,
   Repeat,
   Search,
   Settings,
   Sparkles,
+  Sun,
   Timer,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSettings } from '../contexts/SettingsContext';
 import type { Project, Sprint, Task } from '../types';
 
 interface SpotlightSearchModalProps {
@@ -62,6 +65,7 @@ export default function SpotlightSearchModal({
   onQuickAddTask,
   onLaunchFocusMode,
 }: SpotlightSearchModalProps) {
+  const { settings, updateSetting } = useSettings();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -111,6 +115,17 @@ export default function SpotlightSearchModal({
         action: () => {
           onClose();
           onLaunchFocusMode();
+        },
+      },
+      {
+        id: 'action-toggle-theme',
+        type: 'action' as const,
+        label: `Switch to ${settings.theme === 'dark' ? 'Light' : 'Dark'} Mode`,
+        subLabel: 'Toggle the application visual theme',
+        icon: settings.theme === 'dark' ? <Sun className="w-4 h-4 text-orange-400" /> : <Moon className="w-4 h-4 text-indigo-400" />,
+        action: () => {
+          onClose();
+          updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
         },
       },
       {

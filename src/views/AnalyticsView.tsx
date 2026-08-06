@@ -171,17 +171,31 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
   const last30DaysActivity = useMemo(() => getLast30DaysActivity(dailyActivity), [dailyActivity]);
   const maxCompletions30d = useMemo(() => Math.max(1, ...last30DaysActivity.map(d => d.completions)), [last30DaysActivity]);
 
-  const polylinePoints = useMemo(() => {
-    return last30DaysActivity.map((d, i) => {
+  const { linePath, areaPath } = useMemo(() => {
+    if (last30DaysActivity.length === 0) return { linePath: '', areaPath: '' };
+    
+    const points = last30DaysActivity.map((d, i) => {
       const x = (i / 29) * 300;
       const y = 100 - (d.completions / maxCompletions30d) * 80; // 20 to 100
-      return `${x},${y}`;
-    }).join(' ');
-  }, [last30DaysActivity, maxCompletions30d]);
+      return { x, y };
+    });
 
-  const polygonPoints = useMemo(() => {
-    return `0,100 ${polylinePoints} 300,100`;
-  }, [polylinePoints]);
+    let d = `M ${points[0]!.x},${points[0]!.y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i]!;
+      const p1 = points[i + 1]!;
+      const cp1x = (p0.x + p1.x) / 2;
+      const cp1y = p0.y;
+      const cp2x = (p0.x + p1.x) / 2;
+      const cp2y = p1.y;
+      d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p1.x},${p1.y}`;
+    }
+
+    return {
+      linePath: d,
+      areaPath: `${d} L 300,100 L 0,100 Z`
+    };
+  }, [last30DaysActivity, maxCompletions30d]);
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 space-y-6">
@@ -278,7 +292,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
         </div>
 
         {/* Charts Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 border-t border-border-primary/50 pt-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 border-t border-border-primary/50 pt-6">
           {/* Weekly Strategic Activity Bar Chart */}
           <div>
             <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
@@ -322,21 +336,21 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
                 </defs>
                 
                 {/* Fill area */}
-                <polygon
-                  points={polygonPoints}
+                <path
+                  d={areaPath}
                   fill="url(#line-gradient)"
                   className="text-interactive-primary"
                 />
                 
                 {/* Line */}
-                <polyline
+                <path
+                  d={linePath}
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2.5"
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   className="text-interactive-primary drop-shadow-[0_0_6px_rgba(79,70,229,0.4)]"
-                  points={polylinePoints}
                 />
 
                 {/* Points */}
