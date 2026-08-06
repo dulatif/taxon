@@ -19,6 +19,7 @@ interface UseFocusTimerReturn {
   timerIsRunning: boolean;
   activeFocusTask: Task | null;
   isFocusModeActive: boolean;
+  isSessionActive: boolean;
   phase: PomodoroPhase;
   completedWorkSessions: number;
   switchPhase: (newPhase: PomodoroPhase) => void;
@@ -52,6 +53,7 @@ export function useFocusTimer({
   const [timerIsRunning, setTimerIsRunning] = useState(false);
   const [activeFocusTask, setActiveFocusTask] = useState<Task | null>(null);
   const [isFocusModeActive, setIsFocusModeActive] = useState(false);
+  const [isSessionActive, setIsSessionActive] = useState(false);
 
   const onTimerCompleteRef = useRef(onTimerComplete);
   const onTickFocusTimeRef = useRef(onTickFocusTime);
@@ -192,7 +194,10 @@ export function useFocusTimer({
   }, [timerIsRunning, playCompletionBeep]);
 
   const toggleTimer = useCallback(() => {
-    setTimerIsRunning((prev) => !prev);
+    setTimerIsRunning((prev) => {
+      if (!prev) setIsSessionActive(true);
+      return !prev;
+    });
   }, []);
 
   const resetTimer = useCallback(() => {
@@ -200,6 +205,7 @@ export function useFocusTimer({
     else if (phase === 'shortBreak') setTimerSeconds(shortBreak * 60);
     else setTimerSeconds(longBreak * 60);
     setTimerIsRunning(false);
+    setIsSessionActive(false);
   }, [phase, workDuration, shortBreak, longBreak]);
 
   const switchPhase = useCallback((newPhase: PomodoroPhase) => {
@@ -235,6 +241,7 @@ export function useFocusTimer({
     setPhase('work');
     setTimerIsRunning(true);
     setIsFocusModeActive(true);
+    setIsSessionActive(true);
   }, []);
 
   const selectTaskToFocus = useCallback((task: Task) => {
@@ -242,6 +249,7 @@ export function useFocusTimer({
     const workSecs = workDurationRef.current * 60;
     setTimerSeconds((prev) => (prev > 0 && prev < workSecs ? prev : workSecs));
     setTimerIsRunning(true);
+    setIsSessionActive(true);
   }, []);
 
   const unlinkTask = useCallback(() => {
@@ -251,6 +259,7 @@ export function useFocusTimer({
   const endFocusMode = useCallback(() => {
     setTimerIsRunning(false);
     setIsFocusModeActive(false);
+    setIsSessionActive(false);
   }, []);
 
   const minimizeFocusMode = useCallback(() => {
@@ -266,6 +275,7 @@ export function useFocusTimer({
     timerIsRunning,
     activeFocusTask,
     isFocusModeActive,
+    isSessionActive,
     phase,
     completedWorkSessions,
     switchPhase,

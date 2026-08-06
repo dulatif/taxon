@@ -1,5 +1,5 @@
 import type { DropResult } from '@hello-pangea/dnd';
-import { Moon, Pause, Search, Sun } from 'lucide-react';
+import { Moon, Pause, Play, Search, Sun } from 'lucide-react';
 import { useMemo } from 'react';
 import logo from '../assets/logo.png';
 import { PROJECT_CATEGORIES } from '../constants/categories';
@@ -21,6 +21,7 @@ interface SidebarProps {
   onReorderPinnedProjects?: (projects: Project[]) => void;
   timerSeconds?: number;
   timerIsRunning?: boolean;
+  isSessionActive?: boolean;
   activeFocusTaskTitle?: string;
   onLaunchFocusMode?: () => void;
   onToggleTimer?: () => void;
@@ -40,6 +41,7 @@ export default function Sidebar({
   onReorderPinnedProjects,
   timerSeconds,
   timerIsRunning,
+  isSessionActive,
   activeFocusTaskTitle,
   onLaunchFocusMode,
   onToggleTimer,
@@ -197,7 +199,7 @@ export default function Sidebar({
       {/* Fixed Footer Area (Pomodoro Widget & Footer Nav) */}
       <div className="shrink-0 p-4 border-t border-border-primary/50 bg-surface-primary flex flex-col gap-3">
         {/* Active Focus Timer Widget */}
-        {timerIsRunning && currentView !== 'dashboard' && timerSeconds !== undefined && (
+        {isSessionActive && currentView !== 'dashboard' && timerSeconds !== undefined && (
           <div
             onClick={onLaunchFocusMode}
             className="bg-surface-secondary hover:bg-surface-hover border border-border-primary/50 hover:border-border-primary/80 rounded-md p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
@@ -205,8 +207,10 @@ export default function Sidebar({
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-muted group-hover:text-text-primary transition-colors flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                Focus Active
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${timerIsRunning ? 'bg-green-400 animate-pulse' : 'bg-yellow-500'}`}
+                ></span>
+                {timerIsRunning ? 'Focus Active' : 'Focus Paused'}
               </span>
               <button
                 onClick={(e) => {
@@ -216,7 +220,11 @@ export default function Sidebar({
                 className="text-text-muted hover:text-text-primary p-1 hover:bg-surface-hover rounded transition-colors"
                 title="Pause/Resume Timer"
               >
-                <Pause className="w-3.5 h-3.5 fill-current" />
+                {timerIsRunning ? (
+                  <Pause className="w-3.5 h-3.5 fill-current" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                )}
               </button>
             </div>
             <div className="text-xl font-bold font-mono text-text-primary tracking-tight leading-none my-1.5">

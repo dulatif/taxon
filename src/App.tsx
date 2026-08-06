@@ -260,6 +260,7 @@ export default function App() {
           onReorderPinnedProjects={handleReorderPinnedProjects}
           timerSeconds={focusTimer.timerSeconds}
           timerIsRunning={focusTimer.timerIsRunning}
+          isSessionActive={focusTimer.isSessionActive}
           activeFocusTaskTitle={focusTimer.activeFocusTask?.title}
           onLaunchFocusMode={focusTimer.launchFocusMode}
           onToggleTimer={focusTimer.toggleTimer}
