@@ -5,8 +5,11 @@ interface GeneralSettingsProps {
   pomodoroShortBreak: number;
   pomodoroLongBreak: number;
   pomodoroLongBreakInterval: number;
+  pomodoroAutoStartBreaks: boolean;
+  pomodoroAutoStartPomodoros: boolean;
   backupFrequency: string;
   updateSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
+  toggleSetting: (key: keyof SettingsState) => void;
   onExportData: () => void;
   onImportDataTrigger: () => void;
 }
@@ -16,8 +19,11 @@ export default function GeneralSettings({
   pomodoroShortBreak,
   pomodoroLongBreak,
   pomodoroLongBreakInterval,
+  pomodoroAutoStartBreaks,
+  pomodoroAutoStartPomodoros,
   backupFrequency,
   updateSetting,
+  toggleSetting,
   onExportData,
   onImportDataTrigger,
 }: GeneralSettingsProps) {
@@ -104,6 +110,48 @@ export default function GeneralSettings({
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        <div className="pt-2 mt-2 border-t border-border-primary/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">Auto-start Breaks</span>
+              <p className="text-[9px] text-text-muted mt-0.5">Automatically start the break timer when a pomodoro finishes</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSetting('pomodoroAutoStartBreaks')}
+              className={`w-9 h-5 rounded-full relative transition-colors ${
+                pomodoroAutoStartBreaks ? 'bg-interactive-primary' : 'bg-surface-primary border border-border-primary'
+              }`}
+            >
+              <div
+                className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${
+                  pomodoroAutoStartBreaks ? 'translate-x-4.5' : 'translate-x-1 opacity-50'
+                }`}
+              />
+            </button>
+          </div>
+          
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">Auto-start Pomodoros</span>
+              <p className="text-[9px] text-text-muted mt-0.5">Automatically start the next pomodoro when a break finishes</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSetting('pomodoroAutoStartPomodoros')}
+              className={`w-9 h-5 rounded-full relative transition-colors ${
+                pomodoroAutoStartPomodoros ? 'bg-interactive-primary' : 'bg-surface-primary border border-border-primary'
+              }`}
+            >
+              <div
+                className={`w-3.5 h-3.5 bg-white rounded-full absolute top-0.5 transition-transform ${
+                  pomodoroAutoStartPomodoros ? 'translate-x-4.5' : 'translate-x-1 opacity-50'
+                }`}
+              />
+            </button>
           </div>
         </div>
       </div>

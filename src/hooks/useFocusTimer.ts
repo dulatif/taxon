@@ -12,6 +12,8 @@ interface UseFocusTimerOptions {
   shortBreak?: number; // in minutes
   longBreak?: number; // in minutes
   longBreakInterval?: number; // count
+  autoStartBreaks?: boolean;
+  autoStartPomodoros?: boolean;
 }
 
 interface UseFocusTimerReturn {
@@ -46,6 +48,8 @@ export function useFocusTimer({
   shortBreak = 5,
   longBreak = 15,
   longBreakInterval = 4,
+  autoStartBreaks = false,
+  autoStartPomodoros = false,
 }: UseFocusTimerOptions): UseFocusTimerReturn {
   const [phase, setPhase] = useState<PomodoroPhase>('work');
   const [completedWorkSessions, setCompletedWorkSessions] = useState(0);
@@ -65,7 +69,10 @@ export function useFocusTimer({
   const shortBreakRef = useRef(shortBreak);
   const longBreakRef = useRef(longBreak);
   const longBreakIntervalRef = useRef(longBreakInterval);
+  const autoStartBreaksRef = useRef(autoStartBreaks);
+  const autoStartPomodorosRef = useRef(autoStartPomodoros);
 
+  // Keep refs in sync
   useEffect(() => {
     onTimerCompleteRef.current = onTimerComplete;
     onTickFocusTimeRef.current = onTickFocusTime;
@@ -77,7 +84,22 @@ export function useFocusTimer({
     shortBreakRef.current = shortBreak;
     longBreakRef.current = longBreak;
     longBreakIntervalRef.current = longBreakInterval;
-  });
+    autoStartBreaksRef.current = autoStartBreaks;
+    autoStartPomodorosRef.current = autoStartPomodoros;
+  }, [
+    onTimerComplete,
+    onTickFocusTime,
+    activeFocusTask,
+    soundEnabled,
+    phase,
+    completedWorkSessions,
+    workDuration,
+    shortBreak,
+    longBreak,
+    longBreakInterval,
+    autoStartBreaks,
+    autoStartPomodoros,
+  ]);
 
   // Sync initial timerSeconds when duration settings change (if timer not actively running)
   const prevWorkDurationRef = useRef(workDuration);
@@ -147,7 +169,6 @@ export function useFocusTimer({
         setTimerSeconds((prev) => {
           if (prev <= 1) {
             // Timer elapsed
-            setTimerIsRunning(false);
 
             // Play completion sound
             playCompletionBeep();
@@ -165,6 +186,10 @@ export function useFocusTimer({
                   : 'Time for a break!',
               });
               onTimerCompleteRef.current(currentTask, 'work');
+              
+              if (!autoStartBreaksRef.current) {
+                setTimerIsRunning(false);
+              }
 
               if (nextCount % longBreakIntervalRef.current === 0) {
                 setPhase('longBreak');
@@ -180,6 +205,11 @@ export function useFocusTimer({
               });
               onTimerCompleteRef.current(currentTask, currentPhase);
               setPhase('work');
+              
+              if (!autoStartPomodorosRef.current) {
+                setTimerIsRunning(false);
+              }
+              
               return workDurationRef.current * 60;
             }
           }

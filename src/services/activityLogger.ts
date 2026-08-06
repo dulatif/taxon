@@ -28,6 +28,8 @@ export function aggregateActivityData(
   focusVelocity: number;
   taskAccomplishments: number;
   streak: number;
+  thisMonthActiveDays: number;
+  lastMonthActiveDays: number;
 } {
   const now = new Date();
   const thirtyDaysAgo = new Date(now);
@@ -49,11 +51,51 @@ export function aggregateActivityData(
 
   // Calculate streak: consecutive days with at least one completion
   const streak = calculateStreak(log);
+  
+  // Calculate active days for this month and last month
+  const { thisMonthActiveDays, lastMonthActiveDays } = calculateActiveDays(log);
 
   return {
     focusVelocity,
     taskAccomplishments,
     streak,
+    thisMonthActiveDays,
+    lastMonthActiveDays,
+  };
+}
+
+/**
+ * Calculate active days for the current and previous month.
+ */
+function calculateActiveDays(log: ActivityLogEntry[]): { thisMonthActiveDays: number; lastMonthActiveDays: number } {
+  if (log.length === 0) return { thisMonthActiveDays: 0, lastMonthActiveDays: 0 };
+  
+  const now = new Date();
+  const currentMonth = now.getMonth();
+  const currentYear = now.getFullYear();
+  
+  const lastMonthDate = new Date(now);
+  lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
+  const lastMonth = lastMonthDate.getMonth();
+  const lastMonthYear = lastMonthDate.getFullYear();
+
+  const thisMonthDates = new Set<string>();
+  const lastMonthDates = new Set<string>();
+
+  for (const entry of log) {
+    if (entry.completedAt) {
+      const date = new Date(entry.completedAt);
+      if (date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
+        thisMonthDates.add(formatDateStr(date));
+      } else if (date.getMonth() === lastMonth && date.getFullYear() === lastMonthYear) {
+        lastMonthDates.add(formatDateStr(date));
+      }
+    }
+  }
+
+  return {
+    thisMonthActiveDays: thisMonthDates.size,
+    lastMonthActiveDays: lastMonthDates.size,
   };
 }
 

@@ -27,8 +27,11 @@ export default function SettingsView({ onExportData, onImportDataTrigger }: Sett
               pomodoroShortBreak={settings.pomodoroShortBreak}
               pomodoroLongBreak={settings.pomodoroLongBreak}
               pomodoroLongBreakInterval={settings.pomodoroLongBreakInterval}
+              pomodoroAutoStartBreaks={settings.pomodoroAutoStartBreaks}
+              pomodoroAutoStartPomodoros={settings.pomodoroAutoStartPomodoros}
               backupFrequency={settings.backupFrequency}
               updateSetting={updateSetting}
+              toggleSetting={toggleSetting}
               onExportData={onExportData}
               onImportDataTrigger={onImportDataTrigger}
             />

@@ -245,17 +245,22 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           </div>
           <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 group hover:border-border-focus/20 transition-all">
             <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-text-muted">
-              Uninterrupted Streaks
+              This Month Active Days
             </span>
             <div className="text-3xl font-bold font-mono text-text-primary mt-2 flex items-center gap-2">
               <Flame className="w-6 h-6 text-text-primary fill-current animate-pulse" />
               <span>
-                {analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}
+                {analyticsData.thisMonthActiveDays} Day{analyticsData.thisMonthActiveDays !== 1 ? 's' : ''}
               </span>
             </div>
-            <p className="text-[10px] text-text-muted mt-1">
-              Maintained daily completion focus sprint
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-text-muted">
+                {analyticsData.thisMonthActiveDays >= analyticsData.lastMonthActiveDays ? 'Up from' : 'Down from'} {analyticsData.lastMonthActiveDays} last month
+              </p>
+              <p className="text-[10px] text-interactive-primary font-bold font-mono flex items-center gap-1">
+                <Flame className="w-3 h-3 fill-current" /> {analyticsData.streak} day streak
+              </p>
+            </div>
           </div>
         </div>
 

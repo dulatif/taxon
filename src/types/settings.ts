@@ -7,4 +7,6 @@ export interface SettingsState {
   pomodoroShortBreak: number;
   pomodoroLongBreak: number;
   pomodoroLongBreakInterval: number;
+  pomodoroAutoStartBreaks: boolean;
+  pomodoroAutoStartPomodoros: boolean;
 }

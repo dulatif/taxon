@@ -349,4 +349,6 @@ export const DEFAULT_SETTINGS: SettingsState = {
   pomodoroShortBreak: 5,
   pomodoroLongBreak: 15,
   pomodoroLongBreakInterval: 4,
+  pomodoroAutoStartBreaks: false,
+  pomodoroAutoStartPomodoros: false,
 };
