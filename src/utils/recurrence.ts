@@ -11,52 +11,64 @@ export const calculateNextDueDate = (currentDateStr?: string, rule?: RecurrenceR
     currentDateStr && currentDateStr.trim() !== ''
       ? new Date(currentDateStr.substring(0, 10) + 'T00:00:00')
       : new Date(todayDate);
-  if (isNaN(baseDate.getTime()) || baseDate < todayDate) {
+  if (isNaN(baseDate.getTime())) {
     baseDate = new Date(todayDate);
   }
 
   const next = new Date(baseDate);
   const interval = rule.interval && rule.interval > 0 ? rule.interval : 1;
 
-  switch (rule.frequency) {
-    case 'daily': {
-      next.setDate(next.getDate() + interval);
-      break;
-    }
-    case 'weekdays': {
-      do {
-        next.setDate(next.getDate() + 1);
-      } while (next.getDay() === 0 || next.getDay() === 6);
-      break;
-    }
-    case 'weekly': {
-      if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
-        const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
-        const currentDay = next.getDay();
-        const nextDayInSameWeek = sortedDays.find((d) => d > currentDay);
-        if (nextDayInSameWeek !== undefined) {
-          next.setDate(next.getDate() + (nextDayInSameWeek - currentDay));
-        } else {
-          const daysUntilNextWeek = 7 - currentDay + sortedDays[0]! + (interval - 1) * 7;
-          next.setDate(next.getDate() + daysUntilNextWeek);
-        }
-      } else {
-        next.setDate(next.getDate() + interval * 7);
+  const advance = (dateToAdvance: Date) => {
+    switch (rule.frequency) {
+      case 'daily': {
+        dateToAdvance.setDate(dateToAdvance.getDate() + interval);
+        break;
       }
-      break;
+      case 'weekdays': {
+        do {
+          dateToAdvance.setDate(dateToAdvance.getDate() + 1);
+        } while (dateToAdvance.getDay() === 0 || dateToAdvance.getDay() === 6);
+        break;
+      }
+      case 'weekly': {
+        if (rule.daysOfWeek && rule.daysOfWeek.length > 0) {
+          const sortedDays = [...rule.daysOfWeek].sort((a, b) => a - b);
+          const currentDay = dateToAdvance.getDay();
+          const nextDayInSameWeek = sortedDays.find((d) => d > currentDay);
+          if (nextDayInSameWeek !== undefined) {
+            dateToAdvance.setDate(dateToAdvance.getDate() + (nextDayInSameWeek - currentDay));
+          } else {
+            const daysUntilNextWeek = 7 - currentDay + sortedDays[0]! + (interval - 1) * 7;
+            dateToAdvance.setDate(dateToAdvance.getDate() + daysUntilNextWeek);
+          }
+        } else {
+          dateToAdvance.setDate(dateToAdvance.getDate() + interval * 7);
+        }
+        break;
+      }
+      case 'monthly': {
+        dateToAdvance.setMonth(dateToAdvance.getMonth() + interval);
+        break;
+      }
+      case 'yearly': {
+        dateToAdvance.setFullYear(dateToAdvance.getFullYear() + interval);
+        break;
+      }
+      case 'custom': {
+        dateToAdvance.setDate(dateToAdvance.getDate() + interval);
+        break;
+      }
     }
-    case 'monthly': {
-      next.setMonth(next.getMonth() + interval);
-      break;
-    }
-    case 'yearly': {
-      next.setFullYear(next.getFullYear() + interval);
-      break;
-    }
-    case 'custom': {
-      next.setDate(next.getDate() + interval);
-      break;
-    }
+  };
+
+  // Always advance at least once
+  advance(next);
+
+  // If the next date is still in the past, keep advancing until it reaches today or the future
+  let guard = 0;
+  while (next < todayDate && guard < 1000) {
+    advance(next);
+    guard++;
   }
 
   const year = next.getFullYear();

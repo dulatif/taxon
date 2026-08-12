@@ -175,19 +175,59 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
 
   const handleUpdateTaskDetail = useCallback(
     (updatedTask: Task) => {
-      const taskToSave = { ...updatedTask };
-      if (taskToSave.status === 'Done') {
-        taskToSave.completed = true;
-      } else if (taskToSave.status) {
-        taskToSave.completed = false;
-      }
-      if ((taskToSave.completed || taskToSave.status === 'Done') && !taskToSave.dueDate) {
-        taskToSave.dueDate = getTodayStr();
-      }
-      setTasks((prev) => prev.map((t) => (t.id === taskToSave.id ? taskToSave : t)));
-      saveTask(taskToSave);
-      if (taskToSave.projectId) {
-        setTimeout(() => options?.onProjectProgressChanged?.(taskToSave.projectId!), 50);
+      let targetProjId: string | null = null;
+      let spawnedTask: Task | null = null;
+
+      setTasks((prev) => {
+        const updated = prev.map((t) => {
+          if (t.id === updatedTask.id) {
+            targetProjId = t.projectId;
+            const taskToSave = { ...updatedTask };
+            if (taskToSave.status === 'Done') {
+              taskToSave.completed = true;
+            } else if (taskToSave.status) {
+              taskToSave.completed = false;
+            }
+            if ((taskToSave.completed || taskToSave.status === 'Done') && !taskToSave.dueDate) {
+              taskToSave.dueDate = getTodayStr();
+            }
+
+            const willComplete = taskToSave.completed;
+            if (willComplete && !t.completed) {
+              options?.onTaskCompleted?.(t.id, t.title);
+
+              if (taskToSave.recurrence) {
+                const nextDate = calculateNextDueDate(taskToSave.dueDate, taskToSave.recurrence);
+                spawnedTask = {
+                  ...taskToSave,
+                  id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                  completed: false,
+                  status: 'To Do' as const,
+                  dueDate: nextDate,
+                  timeSpent: 0,
+                  subtasks: taskToSave.subtasks
+                    ? taskToSave.subtasks.map((s) => ({ ...s, completed: false }))
+                    : undefined,
+                };
+              }
+            }
+
+            saveTask(taskToSave);
+            return taskToSave;
+          }
+          return t;
+        });
+
+        if (spawnedTask) {
+          saveTask(spawnedTask);
+          return [spawnedTask, ...updated];
+        }
+        return updated;
+      });
+
+      const pid = updatedTask.projectId || targetProjId;
+      if (pid) {
+        setTimeout(() => options?.onProjectProgressChanged?.(pid), 50);
       }
     },
     [options],
