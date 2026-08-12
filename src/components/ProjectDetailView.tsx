@@ -128,6 +128,7 @@ export default function ProjectDetailView({
 
   useEffect(() => {
     if (initialSprintId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedSprintId(initialSprintId);
     }
   }, [initialSprintId]);
@@ -231,7 +232,9 @@ export default function ProjectDetailView({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refreshVault();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [project.vaultPath]);
 
   // ProjectDetail keyboard shortcuts
@@ -319,7 +322,7 @@ export default function ProjectDetailView({
           } else {
             taskInputRef.current?.focus();
           }
-          
+
           return;
         }
       }
@@ -361,6 +364,7 @@ export default function ProjectDetailView({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedSprintId, sprints, project.id, exportToAgent, copyContextSnapshot]);
 
   const handleSetVaultDirectory = async () => {

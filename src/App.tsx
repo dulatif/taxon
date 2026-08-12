@@ -163,7 +163,7 @@ export default function App() {
           const pinned = projects
             .filter((p) => p.pinned)
             .sort((a, b) => (a.pinnedSortOrder ?? 0) - (b.pinnedSortOrder ?? 0));
-          
+
           if (num <= pinned.length) {
             e.preventDefault();
             const targetProj = pinned[num - 1];
@@ -172,7 +172,7 @@ export default function App() {
         }
       }
     };
-    
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [currentView, projects, selectProject]);

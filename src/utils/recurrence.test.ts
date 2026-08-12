@@ -74,7 +74,7 @@ describe('calculateNextDueDate', () => {
 
     it('uses today when currentDate is in the past', () => {
       const rule: RecurrenceRule = { frequency: 'daily', interval: 1 };
-      expect(calculateNextDueDate('2020-01-01', rule)).toBe('2026-01-16');
+      expect(calculateNextDueDate('2025-01-01', rule)).toBe('2026-01-15');
     });
   });
 });

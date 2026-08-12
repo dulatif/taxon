@@ -68,7 +68,7 @@ export default function ProjectsView({
   }, [availableCategories, selectedCategory]);
 
   const filteredProjects = useMemo(() => {
-    let list = projects;
+    let list: Project[];
     if (selectedCategory === 'All') {
       list = projects.filter((p) => p.category !== 'Completed');
     } else {

@@ -155,7 +155,7 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
     setProjects((prev) => {
       const pinnedCount = prev.filter((p) => p.pinned).length;
       const targetProject = prev.find((p) => p.id === projectId);
-      
+
       if (targetProject && !targetProject.pinned && pinnedCount >= 9) {
         toast.error('Maximum of 9 pinned projects allowed');
         return prev;

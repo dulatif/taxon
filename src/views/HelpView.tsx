@@ -74,7 +74,9 @@ export default function HelpView() {
               </kbd>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
-              <span className="text-text-primary font-sans text-xs">Switch to Pinned Project 1-9</span>
+              <span className="text-text-primary font-sans text-xs">
+                Switch to Pinned Project 1-9
+              </span>
               <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
                 Alt+[1-9]
               </kbd>

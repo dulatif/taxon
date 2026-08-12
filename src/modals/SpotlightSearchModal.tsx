@@ -244,7 +244,7 @@ export default function SpotlightSearchModal({
         },
       },
     ],
-    [onClose, onQuickAddTask, onLaunchFocusMode, onNavigate],
+    [onClose, onQuickAddTask, onLaunchFocusMode, onNavigate, settings.theme, updateSetting],
   );
 
   // Build sprint & backlog options for projects

@@ -140,11 +140,11 @@ describe('workflowLayout Engine', () => {
 
     const wf3Node = taskNodes.find((n) => n.id === 'wf0003');
     expect(wf3Node).toBeDefined();
-    expect((wf3Node?.data as unknown as TaskNodeData).task.status).toBe('Need to Test');
+    expect((wf3Node!.data as unknown as TaskNodeData).task.status).toBe('Need to Test');
 
     const wf1Node = taskNodes.find((n) => n.id === 'wf0001');
     expect(wf1Node).toBeDefined();
-    expect((wf1Node?.data as unknown as TaskNodeData).task.status).toBe('Done');
+    expect((wf1Node!.data as unknown as TaskNodeData).task.status).toBe('Done');
 
     // All edges should have valid source and target within taskNodes
     const taskNodeIds = new Set(taskNodes.map((n) => n.id));
