@@ -122,7 +122,12 @@ export default function SpotlightSearchModal({
         type: 'action' as const,
         label: `Switch to ${settings.theme === 'dark' ? 'Light' : 'Dark'} Mode`,
         subLabel: 'Toggle the application visual theme',
-        icon: settings.theme === 'dark' ? <Sun className="w-4 h-4 text-orange-400" /> : <Moon className="w-4 h-4 text-indigo-400" />,
+        icon:
+          settings.theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-orange-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-400" />
+          ),
         action: () => {
           onClose();
           updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
@@ -293,24 +298,20 @@ export default function SpotlightSearchModal({
 
     const matchesAllTerms = (...fields: (string | undefined | null)[]) => {
       const combinedText = fields.filter(Boolean).join(' ').toLowerCase();
-      return searchTerms.every(term => combinedText.includes(term));
+      return searchTerms.every((term) => combinedText.includes(term));
     };
 
-    const actions = quickActionsList.filter((a) =>
-      matchesAllTerms(a.label, a.subLabel)
-    );
+    const actions = quickActionsList.filter((a) => matchesAllTerms(a.label, a.subLabel));
 
     const matchingProjects = projects.filter((p) =>
-      matchesAllTerms(p.name, p.category, p.description)
+      matchesAllTerms(p.name, p.category, p.description),
     );
 
-    const matchingSprints = allSprintOptions.filter((s) =>
-      matchesAllTerms(s.label, s.subLabel)
-    ).slice(0, 4);
+    const matchingSprints = allSprintOptions
+      .filter((s) => matchesAllTerms(s.label, s.subLabel))
+      .slice(0, 4);
 
-    const matchingTasks = tasks
-      .filter((t) => matchesAllTerms(t.title, t.description))
-      .slice(0, 6);
+    const matchingTasks = tasks.filter((t) => matchesAllTerms(t.title, t.description)).slice(0, 6);
 
     return {
       filteredActions: actions,
@@ -460,12 +461,7 @@ export default function SpotlightSearchModal({
     if (type === 'action') return indexInGroup;
     if (type === 'project') return filteredActions.length + indexInGroup;
     if (type === 'sprint') return filteredActions.length + filteredProjects.length + indexInGroup;
-    return (
-      filteredActions.length +
-      filteredProjects.length +
-      filteredSprints.length +
-      indexInGroup
-    );
+    return filteredActions.length + filteredProjects.length + filteredSprints.length + indexInGroup;
   };
 
   return (

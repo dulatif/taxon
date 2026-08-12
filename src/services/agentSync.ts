@@ -1062,3 +1062,40 @@ export function generateChangelog(entries: AuditLogEntry[]): string {
 
   return md;
 }
+
+export async function exportSingleTaskToAgent(task: Task, vaultPath: string): Promise<boolean> {
+  if (task.archived) return false;
+  try {
+    const tasksDir = joinPath(vaultPath, '.taxon/tasks');
+    const dirExists = await exists(tasksDir).catch(() => false);
+    if (!dirExists) {
+      await mkdir(tasksDir, { recursive: true });
+    }
+    const filePath = joinPath(tasksDir, taskFilename(task));
+    await writeTextFile(filePath, taskToMarkdown(task));
+    return true;
+  } catch (err) {
+    console.error('Failed to export single task to agent:', err);
+    return false;
+  }
+}
+
+export async function exportSingleSprintToAgent(
+  sprint: Sprint,
+  sprintTasks: Task[],
+  vaultPath: string,
+): Promise<boolean> {
+  try {
+    const sprintsDir = joinPath(vaultPath, '.taxon/sprints');
+    const dirExists = await exists(sprintsDir).catch(() => false);
+    if (!dirExists) {
+      await mkdir(sprintsDir, { recursive: true });
+    }
+    const filePath = joinPath(sprintsDir, sprintFilename(sprint));
+    await writeTextFile(filePath, sprintToMarkdown(sprint, sprintTasks));
+    return true;
+  } catch (err) {
+    console.error('Failed to export single sprint to agent:', err);
+    return false;
+  }
+}

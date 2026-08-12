@@ -14,7 +14,7 @@ import type { Project, Sprint, Task } from '../../types';
 import { ModuleGroupNode } from './ModuleGroupNode';
 import { TaskNode } from './TaskNode';
 import { WorkflowToolbar } from './WorkflowToolbar';
-import { getWorkflowElements } from './workflowLayout';
+import { buildTaskIdLookup, getWorkflowElements } from './workflowLayout';
 
 const nodeTypes = {
   taskNode: TaskNode,
@@ -97,6 +97,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
 
       // Filter by sprint if specified
       if (currentSprintId && currentSprintId !== 'all') {
+        const lookup = buildTaskIdLookup(list);
         const allTaskMap = new Map(list.map((t) => [t.id, t]));
         const includedIds = new Set<string>();
 
@@ -108,8 +109,9 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
             // Include dependent upstream tasks to keep DAG layout intact
             if (t.dependsOn && Array.isArray(t.dependsOn)) {
               for (const dep of t.dependsOn) {
-                if (allTaskMap.has(dep)) {
-                  includedIds.add(dep);
+                const resolvedId = lookup.get(dep);
+                if (resolvedId && allTaskMap.has(resolvedId)) {
+                  includedIds.add(resolvedId);
                 }
               }
             }

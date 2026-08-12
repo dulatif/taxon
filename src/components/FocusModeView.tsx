@@ -1,4 +1,4 @@
-import { Circle, Minimize2, Pause, Play, SkipForward, StopCircle, Unlink } from 'lucide-react';
+import { Minimize2, Pause, Play, SkipForward, StopCircle, Unlink } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useEffect } from 'react';
 import type { Project, Task } from '../types';
@@ -6,7 +6,6 @@ import type { Project, Task } from '../types';
 interface FocusModeViewProps {
   activeTask: Task | null;
   projects: Project[];
-  tasks: Task[];
   timerSeconds: number;
   timerIsRunning: boolean;
   phase?: 'work' | 'shortBreak' | 'longBreak';
@@ -14,7 +13,6 @@ interface FocusModeViewProps {
   onToggleTimer: () => void;
   onSkipTimer: () => void;
   onEndFocusMode: () => void;
-  onSelectTaskToFocus: (task: Task) => void;
   onUnlinkTask?: () => void;
   onMinimizeFocusMode: () => void;
 }
@@ -22,7 +20,6 @@ interface FocusModeViewProps {
 export default function FocusModeView({
   activeTask,
   projects,
-  tasks,
   timerSeconds,
   timerIsRunning,
   phase = 'work',
@@ -30,7 +27,6 @@ export default function FocusModeView({
   onToggleTimer,
   onSkipTimer,
   onEndFocusMode,
-  onSelectTaskToFocus,
   onUnlinkTask,
   onMinimizeFocusMode,
 }: FocusModeViewProps) {
@@ -45,16 +41,6 @@ export default function FocusModeView({
   }, [onMinimizeFocusMode]);
 
   const currentProject = activeTask ? projects.find((p) => p.id === activeTask.projectId) : null;
-
-  // Up Next Queue contains other uncompleted tasks for this active project
-  const upNextTasks = activeTask
-    ? tasks.filter(
-        (t) =>
-          t.id !== activeTask.id &&
-          !t.completed &&
-          (t.projectId === activeTask.projectId || (!t.projectId && !activeTask.projectId)),
-      )
-    : tasks.filter((t) => !t.completed);
 
   const formattedTime = () => {
     const mins = Math.floor(timerSeconds / 60);
@@ -74,12 +60,12 @@ export default function FocusModeView({
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-surface-app text-text-primary z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none"
+      className="fixed inset-0 bg-surface-app text-text-primary z-50 flex flex-col items-center justify-between py-12 px-6 overflow-hidden select-none group"
     >
       {/* Hide / Minimize button to close full screen without stopping timer */}
       <button
         onClick={onMinimizeFocusMode}
-        className="absolute top-14 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-secondary/80 hover:bg-surface-hover border border-border-primary hover:border-border-focus/40 text-text-muted hover:text-text-primary transition-all cursor-pointer font-mono text-xs uppercase font-semibold"
+        className="absolute top-14 right-6 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-secondary/80 hover:bg-surface-hover border border-border-primary hover:border-border-focus/40 text-text-muted hover:text-text-primary transition-all duration-300 cursor-pointer font-mono text-xs uppercase font-semibold opacity-0 group-hover:opacity-100"
         title="Hide full screen focus mode (keep timer running)"
       >
         <Minimize2 className="w-3.5 h-3.5" />
@@ -127,7 +113,7 @@ export default function FocusModeView({
               <span className="text-border-primary font-bold">•</span>
               <button
                 onClick={onUnlinkTask}
-                className="flex items-center gap-1 font-mono text-[10px] uppercase text-text-muted hover:text-text-primary bg-surface-secondary hover:bg-surface-hover px-2 py-0.5 rounded border border-border-primary transition-colors cursor-pointer"
+                className="flex items-center gap-1 font-mono text-[10px] uppercase text-text-muted hover:text-text-primary bg-surface-secondary hover:bg-surface-hover px-2 py-0.5 rounded border border-border-primary transition-all duration-300 cursor-pointer opacity-0 group-hover:opacity-100"
                 title="Unlink task to run a standalone focus session"
               >
                 <Unlink className="w-3 h-3" />
@@ -151,7 +137,7 @@ export default function FocusModeView({
           <circle
             className="text-surface-primary"
             stroke="currentColor"
-            strokeWidth="4"
+            strokeWidth="16"
             fill="transparent"
             r="140"
             cx="150"
@@ -161,7 +147,7 @@ export default function FocusModeView({
           <circle
             className="text-text-primary transition-[stroke-dashoffset] duration-1000 ease-linear"
             stroke="currentColor"
-            strokeWidth="4"
+            strokeWidth="16"
             strokeDasharray={2 * Math.PI * 140}
             strokeDashoffset={strokeOffset()}
             strokeLinecap="round"
@@ -198,12 +184,12 @@ export default function FocusModeView({
       </div>
 
       {/* Control console row */}
-      <div className="flex items-center space-x-8 z-10 pb-4">
+      <div className="flex items-center space-x-8 z-10 pb-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
         <button
           onClick={onEndFocusMode}
-          className="flex flex-col items-center justify-center text-text-muted hover:text-text-primary transition-colors group cursor-pointer"
+          className="flex flex-col items-center justify-center text-text-muted hover:text-text-primary transition-colors cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-full border border-border-primary flex items-center justify-center mb-2 group-hover:border-border-focus transition-colors">
+          <div className="w-12 h-12 rounded-full border border-border-primary flex items-center justify-center mb-2 hover:border-border-focus transition-colors">
             <StopCircle className="w-5 h-5 text-red-500 fill-current" />
           </div>
           <span className="text-[10px] uppercase font-bold tracking-widest font-mono">
@@ -213,46 +199,13 @@ export default function FocusModeView({
 
         <button
           onClick={onSkipTimer}
-          className="flex flex-col items-center justify-center text-text-muted hover:text-text-primary transition-colors group cursor-pointer"
+          className="flex flex-col items-center justify-center text-text-muted hover:text-text-primary transition-colors cursor-pointer"
         >
-          <div className="w-12 h-12 rounded-full border border-border-primary flex items-center justify-center mb-2 group-hover:border-border-focus transition-colors">
+          <div className="w-12 h-12 rounded-full border border-border-primary flex items-center justify-center mb-2 hover:border-border-focus transition-colors">
             <SkipForward className="w-5 h-5" />
           </div>
           <span className="text-[10px] uppercase font-bold tracking-widest font-mono">Skip</span>
         </button>
-      </div>
-
-      {/* Up Next pending tasks footer queue */}
-      <div className="w-full max-w-lg pb-4 border-t border-border-primary pt-6 relative z-10 bg-surface-app">
-        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-surface-app px-4 whitespace-nowrap">
-          <span className="text-[10px] font-bold text-text-muted uppercase tracking-[0.2em]">
-            Up Next Queue
-          </span>
-        </div>
-
-        <div className="flex flex-col space-y-3.5 max-h-[140px] overflow-y-auto scrollbar-none px-2">
-          {upNextTasks.length === 0 ? (
-            <div className="text-center py-2 text-xs text-text-muted/50 italic">
-              No pending tasks queued
-            </div>
-          ) : (
-            upNextTasks.slice(0, 3).map((task) => (
-              <div
-                key={task.id}
-                onClick={() => onSelectTaskToFocus(task)}
-                className="flex items-center justify-between text-text-muted hover:text-text-primary transition-colors cursor-pointer group"
-              >
-                <div className="flex items-center space-x-3 truncate">
-                  <Circle className="w-2.5 h-2.5 fill-transparent text-border-primary/80 group-hover:text-text-primary transition-colors shrink-0" />
-                  <span className="text-xs font-semibold truncate max-w-[280px]">{task.title}</span>
-                </div>
-                <span className="font-mono text-[10px] text-border-primary group-hover:text-text-muted font-semibold transition-colors shrink-0 bg-surface-primary px-2 py-0.5 rounded border border-border-primary/50">
-                  {task.duration || '25m'}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
       </div>
     </motion.div>
   );

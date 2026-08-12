@@ -29,7 +29,9 @@ interface AgentSyncPanelProps {
   onExport: () => void;
   onImport: () => void;
   onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
-  onCopyContextSnapshot?: (selectedSprintId?: string) => Promise<{ success: boolean; activeCount: number }>;
+  onCopyContextSnapshot?: (
+    selectedSprintId?: string,
+  ) => Promise<{ success: boolean; activeCount: number }>;
   selectedSprintId?: string;
   onOpenAuditLog?: () => void;
   onInstallGitHook?: () => Promise<{ success: boolean; message: string }>;

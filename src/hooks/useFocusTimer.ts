@@ -186,7 +186,7 @@ export function useFocusTimer({
                   : 'Time for a break!',
               });
               onTimerCompleteRef.current(currentTask, 'work');
-              
+
               if (!autoStartBreaksRef.current) {
                 setTimerIsRunning(false);
               }
@@ -205,11 +205,11 @@ export function useFocusTimer({
               });
               onTimerCompleteRef.current(currentTask, currentPhase);
               setPhase('work');
-              
+
               if (!autoStartPomodorosRef.current) {
                 setTimerIsRunning(false);
               }
-              
+
               return workDurationRef.current * 60;
             }
           }

@@ -1,6 +1,10 @@
 import { Calendar, CheckCircle2, Clock, Flame, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { aggregateActivityData, getCurrentWeekActivity, getLast30DaysActivity } from '../services/activityLogger';
+import {
+  aggregateActivityData,
+  getCurrentWeekActivity,
+  getLast30DaysActivity,
+} from '../services/activityLogger';
 import type { ActivityLogEntry, DailyActivity, Task } from '../types';
 import { formatDateStr } from '../utils/format-date';
 
@@ -169,11 +173,14 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
   // 30-Day Line Chart data
   const last30DaysActivity = useMemo(() => getLast30DaysActivity(dailyActivity), [dailyActivity]);
-  const maxCompletions30d = useMemo(() => Math.max(1, ...last30DaysActivity.map(d => d.completions)), [last30DaysActivity]);
+  const maxCompletions30d = useMemo(
+    () => Math.max(1, ...last30DaysActivity.map((d) => d.completions)),
+    [last30DaysActivity],
+  );
 
   const { linePath, areaPath } = useMemo(() => {
     if (last30DaysActivity.length === 0) return { linePath: '', areaPath: '' };
-    
+
     const points = last30DaysActivity.map((d, i) => {
       const x = (i / 29) * 300;
       const y = 100 - (d.completions / maxCompletions30d) * 80; // 20 to 100
@@ -193,7 +200,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
     return {
       linePath: d,
-      areaPath: `${d} L 300,100 L 0,100 Z`
+      areaPath: `${d} L 300,100 L 0,100 Z`,
     };
   }, [last30DaysActivity, maxCompletions30d]);
 
@@ -278,11 +285,15 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               This Month Active Days
             </span>
             <div className="text-3xl font-bold font-mono text-text-primary mt-2">
-              {analyticsData.thisMonthActiveDays} Day{analyticsData.thisMonthActiveDays !== 1 ? 's' : ''}
+              {analyticsData.thisMonthActiveDays} Day
+              {analyticsData.thisMonthActiveDays !== 1 ? 's' : ''}
             </div>
             <div className="flex items-center justify-between mt-1">
               <p className="text-[10px] text-text-muted">
-                {analyticsData.thisMonthActiveDays >= analyticsData.lastMonthActiveDays ? 'Up from' : 'Down from'} {analyticsData.lastMonthActiveDays} last month
+                {analyticsData.thisMonthActiveDays >= analyticsData.lastMonthActiveDays
+                  ? 'Up from'
+                  : 'Down from'}{' '}
+                {analyticsData.lastMonthActiveDays} last month
               </p>
               <p className="text-[10px] text-interactive-primary font-bold font-mono flex items-center gap-1">
                 <Flame className="w-3 h-3 fill-current" /> {analyticsData.streak} day streak
@@ -327,21 +338,35 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
               30-Day Accomplishment Trend
             </h3>
             <div className="h-44 w-full relative flex items-end pb-[22px]">
-              <svg viewBox="0 0 300 100" className="w-full h-full overflow-visible" preserveAspectRatio="none">
+              <svg
+                viewBox="0 0 300 100"
+                className="w-full h-full overflow-visible"
+                preserveAspectRatio="none"
+              >
                 <defs>
                   <linearGradient id="line-gradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="currentColor" className="text-interactive-primary" stopOpacity="0.2" />
-                    <stop offset="100%" stopColor="currentColor" className="text-interactive-primary" stopOpacity="0" />
+                    <stop
+                      offset="0%"
+                      stopColor="currentColor"
+                      className="text-interactive-primary"
+                      stopOpacity="0.2"
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="currentColor"
+                      className="text-interactive-primary"
+                      stopOpacity="0"
+                    />
                   </linearGradient>
                 </defs>
-                
+
                 {/* Fill area */}
                 <path
                   d={areaPath}
                   fill="url(#line-gradient)"
                   className="text-interactive-primary"
                 />
-                
+
                 {/* Line */}
                 <path
                   d={linePath}
@@ -357,7 +382,7 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
                 {last30DaysActivity.map((d, i) => {
                   const x = (i / 29) * 300;
                   const y = 100 - (d.completions / maxCompletions30d) * 80;
-                  
+
                   return (
                     <g key={i} className="group">
                       <circle
@@ -366,7 +391,9 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
                         r="3.5"
                         className="fill-surface-primary stroke-interactive-primary stroke-[2.5px] opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
                       />
-                      <title>{d.date}: {d.completions} task{d.completions !== 1 ? 's' : ''}</title>
+                      <title>
+                        {d.date}: {d.completions} task{d.completions !== 1 ? 's' : ''}
+                      </title>
                     </g>
                   );
                 })}

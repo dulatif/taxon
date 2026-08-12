@@ -387,6 +387,21 @@ export const saveTask = async (t: Task) => {
       t.moduleGroup ?? null,
     ],
   );
+
+  if (t.projectId) {
+    try {
+      const projs = await d.select<{ vaultPath: string }[]>(
+        'SELECT vaultPath FROM projects WHERE id = $1',
+        [t.projectId],
+      );
+      if (projs.length > 0 && projs[0]?.vaultPath) {
+        const { exportSingleTaskToAgent } = await import('./agentSync');
+        await exportSingleTaskToAgent(t, projs[0].vaultPath);
+      }
+    } catch (e) {
+      console.error('Failed to trigger surgical task export:', e);
+    }
+  }
 };
 
 export const deleteTask = async (id: string) => {
@@ -429,6 +444,24 @@ export const saveSprint = async (s: Sprint) => {
       s.completedAt ?? null,
     ],
   );
+
+  if (s.projectId) {
+    try {
+      const projs = await d.select<{ vaultPath: string }[]>(
+        'SELECT vaultPath FROM projects WHERE id = $1',
+        [s.projectId],
+      );
+      if (projs.length > 0 && projs[0]?.vaultPath) {
+        const { exportSingleSprintToAgent } = await import('./agentSync');
+        // getTasks handles the JSON parsing mapping safely
+        const allTasks = await getTasks();
+        const sprintTasks = allTasks.filter((t) => t.sprintId === s.id);
+        await exportSingleSprintToAgent(s, sprintTasks, projs[0].vaultPath);
+      }
+    } catch (e) {
+      console.error('Failed to trigger surgical sprint export:', e);
+    }
+  }
 };
 
 export const deleteSprint = async (id: string) => {

@@ -106,6 +106,16 @@ export function getWorkflowElements(
       dagre.layout(g);
     } catch (err) {
       console.warn(`[WorkflowLayout] Dagre layout warning for group '${groupName}':`, err);
+      // Fallback grid layout if dagre fails (e.g., due to cyclic dependencies)
+      let i = 0;
+      for (const taskId of g.nodes()) {
+        const node = g.node(taskId);
+        if (node) {
+          node.x = (i % 3) * (TASK_NODE_WIDTH + 40) + TASK_NODE_WIDTH / 2;
+          node.y = Math.floor(i / 3) * (TASK_NODE_HEIGHT_NORMAL + 55) + TASK_NODE_HEIGHT_NORMAL / 2;
+        }
+        i++;
+      }
     }
 
     // Compute bounding box

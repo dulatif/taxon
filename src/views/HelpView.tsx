@@ -16,7 +16,9 @@ export default function HelpView() {
         </div>
 
         <p className="text-xs leading-relaxed text-text-muted">
-          Welcome to <strong>Taxon - Precision Tasking</strong>. Built with dark-mode aesthetic guidelines to facilitate absolute visual focus, OLED efficiency, and high-productivity daily workflows.
+          Welcome to <strong>Taxon - Precision Tasking</strong>. Built with dark-mode aesthetic
+          guidelines to facilitate absolute visual focus, OLED efficiency, and high-productivity
+          daily workflows.
         </p>
       </div>
 
@@ -52,7 +54,9 @@ export default function HelpView() {
               </kbd>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
-              <span className="text-text-primary font-sans text-xs">Close Modals / Minimize Focus</span>
+              <span className="text-text-primary font-sans text-xs">
+                Close Modals / Minimize Focus
+              </span>
               <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
                 Esc
               </kbd>
@@ -85,16 +89,28 @@ export default function HelpView() {
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
               <span className="text-text-primary font-sans text-xs">Switch View Mode</span>
               <span className="flex gap-1">
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">1 List</kbd>
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">2 Board</kbd>
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">3 Graph</kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  1 List
+                </kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  2 Board
+                </kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  3 Graph
+                </kbd>
               </span>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
-              <span className="text-text-primary font-sans text-xs">Toggle Sidebar (Vault/Agent)</span>
+              <span className="text-text-primary font-sans text-xs">
+                Toggle Sidebar (Vault/Agent)
+              </span>
               <span className="flex gap-1">
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">[</kbd>
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">]</kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  [
+                </kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  ]
+                </kbd>
               </span>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
@@ -104,11 +120,19 @@ export default function HelpView() {
               </kbd>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
-              <span className="text-text-primary font-sans text-xs">AI Sync Export / Import / Copy</span>
+              <span className="text-text-primary font-sans text-xs">
+                AI Sync Export / Import / Copy
+              </span>
               <span className="flex gap-1">
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">Alt+E</kbd>
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">Alt+I</kbd>
-                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">Alt+C</kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  Alt+E
+                </kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  Alt+I
+                </kbd>
+                <kbd className="px-1.5 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  Alt+C
+                </kbd>
               </span>
             </div>
           </div>
@@ -131,15 +155,21 @@ export default function HelpView() {
             <div className="grid grid-cols-3 gap-3 font-mono">
               <div className="bg-surface-primary p-2.5 rounded-lg border border-border-primary/50 flex items-center justify-between">
                 <span>Navigate Results</span>
-                <kbd className="px-2 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">↑ / ↓</kbd>
+                <kbd className="px-2 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  ↑ / ↓
+                </kbd>
               </div>
               <div className="bg-surface-primary p-2.5 rounded-lg border border-border-primary/50 flex items-center justify-between">
                 <span>Execute Selection</span>
-                <kbd className="px-2 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">↵ Enter</kbd>
+                <kbd className="px-2 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  ↵ Enter
+                </kbd>
               </div>
               <div className="bg-surface-primary p-2.5 rounded-lg border border-border-primary/50 flex items-center justify-between">
                 <span>Dismiss Modal</span>
-                <kbd className="px-2 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">ESC</kbd>
+                <kbd className="px-2 py-0.5 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                  ESC
+                </kbd>
               </div>
             </div>
           </div>
@@ -152,9 +182,19 @@ export default function HelpView() {
             <div className="space-y-2 font-mono">
               <div className="bg-surface-primary p-3 rounded-lg border border-border-primary/50 flex items-center justify-between">
                 <div>
-                  <div className="text-text-primary font-semibold font-sans">Sprint &amp; Backlog Direct Search</div>
+                  <div className="text-text-primary font-semibold font-sans">
+                    Sprint &amp; Backlog Direct Search
+                  </div>
                   <div className="text-[11px] text-text-muted font-mono mt-0.5">
-                    Type <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-blue-400">Project Backlog</code> or <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-blue-400">Project Sprint 5</code> to jump directly to pre-filtered project view.
+                    Type{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-blue-400">
+                      Project Backlog
+                    </code>{' '}
+                    or{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-blue-400">
+                      Project Sprint 5
+                    </code>{' '}
+                    to jump directly to pre-filtered project view.
                   </div>
                 </div>
                 <Layers className="w-4 h-4 text-blue-400 shrink-0 ml-2" />
@@ -162,9 +202,35 @@ export default function HelpView() {
 
               <div className="bg-surface-primary p-3 rounded-lg border border-border-primary/50 flex items-center justify-between">
                 <div>
-                  <div className="text-text-primary font-semibold font-sans">Quick Views &amp; Actions</div>
+                  <div className="text-text-primary font-semibold font-sans">
+                    Quick Views &amp; Actions
+                  </div>
                   <div className="text-[11px] text-text-muted font-mono mt-0.5">
-                    Type <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">Todo</code>, <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">Work Log</code>, <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">Recurring</code>, <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">Focus</code>, <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">Analytics</code>, or <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">Help</code> to open any screen.
+                    Type{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">
+                      Todo
+                    </code>
+                    ,{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">
+                      Work Log
+                    </code>
+                    ,{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">
+                      Recurring
+                    </code>
+                    ,{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">
+                      Focus
+                    </code>
+                    ,{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">
+                      Analytics
+                    </code>
+                    , or{' '}
+                    <code className="bg-surface-elevated px-1.5 py-0.5 rounded text-emerald-400">
+                      Help
+                    </code>{' '}
+                    to open any screen.
                   </div>
                 </div>
                 <Sparkles className="w-4 h-4 text-emerald-400 shrink-0 ml-2" />

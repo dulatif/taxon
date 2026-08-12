@@ -1,7 +1,7 @@
 import { exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
-import { toast } from 'sonner';
 import { Command } from '@tauri-apps/plugin-shell';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   applyAgentChanges,
   cleanUpArchivedFiles,
@@ -348,8 +348,15 @@ export function useAgentSync(
   const isAutoSyncingRef = useRef(false);
 
   const autoImportChanges = useCallback(async () => {
-    if (!project?.vaultPath || isImporting || isScanning || isExporting || isAutoSyncingRef.current)
-      {return;}
+    if (
+      !project?.vaultPath ||
+      isImporting ||
+      isScanning ||
+      isExporting ||
+      isAutoSyncingRef.current
+    ) {
+      return;
+    }
 
     isAutoSyncingRef.current = true;
     try {

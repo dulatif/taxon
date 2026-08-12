@@ -51,7 +51,7 @@ export function aggregateActivityData(
 
   // Calculate streak: consecutive days with at least one completion
   const streak = calculateStreak(log);
-  
+
   // Calculate active days for this month and last month
   const { thisMonthActiveDays, lastMonthActiveDays } = calculateActiveDays(log);
 
@@ -67,13 +67,16 @@ export function aggregateActivityData(
 /**
  * Calculate active days for the current and previous month.
  */
-function calculateActiveDays(log: ActivityLogEntry[]): { thisMonthActiveDays: number; lastMonthActiveDays: number } {
+function calculateActiveDays(log: ActivityLogEntry[]): {
+  thisMonthActiveDays: number;
+  lastMonthActiveDays: number;
+} {
   if (log.length === 0) return { thisMonthActiveDays: 0, lastMonthActiveDays: 0 };
-  
+
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  
+
   const lastMonthDate = new Date(now);
   lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
   const lastMonth = lastMonthDate.getMonth();
@@ -253,18 +256,17 @@ export function getLast30DaysActivity(dailyActivity: DailyActivity[]): {
     const date = new Date(today);
     date.setDate(today.getDate() - i);
     const dateStr = formatDateStr(date);
-    
+
     const matchingAct = dailyActivity.find((d) => (d.date || d.day) === dateStr);
-    
+
     // Generate stable dummy data based on date for visualization
     const seed = date.getDate() * 7 + date.getMonth() * 13;
     const dummyCompletions = (seed % 6) + Math.floor((30 - i) / 5); // Gradual upward trend
 
     result.push({
       date: dateStr,
-      completions: matchingAct && matchingAct.completions > 0 
-        ? matchingAct.completions 
-        : dummyCompletions,
+      completions:
+        matchingAct && matchingAct.completions > 0 ? matchingAct.completions : dummyCompletions,
     });
   }
 

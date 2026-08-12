@@ -116,39 +116,55 @@ export default function GeneralSettings({
         <div className="pt-2 mt-2 border-t border-border-primary/40 space-y-3">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">Auto-start Breaks</span>
-              <p className="text-[9px] text-text-muted mt-0.5">Automatically start the break timer when a pomodoro finishes</p>
+              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">
+                Auto-start Breaks
+              </span>
+              <p className="text-[9px] text-text-muted mt-0.5">
+                Automatically start the break timer when a pomodoro finishes
+              </p>
             </div>
             <button
               type="button"
               onClick={() => toggleSetting('pomodoroAutoStartBreaks')}
               className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
-                pomodoroAutoStartBreaks ? 'bg-interactive-primary' : 'bg-surface-primary border border-border-primary'
+                pomodoroAutoStartBreaks
+                  ? 'bg-interactive-primary'
+                  : 'bg-surface-primary border border-border-primary'
               }`}
             >
               <div
                 className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                  pomodoroAutoStartBreaks ? 'bg-interactive-primary-text translate-x-5' : 'bg-text-muted translate-x-0'
+                  pomodoroAutoStartBreaks
+                    ? 'bg-interactive-primary-text translate-x-5'
+                    : 'bg-text-muted translate-x-0'
                 }`}
               />
             </button>
           </div>
-          
+
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">Auto-start Pomodoros</span>
-              <p className="text-[9px] text-text-muted mt-0.5">Automatically start the next pomodoro when a break finishes</p>
+              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">
+                Auto-start Pomodoros
+              </span>
+              <p className="text-[9px] text-text-muted mt-0.5">
+                Automatically start the next pomodoro when a break finishes
+              </p>
             </div>
             <button
               type="button"
               onClick={() => toggleSetting('pomodoroAutoStartPomodoros')}
               className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
-                pomodoroAutoStartPomodoros ? 'bg-interactive-primary' : 'bg-surface-primary border border-border-primary'
+                pomodoroAutoStartPomodoros
+                  ? 'bg-interactive-primary'
+                  : 'bg-surface-primary border border-border-primary'
               }`}
             >
               <div
                 className={`w-4 h-4 rounded-full transition-all duration-200 ${
-                  pomodoroAutoStartPomodoros ? 'bg-interactive-primary-text translate-x-5' : 'bg-text-muted translate-x-0'
+                  pomodoroAutoStartPomodoros
+                    ? 'bg-interactive-primary-text translate-x-5'
+                    : 'bg-text-muted translate-x-0'
                 }`}
               />
             </button>
