@@ -185,10 +185,17 @@ export default function ProjectDetailView({
     setIsImportModalOpen(false);
   };
 
+  const cycleTaskFilter = () => {
+    const options: TaskTabType[] = ['all', 'todo', 'In Progress', 'Need to Test', 'completed', 'archived'];
+    const currentIndex = options.indexOf(taskTab);
+    const nextIndex = (currentIndex + 1) % options.length;
+    setTaskTab(options[nextIndex] as TaskTabType);
+  };
+
   const cycleSprintFilter = () => {
     const options: string[] = ['all', 'backlog'];
     if (sprints) {
-      const projectSprints = sprints.filter((s) => s.projectId === project.id);
+      const projectSprints = sprints.filter((s) => s.projectId === project.id && (s.status === 'Active' || s.status === 'Planned'));
       for (const s of projectSprints) {
         options.push(s.id);
       }
@@ -256,6 +263,11 @@ export default function ProjectDetailView({
           cycleSprintFilter();
           return;
         }
+        if (e.key.toLowerCase() === 'f') {
+          e.preventDefault();
+          cycleTaskFilter();
+          return;
+        }
         if (e.key === '/') {
           // If we are already focused on an input or textarea, let the user type '/'
           if (
@@ -275,6 +287,11 @@ export default function ProjectDetailView({
         if (key === 's') {
           e.preventDefault();
           cycleSprintFilter();
+          return;
+        }
+        if (key === 'f') {
+          e.preventDefault();
+          cycleTaskFilter();
           return;
         }
         if (key === 'e') {
