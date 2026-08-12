@@ -94,7 +94,7 @@ export default function FileNode({
       }}
       className={`flex items-center justify-between py-1.5 px-2 rounded transition-colors group cursor-pointer select-none text-xs font-sans ${
         isSelected
-          ? 'bg-white/15 text-white font-semibold border-l-2 border-white'
+          ? 'bg-interactive-primary/10 text-interactive-primary font-bold border-l-2 border-interactive-primary'
           : 'hover:bg-surface-hover text-text-secondary hover:text-text-primary'
       }`}
       style={{ paddingLeft: `${depth * 14 + 22}px` }}
