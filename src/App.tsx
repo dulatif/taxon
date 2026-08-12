@@ -154,6 +154,31 @@ export default function App() {
     },
   });
 
+  useEffect(() => {
+    if (currentView !== 'project-details') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        const key = e.key;
+        const num = parseInt(key, 10);
+        if (!isNaN(num) && num >= 1 && num <= 9) {
+          const pinned = projects
+            .filter((p) => p.pinned)
+            .sort((a, b) => (a.pinnedSortOrder ?? 0) - (b.pinnedSortOrder ?? 0));
+          
+          if (num <= pinned.length) {
+            e.preventDefault();
+            const targetProj = pinned[num - 1];
+            selectProject(targetProj!.id);
+          }
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentView, projects, selectProject]);
+
   const { settings } = useSettings();
 
   const focusTimer = useFocusTimer({

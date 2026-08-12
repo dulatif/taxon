@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import {
   deleteFile,
   deleteFilesByProject,
@@ -153,6 +154,13 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
   const handleTogglePinProject = useCallback((projectId: string) => {
     setProjects((prev) => {
       const pinnedCount = prev.filter((p) => p.pinned).length;
+      const targetProject = prev.find((p) => p.id === projectId);
+      
+      if (targetProject && !targetProject.pinned && pinnedCount >= 9) {
+        toast.error('Maximum of 9 pinned projects allowed');
+        return prev;
+      }
+
       return prev.map((p) => {
         if (p.id === projectId) {
           const up = { ...p, pinned: !p.pinned };
