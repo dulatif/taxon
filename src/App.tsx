@@ -155,8 +155,6 @@ export default function App() {
   });
 
   useEffect(() => {
-    if (currentView !== 'project-details') return;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
         const key = e.key;
