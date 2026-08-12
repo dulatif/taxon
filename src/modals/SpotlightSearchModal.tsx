@@ -531,7 +531,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={action.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={action.action}
                               className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                                 isSelected
@@ -579,7 +579,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={proj.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={() => {
                                 onClose();
                                 onSelectProject(proj.id);
@@ -628,7 +628,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={sp.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={() => {
                                 onClose();
                                 if (onSelectProjectSprint) {
@@ -682,7 +682,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={task.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={() => {
                                 onClose();
                                 if (task.projectId) {
