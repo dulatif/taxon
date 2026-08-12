@@ -73,6 +73,12 @@ export default function HelpView() {
                 ⌘⇧S / Ctrl+Shift+S
               </kbd>
             </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Switch to Pinned Project 1-9</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                Alt+[1-9]
+              </kbd>
+            </div>
           </div>
 
           {/* Project Detail View Shortcuts */}
@@ -117,6 +123,24 @@ export default function HelpView() {
               <span className="text-text-primary font-sans text-xs">Cycle Sprint Filter</span>
               <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
                 S / Alt+S
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Cycle Task Filter</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                F / Alt+F
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Toggle Project Pin</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                P / Alt+P
+              </kbd>
+            </div>
+            <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
+              <span className="text-text-primary font-sans text-xs">Focus Vault Search</span>
+              <kbd className="px-2 py-1 bg-surface-elevated border border-border-primary rounded text-[10px] text-text-primary">
+                ⌘P / Ctrl+P
               </kbd>
             </div>
             <div className="flex justify-between items-center bg-surface-primary p-2.5 rounded-lg border border-border-primary/50">
