@@ -1,5 +1,5 @@
 import { Search, X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { VaultEntry } from '../../types';
 import FileNode from './FileNode';
 import TreeToolbar from './TreeToolbar';
@@ -54,6 +54,20 @@ export default function VaultFileTree({
   const [newDocName, setNewDocName] = useState('');
   const [createError, setCreateError] = useState<string | null>(null);
 
+  const filterInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'p' && !e.shiftKey) {
+        e.preventDefault();
+        filterInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const filteredEntries = filterEntries(entries, searchQuery);
 
   const handleCreateSubmit = async (e: React.FormEvent) => {
@@ -87,6 +101,7 @@ export default function VaultFileTree({
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-text-muted" />
         <input
+          ref={filterInputRef}
           type="text"
           placeholder="Filter documents inside vault..."
           value={searchQuery}
