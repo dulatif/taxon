@@ -168,6 +168,8 @@ export default function ProjectDetailView({
     exportChangelogFile,
     installGitHook,
     refreshAgentEntries,
+    isLiveSyncEnabled,
+    toggleLiveSync,
   } = useAgentSync(project, tasks, sprints || [], refreshAllData || (async () => {}));
 
   const handleScanForChanges = async () => {
@@ -186,7 +188,14 @@ export default function ProjectDetailView({
   };
 
   const cycleTaskFilter = () => {
-    const options: TaskTabType[] = ['all', 'todo', 'In Progress', 'Need to Test', 'completed', 'archived'];
+    const options: TaskTabType[] = [
+      'all',
+      'todo',
+      'In Progress',
+      'Need to Test',
+      'completed',
+      'archived',
+    ];
     const currentIndex = options.indexOf(taskTab);
     const nextIndex = (currentIndex + 1) % options.length;
     setTaskTab(options[nextIndex] as TaskTabType);
@@ -195,7 +204,9 @@ export default function ProjectDetailView({
   const cycleSprintFilter = () => {
     const options: string[] = ['all', 'backlog'];
     if (sprints) {
-      const projectSprints = sprints.filter((s) => s.projectId === project.id && (s.status === 'Active' || s.status === 'Planned'));
+      const projectSprints = sprints.filter(
+        (s) => s.projectId === project.id && (s.status === 'Active' || s.status === 'Planned'),
+      );
       for (const s of projectSprints) {
         options.push(s.id);
       }
@@ -277,7 +288,33 @@ export default function ProjectDetailView({
             return;
           }
           e.preventDefault();
-          taskInputRef.current?.focus();
+
+          let stateChanged = false;
+          if (viewMode !== 'list') {
+            setViewMode('list');
+            stateChanged = true;
+          }
+          if (taskTab !== 'todo') {
+            setTaskTab('todo');
+            stateChanged = true;
+          }
+          if (searchQuery !== '') {
+            setSearchQuery('');
+            stateChanged = true;
+          }
+          if (dueDateFilter !== 'all') {
+            setDueDateFilter('all');
+            stateChanged = true;
+          }
+
+          if (stateChanged) {
+            setTimeout(() => {
+              taskInputRef.current?.focus();
+            }, 50);
+          } else {
+            taskInputRef.current?.focus();
+          }
+          
           return;
         }
       }
@@ -743,6 +780,8 @@ export default function ProjectDetailView({
                   setIsDocumentPanelOpen(true);
                 }}
                 onRefreshEntries={refreshAgentEntries}
+                isLiveSyncEnabled={isLiveSyncEnabled}
+                onToggleLiveSync={toggleLiveSync}
               />
             )}
           </div>

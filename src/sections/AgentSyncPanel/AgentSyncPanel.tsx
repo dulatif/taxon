@@ -39,6 +39,8 @@ interface AgentSyncPanelProps {
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
   error?: string | null;
+  isLiveSyncEnabled: boolean;
+  onToggleLiveSync: (enabled: boolean) => void;
 }
 
 export default function AgentSyncPanel({
@@ -60,6 +62,8 @@ export default function AgentSyncPanel({
   onSelectFile,
   onRefreshEntries,
   error,
+  isLiveSyncEnabled,
+  onToggleLiveSync,
 }: AgentSyncPanelProps) {
   const [isTreeExpanded, setIsTreeExpanded] = useState(true);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
@@ -132,6 +136,29 @@ export default function AgentSyncPanel({
           <Bot className="w-4 h-4 text-emerald-400" />
           AI Agent Sync
         </h3>
+
+        {hasVaultPath && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
+              Live Sync
+            </span>
+            <button
+              type="button"
+              onClick={() => onToggleLiveSync(!isLiveSyncEnabled)}
+              className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors cursor-pointer ${
+                isLiveSyncEnabled
+                  ? 'bg-emerald-500'
+                  : 'bg-surface-elevated border border-border-primary'
+              }`}
+            >
+              <span
+                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                  isLiveSyncEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (

@@ -428,16 +428,25 @@ export function useAgentSync(
     autoImportRef.current = autoImportChanges;
   }, [autoImportChanges]);
 
-  // Periodic auto-sync when vaultPath is active (polls every 3s)
+  const [isLiveSyncEnabled, setIsLiveSyncEnabled] = useState(() => {
+    return localStorage.getItem('taxon_live_sync') === 'true';
+  });
+
+  const toggleLiveSync = useCallback((enabled: boolean) => {
+    setIsLiveSyncEnabled(enabled);
+    localStorage.setItem('taxon_live_sync', String(enabled));
+  }, []);
+
+  // Periodic auto-sync when vaultPath is active and live sync is enabled (polls every 3s)
   useEffect(() => {
-    if (!project?.vaultPath) return;
+    if (!project?.vaultPath || !isLiveSyncEnabled) return;
 
     const intervalId = setInterval(() => {
       autoImportRef.current();
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [project?.vaultPath]);
+  }, [project?.vaultPath, isLiveSyncEnabled]);
 
   return {
     syncState,
@@ -463,5 +472,7 @@ export function useAgentSync(
     installGitHook,
     refreshAuditSummary,
     refreshAgentEntries,
+    isLiveSyncEnabled,
+    toggleLiveSync,
   };
 }
