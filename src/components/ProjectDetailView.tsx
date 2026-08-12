@@ -279,6 +279,11 @@ export default function ProjectDetailView({
           cycleTaskFilter();
           return;
         }
+        if (e.key.toLowerCase() === 'p') {
+          e.preventDefault();
+          onTogglePinProject?.(project.id);
+          return;
+        }
         if (e.key === '/') {
           // If we are already focused on an input or textarea, let the user type '/'
           if (
@@ -329,6 +334,11 @@ export default function ProjectDetailView({
         if (key === 'f') {
           e.preventDefault();
           cycleTaskFilter();
+          return;
+        }
+        if (key === 'p') {
+          e.preventDefault();
+          onTogglePinProject?.(project.id);
           return;
         }
         if (key === 'e') {
