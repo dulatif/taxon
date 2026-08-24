@@ -106,19 +106,40 @@ export function getWorkflowElements(
       dagre.layout(g);
     } catch (err) {
       console.warn(`[WorkflowLayout] Dagre layout warning for group '${groupName}':`, err);
-      // Fallback grid layout if dagre fails (e.g., due to cyclic dependencies)
+    }
+
+    // Verify all nodes have valid finite numeric coordinates
+    let needsGridFallback = false;
+    for (const task of groupTasks) {
+      const nodePos = g.node(task.id);
+      if (
+        !nodePos ||
+        typeof nodePos.x !== 'number' ||
+        !Number.isFinite(nodePos.x) ||
+        typeof nodePos.y !== 'number' ||
+        !Number.isFinite(nodePos.y)
+      ) {
+        needsGridFallback = true;
+        break;
+      }
+    }
+
+    if (needsGridFallback) {
       let i = 0;
-      for (const taskId of g.nodes()) {
-        const node = g.node(taskId);
-        if (node) {
-          node.x = (i % 3) * (TASK_NODE_WIDTH + 40) + TASK_NODE_WIDTH / 2;
-          node.y = Math.floor(i / 3) * (TASK_NODE_HEIGHT_NORMAL + 55) + TASK_NODE_HEIGHT_NORMAL / 2;
-        }
+      for (const task of groupTasks) {
+        const isDone = task.completed || task.status === 'Done';
+        const height = isDone ? TASK_NODE_HEIGHT_COLLAPSED : TASK_NODE_HEIGHT_NORMAL;
+        g.setNode(task.id, {
+          width: TASK_NODE_WIDTH,
+          height,
+          x: (i % 3) * (TASK_NODE_WIDTH + 40) + TASK_NODE_WIDTH / 2,
+          y: Math.floor(i / 3) * (TASK_NODE_HEIGHT_NORMAL + 55) + height / 2,
+        });
         i++;
       }
     }
 
-    // Compute bounding box
+    // Compute bounding box safely
     let minX = Infinity;
     let maxX = -Infinity;
     let minY = Infinity;
@@ -126,7 +147,15 @@ export function getWorkflowElements(
 
     for (const task of groupTasks) {
       const nodePos = g.node(task.id);
-      if (!nodePos) continue;
+      if (
+        !nodePos ||
+        typeof nodePos.x !== 'number' ||
+        !Number.isFinite(nodePos.x) ||
+        typeof nodePos.y !== 'number' ||
+        !Number.isFinite(nodePos.y)
+      ) {
+        continue;
+      }
 
       const isDone = task.completed || task.status === 'Done';
       const nodeHeight = isDone ? TASK_NODE_HEIGHT_COLLAPSED : TASK_NODE_HEIGHT_NORMAL;
@@ -136,22 +165,31 @@ export function getWorkflowElements(
       const top = nodePos.y - nodeHeight / 2;
       const bottom = nodePos.y + nodeHeight / 2;
 
-      minX = Math.min(minX, left);
-      maxX = Math.max(maxX, right);
-      minY = Math.min(minY, top);
-      maxY = Math.max(maxY, bottom);
+      if (
+        Number.isFinite(left) &&
+        Number.isFinite(right) &&
+        Number.isFinite(top) &&
+        Number.isFinite(bottom)
+      ) {
+        minX = Math.min(minX, left);
+        maxX = Math.max(maxX, right);
+        minY = Math.min(minY, top);
+        maxY = Math.max(maxY, bottom);
+      }
     }
 
-    // If no nodes, fallback
-    if (minX === Infinity) {
+    // If no nodes or invalid bounding box, fallback
+    if (!Number.isFinite(minX) || !Number.isFinite(maxX)) {
       minX = 0;
       maxX = TASK_NODE_WIDTH;
+    }
+    if (!Number.isFinite(minY) || !Number.isFinite(maxY)) {
       minY = 0;
       maxY = TASK_NODE_HEIGHT_NORMAL;
     }
 
-    const groupWidth = maxX - minX + PADDING_X * 2;
-    const groupHeight = maxY - minY + PADDING_TOP + PADDING_BOTTOM;
+    const groupWidth = Math.max(maxX - minX + PADDING_X * 2, 280);
+    const groupHeight = Math.max(maxY - minY + PADDING_TOP + PADDING_BOTTOM, 140);
     const groupX = currentGroupOffsetX;
     const groupY = 40;
 
@@ -163,8 +201,8 @@ export function getWorkflowElements(
       type: 'moduleGroup',
       position: { x: groupX, y: groupY },
       style: {
-        width: Math.max(groupWidth, 280),
-        height: Math.max(groupHeight, 140),
+        width: groupWidth,
+        height: groupHeight,
         zIndex: -1,
       },
       data: {
@@ -183,8 +221,18 @@ export function getWorkflowElements(
       const isDone = task.completed || task.status === 'Done';
       const nodeHeight = isDone ? TASK_NODE_HEIGHT_COLLAPSED : TASK_NODE_HEIGHT_NORMAL;
 
-      const relativeX = (nodePos?.x ?? 0) - TASK_NODE_WIDTH / 2 - minX + PADDING_X;
-      const relativeY = (nodePos?.y ?? 0) - nodeHeight / 2 - minY + PADDING_TOP;
+      const posX =
+        typeof nodePos?.x === 'number' && Number.isFinite(nodePos.x)
+          ? nodePos.x
+          : TASK_NODE_WIDTH / 2;
+      const posY =
+        typeof nodePos?.y === 'number' && Number.isFinite(nodePos.y) ? nodePos.y : nodeHeight / 2;
+
+      let relativeX = posX - TASK_NODE_WIDTH / 2 - minX + PADDING_X;
+      let relativeY = posY - nodeHeight / 2 - minY + PADDING_TOP;
+
+      if (!Number.isFinite(relativeX)) relativeX = PADDING_X;
+      if (!Number.isFinite(relativeY)) relativeY = PADDING_TOP;
 
       const isResolvedActive = activeTaskId
         ? lookup.get(activeTaskId) === task.id || activeTaskId === task.id

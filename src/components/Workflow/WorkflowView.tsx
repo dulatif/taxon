@@ -153,17 +153,21 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
       onSelectTask,
     ]);
 
-    // Smooth initial viewport fit without jarring resets during live node updates
+    // Smooth viewport fit on initial load or when sprint selection changes
     const initialFitDone = React.useRef(false);
+    const prevSprintIdRef = React.useRef(currentSprintId);
     React.useEffect(() => {
-      if (nodes.length > 0 && !initialFitDone.current) {
-        initialFitDone.current = true;
-        const timer = setTimeout(() => {
-          fitView({ padding: 0.2, duration: 400 });
-        }, 100);
-        return () => clearTimeout(timer);
+      if (nodes.length > 0) {
+        if (!initialFitDone.current || prevSprintIdRef.current !== currentSprintId) {
+          initialFitDone.current = true;
+          prevSprintIdRef.current = currentSprintId;
+          const timer = setTimeout(() => {
+            fitView({ padding: 0.2, duration: 400 });
+          }, 100);
+          return () => clearTimeout(timer);
+        }
       }
-    }, [nodes.length, fitView]);
+    }, [nodes.length, currentSprintId, fitView]);
 
     const handleFitView = useCallback(() => {
       fitView({ padding: 0.2, duration: 400 });
@@ -211,6 +215,22 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
           onFitView={handleFitView}
           totalTasksCount={tasks.filter((t) => !t.archived).length}
         />
+
+        {filteredTasks.length === 0 && (
+          <div className="absolute inset-0 z-0 flex flex-col items-center justify-center p-8 text-center select-none bg-background/50">
+            <div className="w-14 h-14 rounded-2xl bg-muted/40 border border-border/40 flex items-center justify-center mb-3 text-muted-foreground">
+              <GitFork className="w-7 h-7" />
+            </div>
+            <h3 className="text-sm font-semibold text-foreground mb-1">
+              No Tasks Match Current Filter
+            </h3>
+            <p className="text-xs text-muted-foreground max-w-sm">
+              {currentSprintId && currentSprintId !== 'all'
+                ? 'No tasks found in the selected sprint. Try selecting "All Sprints" or clearing the search/module filter.'
+                : 'No tasks found matching your search or module filter.'}
+            </p>
+          </div>
+        )}
 
         <ReactFlow
           nodes={nodes}
