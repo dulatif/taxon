@@ -167,7 +167,7 @@ export default function KanbanView({
       {/* Main Board Columns Frame */}
       <DragDropContext onDragEnd={onDragEnd}>
         <div
-          className={`flex-1 overflow-x-auto p-4 flex gap-6 bg-surface-primary border-x border-b border-border-primary min-h-[450px] ${hideToolbar ? 'rounded-xl border-t' : 'rounded-b-xl'}`}
+          className={`flex-1 overflow-x-auto p-4 flex gap-6 bg-surface-primary border-x border-b border-border-primary min-h-[620px] ${hideToolbar ? 'rounded-xl border-t' : 'rounded-b-xl'}`}
         >
           {columns.map((colName) => {
             // Sync database status filter
@@ -210,7 +210,7 @@ export default function KanbanView({
                       </div>
 
                       {/* Scrollable Tasks Body Container */}
-                      <div className="flex-1 overflow-y-auto space-y-3 pb-4 max-h-[420px] scrollbar-thin">
+                      <div className="flex-1 overflow-y-auto space-y-3 pb-4 max-h-[580px] scrollbar-thin">
                         {colTasks.length === 0 && !snapshot.isDraggingOver ? (
                           <div className="py-12 text-center text-xs text-text-muted/60 border border-dashed border-border-primary/50 rounded-lg">
                             No active tasks
