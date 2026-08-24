@@ -75,7 +75,10 @@ export default function Sidebar({
         .filter((p) => p.pinned)
         .sort((a, b) => (a.pinnedSortOrder ?? 999999) - (b.pinnedSortOrder ?? 999999));
 
-      const draggedProject = pinnedProjects.find((p) => p.id === draggableId);
+      const rawId = draggableId.startsWith('pinned-')
+        ? draggableId.replace(/^pinned-/, '')
+        : draggableId;
+      const draggedProject = pinnedProjects.find((p) => p.id === rawId);
       if (!draggedProject) return;
 
       pinnedProjects.splice(source.index, 1);

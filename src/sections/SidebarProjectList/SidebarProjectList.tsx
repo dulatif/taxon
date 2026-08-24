@@ -80,7 +80,7 @@ export default function SidebarProjectList({
                     return (
                       <Draggable
                         key={`pinned-${project.id}`}
-                        draggableId={project.id}
+                        draggableId={`pinned-${project.id}`}
                         index={index}
                       >
                         {(provided, snapshot) => (
