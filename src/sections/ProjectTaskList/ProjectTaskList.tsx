@@ -1,6 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { Archive, CheckSquare, RotateCcw, Square, Trash2 } from 'lucide-react';
+import { Archive, CheckSquare, Plus, RotateCcw, Square, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import Button from '../../components/Button';
 
@@ -28,17 +28,20 @@ export default function ProjectTaskList({
   tasks,
   projectTasks,
   project,
+  sprints,
   taskTab,
   selectedSort,
   dueDateFilter,
   onToggleTask,
   onReorderTasks,
   onSelectTask,
+  onAssignTaskToSprint,
   onArchiveTask,
   onUnarchiveTask,
   onSetTaskToDelete,
 }: ProjectTaskListProps) {
   const [visibleCount, setVisibleCount] = useState(10);
+  const activeSprint = sprints?.find((s) => s.projectId === project.id && s.status === 'Active');
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -272,17 +275,31 @@ export default function ProjectTaskList({
                             </div>
                           )}
                           {!task.archived ? (
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onArchiveTask?.(task.id);
-                              }}
-                              className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-                              title="Archive task"
-                            >
-                              <Archive className="w-3.5 h-3.5" />
-                            </button>
+                            !task.sprintId && activeSprint && onAssignTaskToSprint ? (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onAssignTaskToSprint(task.id, activeSprint.id);
+                                }}
+                                className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-interactive-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                title={`Move to active sprint (${activeSprint.name})`}
+                              >
+                                <Plus className="w-3.5 h-3.5" />
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onArchiveTask?.(task.id);
+                                }}
+                                className="p-1 hover:bg-surface-hover rounded text-text-muted hover:text-text-primary opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                                title="Archive task"
+                              >
+                                <Archive className="w-3.5 h-3.5" />
+                              </button>
+                            )
                           ) : (
                             <button
                               type="button"
