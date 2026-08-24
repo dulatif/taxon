@@ -178,6 +178,7 @@ export function useFocusTimer({
 
             if (currentPhase === 'work') {
               const nextCount = completedWorkSessionsRef.current + 1;
+              completedWorkSessionsRef.current = nextCount;
               setCompletedWorkSessions(nextCount);
               sendNotification({
                 title: 'Work Session Complete!',
@@ -187,23 +188,25 @@ export function useFocusTimer({
               });
               onTimerCompleteRef.current(currentTask, 'work');
 
+              const nextPhase: PomodoroPhase =
+                nextCount % longBreakIntervalRef.current === 0 ? 'longBreak' : 'shortBreak';
+              phaseRef.current = nextPhase;
+              setPhase(nextPhase);
+
               if (!autoStartBreaksRef.current) {
                 setTimerIsRunning(false);
               }
 
-              if (nextCount % longBreakIntervalRef.current === 0) {
-                setPhase('longBreak');
-                return longBreakRef.current * 60;
-              } else {
-                setPhase('shortBreak');
-                return shortBreakRef.current * 60;
-              }
+              return nextPhase === 'longBreak'
+                ? longBreakRef.current * 60
+                : shortBreakRef.current * 60;
             } else {
               sendNotification({
                 title: 'Break Ended!',
                 body: 'Time to get back to focus.',
               });
               onTimerCompleteRef.current(currentTask, currentPhase);
+              phaseRef.current = 'work';
               setPhase('work');
 
               if (!autoStartPomodorosRef.current) {

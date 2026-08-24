@@ -43,6 +43,12 @@ vi.mock('@tauri-apps/plugin-global-shortcut', () => ({
   unregisterAll: vi.fn().mockResolvedValue(true),
 }));
 
+vi.mock('@tauri-apps/plugin-notification', () => ({
+  sendNotification: vi.fn(),
+  isPermissionGranted: vi.fn().mockResolvedValue(true),
+  requestPermission: vi.fn().mockResolvedValue('granted'),
+}));
+
 // Mock localStorage
 const localStorageMock = (() => {
   let store: Record<string, string> = {};

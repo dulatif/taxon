@@ -185,6 +185,8 @@ export default function App() {
     shortBreak: settings.pomodoroShortBreak,
     longBreak: settings.pomodoroLongBreak,
     longBreakInterval: settings.pomodoroLongBreakInterval,
+    autoStartBreaks: settings.pomodoroAutoStartBreaks,
+    autoStartPomodoros: settings.pomodoroAutoStartPomodoros,
     onTickFocusTime: (task) => onTickFocusTime(task),
     soundEnabled: settings.soundAlerts,
   });
