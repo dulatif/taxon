@@ -64,32 +64,20 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     startDate.setDate(startDate.getDate() - startDayOfWeek);
 
     const weeksArray: HeatmapDay[][] = [];
-    const monthsArray: HeatmapMonthLabel[] = [];
     let currentWeek: HeatmapDay[] = [];
-    let lastMonthIndex = -1;
 
     let totCompletions = 0;
     let totHours = 0;
 
     const curDate = new Date(startDate);
-    let colIndex = 0;
 
     while (curDate <= today) {
       const dateStr = formatDateStr(curDate);
-      const monthIndex = curDate.getMonth();
       const dayOfWeek = curDate.getDay();
 
       if (dayOfWeek === 0 && currentWeek.length > 0) {
         weeksArray.push(currentWeek);
         currentWeek = [];
-        colIndex++;
-      }
-
-      // Check if month changed at the start of a column or first week
-      if (monthIndex !== lastMonthIndex && (dayOfWeek === 0 || weeksArray.length === 0)) {
-        const monthName = curDate.toLocaleString('default', { month: 'short' });
-        monthsArray.push({ monthName, colIndex });
-        lastMonthIndex = monthIndex;
       }
 
       const isToday = curDate.getTime() === today.getTime();
@@ -139,6 +127,43 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
     if (currentWeek.length > 0) {
       weeksArray.push(currentWeek);
+    }
+
+    // Accurately determine month labels matching week columns
+    const monthsArray: HeatmapMonthLabel[] = [];
+    let lastMonth = -1;
+    let lastPushedCol = -10;
+
+    for (let colIdx = 0; colIdx < weeksArray.length; colIdx++) {
+      const week = weeksArray[colIdx];
+      if (!week || week.length === 0) continue;
+
+      for (const day of week) {
+        const parts = day.dateStr.split('-').map(Number);
+        const year = parts[0];
+        const month = parts[1];
+        const dDate = parts[2];
+        if (year === undefined || month === undefined || dDate === undefined) continue;
+
+        const m = month - 1;
+
+        if (m !== lastMonth) {
+          const monthName = new Date(year, m, dDate).toLocaleString('en-US', { month: 'short' });
+
+          if (colIdx === 0) {
+            monthsArray.push({ monthName, colIndex: colIdx });
+            lastPushedCol = colIdx;
+          } else if (colIdx - lastPushedCol >= 2) {
+            monthsArray.push({ monthName, colIndex: colIdx });
+            lastPushedCol = colIdx;
+          } else if (monthsArray.length === 1 && monthsArray[0]?.colIndex === 0) {
+            monthsArray[0] = { monthName, colIndex: colIdx };
+            lastPushedCol = colIdx;
+          }
+          lastMonth = m;
+          break;
+        }
+      }
     }
 
     return {
@@ -453,16 +478,19 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 overflow-x-auto scrollbar-thin">
             <div className="min-w-[720px]">
               {/* Month Header Row */}
-              <div className="flex relative h-5 mb-1 pl-8 text-[10px] font-mono text-text-muted select-none">
-                {monthLabels.map((m, idx) => (
-                  <span
-                    key={idx}
-                    style={{ left: `${32 + m.colIndex * 14}px` }}
-                    className="absolute top-0 font-medium text-text-primary/70 tracking-wider"
-                  >
-                    {m.monthName}
-                  </span>
-                ))}
+              <div className="flex gap-2 mb-1 select-none">
+                <div className="w-6 shrink-0" />
+                <div className="relative h-5 flex-1 text-[10px] font-mono text-text-muted">
+                  {monthLabels.map((m, idx) => (
+                    <span
+                      key={idx}
+                      style={{ left: `${m.colIndex * 15}px` }}
+                      className="absolute top-0 font-medium text-text-primary/70 tracking-wider"
+                    >
+                      {m.monthName}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               {/* Grid Body: Day Labels + Week Columns */}
