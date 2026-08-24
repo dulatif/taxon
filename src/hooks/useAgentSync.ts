@@ -22,6 +22,24 @@ import { scanAgentVault } from '../services/vaultScanner';
 import type { Project, Sprint, Task, VaultEntry } from '../types';
 import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
 
+export function extractErrorMessage(err: unknown, fallback = 'Unknown error occurred'): string {
+  if (!err) return fallback;
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === 'string' && err.trim().length > 0) return err;
+  if (typeof err === 'object') {
+    if ('message' in err && typeof (err as { message: unknown }).message === 'string') {
+      return (err as { message: string }).message;
+    }
+    try {
+      const json = JSON.stringify(err);
+      if (json !== '{}') return json;
+    } catch {
+      // ignore
+    }
+  }
+  return String(err) || fallback;
+}
+
 export function useAgentSync(
   project: Project | null,
   tasks: Task[],
@@ -35,6 +53,10 @@ export function useAgentSync(
   const [isImporting, setIsImporting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   const [auditSummary, setAuditSummary] = useState<{
     count: number;
@@ -113,7 +135,7 @@ export function useAgentSync(
       await refreshAgentEntries();
     } catch (err: unknown) {
       console.error('Failed to export to agent', err);
-      setError(err instanceof Error ? err.message : 'Unknown error during export');
+      setError(extractErrorMessage(err, 'Failed to export tasks to AI agent'));
     } finally {
       setIsExporting(false);
     }
@@ -154,7 +176,7 @@ export function useAgentSync(
       }
     } catch (err: unknown) {
       console.error('Failed to scan agent directory for changes', err);
-      setError(err instanceof Error ? err.message : 'Unknown error during scan');
+      setError(extractErrorMessage(err, 'Failed to scan agent directory for changes'));
     } finally {
       setIsScanning(false);
     }
@@ -200,7 +222,7 @@ export function useAgentSync(
       setAgentDiff(null);
     } catch (err: unknown) {
       console.error('Failed to apply agent changes', err);
-      setError(err instanceof Error ? err.message : 'Unknown error during apply');
+      setError(extractErrorMessage(err, 'Failed to apply agent changes'));
     } finally {
       setIsImporting(false);
     }
@@ -226,7 +248,7 @@ export function useAgentSync(
       return result;
     } catch (err: unknown) {
       console.error('Failed to clean up archived files', err);
-      const errMsg = err instanceof Error ? err.message : 'Unknown error during cleanup';
+      const errMsg = extractErrorMessage(err, 'Failed to clean up archived files');
       setError(errMsg);
       return { movedCount: 0, errors: [errMsg] };
     } finally {
@@ -262,7 +284,7 @@ export function useAgentSync(
       return { success: true, activeCount: targetTasks.length };
     } catch (err: unknown) {
       console.error('Failed to copy context snapshot to clipboard', err);
-      const errMsg = err instanceof Error ? err.message : 'Failed to copy to clipboard';
+      const errMsg = extractErrorMessage(err, 'Failed to copy sprint context to clipboard');
       setError(errMsg);
       return { success: false, activeCount: 0 };
     }
@@ -340,7 +362,7 @@ export function useAgentSync(
       };
     } catch (err: unknown) {
       console.error('Failed to install git hook', err);
-      const errMsg = err instanceof Error ? err.message : 'Failed to install git hook';
+      const errMsg = extractErrorMessage(err, 'Failed to install git hook');
       return { success: false, message: errMsg };
     }
   };
@@ -459,6 +481,7 @@ export function useAgentSync(
     isImporting,
     isScanning,
     error,
+    clearError,
     exportToAgent,
     scanForChanges,
     confirmImport,

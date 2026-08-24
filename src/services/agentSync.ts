@@ -335,8 +335,14 @@ Create a new \`.md\` file in \`.taxon/tasks/\` with this format:
 - Filename: \`TASK-{6-char-id}-{slugified-title}.md\`
 - Generate a unique 6-character alphanumeric ID (e.g. \`a1b2c3\`)
 - Required frontmatter: \`id\`, \`title\`, \`priority\`, \`status\`
+- Recommended frontmatter: \`moduleGroup\`, \`dependsOn\` (these power the Workflow DAG view)
 - Valid priorities: \`Critical\`, \`High\`, \`Medium\`, \`Low\`
 - Valid statuses: \`To Do\`, \`In Progress\`, \`Need to Test\`, \`Done\`
+
+**Workflow Fields (Recommended)**:
+- \`moduleGroup\`: A short technical category name (e.g., "Frontend UI", "Database", "Authentication", "API"). Tasks with the same \`moduleGroup\` are visually grouped together in the Workflow DAG.
+  - **Clustering Rule**: Keep total module groups per sprint small (typically **2 to 4 module groups per sprint**, maximum 5). Group related tasks together under the same group (e.g. all auth UI, state, and services under "Authentication") rather than inventing a separate module group for each individual task.
+- \`dependsOn\`: An array of task IDs that must be completed before this task. This creates directional edges in the Workflow DAG. Reference tasks using their full ID (e.g., \`TASK-a1b2c3\` or just \`a1b2c3\`).
 
 Example Task File:
 \`\`\`markdown
@@ -347,6 +353,9 @@ priority: High
 status: To Do
 completed: false
 sprintId: 
+moduleGroup: Authentication
+dependsOn:
+  - x9y8z7
 labels:
   - frontend
   - auth
@@ -388,6 +397,21 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - IDs must be unique across all tasks/sprints in the entire database, so use truly random alphanumeric strings.
 - You can optionally set \`workspacePath\` to one of the project's Local Workspaces, and \`linkedFiles\` to an array of relative file paths within that workspace to point to specific code.
 - Version: 1.0.0
+
+### Tidying Legacy Tasks (Workflow & DAG)
+**Mandatory Step 1 for Sprints**: Before writing any code for an active sprint, you MUST inspect all tasks in that sprint. If they lack workflow metadata (\`moduleGroup\` or \`dependsOn\`), you must tidy and organize them first.
+**Scope Restriction**: Only tidy tasks within the active sprint. Do NOT modify backlog tasks or tasks outside the current sprint to avoid massive unnecessary edits.
+
+When organizing tasks:
+1. **Module Groups (\`moduleGroup\` field)**: Dynamically assign \`moduleGroup\` names based on the technical context of the task (e.g., "Frontend UI", "Database", "Authentication", "API"). **Cluster related tasks together so the sprint has only 2 to 4 module groups total**. Never create a single-use \`moduleGroup\` for just one task unless it is completely isolated.
+2. **Dependencies (\`dependsOn\` field)**: Infer logical sequential dependencies based on technical architecture. If Task A (e.g., building an API) must logically precede Task B (e.g., building the UI for that API), add Task A's ID to the \`dependsOn\` array in Task B's frontmatter.
+   Example:
+   \`\`\`yaml
+   moduleGroup: Authentication
+   dependsOn:
+     - TASK-a1b2c3
+   \`\`\`
+3. Use your best judgment to create a natural, top-to-bottom execution flow. Do not leave tasks entirely orphaned if they logically belong to a sequence.
 `;
 }
 
@@ -446,21 +470,10 @@ export async function exportProjectToAgent(
   const sprintsPath = joinPath(taxonPath, 'sprints');
   const logsPath = joinPath(taxonPath, 'logs');
 
-  const taxonExists = await exists(taxonPath).catch(() => false);
-  if (taxonExists) {
-    const tasksExists = await exists(tasksPath).catch(() => false);
-    if (tasksExists) await remove(tasksPath, { recursive: true }).catch(console.error);
-    const sprintsExists = await exists(sprintsPath).catch(() => false);
-    if (sprintsExists) await remove(sprintsPath, { recursive: true }).catch(console.error);
-    const logsExists = await exists(logsPath).catch(() => false);
-    if (logsExists) await remove(logsPath, { recursive: true }).catch(console.error);
-  } else {
-    await mkdir(taxonPath, { recursive: true });
-  }
-
-  await mkdir(tasksPath, { recursive: true });
-  await mkdir(sprintsPath, { recursive: true });
-  await mkdir(logsPath, { recursive: true });
+  await mkdir(taxonPath, { recursive: true }).catch(() => {});
+  await mkdir(tasksPath, { recursive: true }).catch(() => {});
+  await mkdir(sprintsPath, { recursive: true }).catch(() => {});
+  await mkdir(logsPath, { recursive: true }).catch(() => {});
 
   const projectTasks = tasks.filter(
     (t) => t.projectId === project.id && !t.archived && !t.completed && t.status !== 'Done',
@@ -479,11 +492,37 @@ export async function exportProjectToAgent(
     exportedTaskCount++;
   }
 
+  // Clean up obsolete task files in .taxon/tasks
+  const existingTaskEntries = await readDir(tasksPath).catch(() => []);
+  const validTaskFiles = new Set(projectTasks.map((t) => taskFilename(t)));
+  for (const entry of existingTaskEntries) {
+    if (
+      !entry.isDirectory &&
+      entry.name.toLowerCase().endsWith('.md') &&
+      !validTaskFiles.has(entry.name)
+    ) {
+      await remove(joinPath(tasksPath, entry.name)).catch(() => {});
+    }
+  }
+
   let exportedSprintCount = 0;
   for (const sprint of projectSprints) {
     const filePath = joinPath(sprintsPath, sprintFilename(sprint));
     await writeTextFile(filePath, sprintToMarkdown(sprint, projectTasks));
     exportedSprintCount++;
+  }
+
+  // Clean up obsolete sprint files in .taxon/sprints
+  const existingSprintEntries = await readDir(sprintsPath).catch(() => []);
+  const validSprintFiles = new Set(projectSprints.map((s) => sprintFilename(s)));
+  for (const entry of existingSprintEntries) {
+    if (
+      !entry.isDirectory &&
+      entry.name.toLowerCase().endsWith('.md') &&
+      !validSprintFiles.has(entry.name)
+    ) {
+      await remove(joinPath(sprintsPath, entry.name)).catch(() => {});
+    }
   }
 
   // Export Daily Work Logs to Second Brain
@@ -551,25 +590,40 @@ export async function scanAgentDirectory(
     return { tasks, sprints, warnings };
   }
 
-  const seenTaskIds = new Set<string>();
+  const seenTaskIds = new Map<string, { task: Task; filename: string }>();
   const tasksExists = await exists(tasksPath).catch(() => false);
   if (tasksExists) {
     const entries = await readDir(tasksPath).catch(() => []);
-    // Sort to make the first file deterministic (alphabetical)
     entries.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const entry of entries) {
       if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
         try {
-          const content = await readTextFile(joinPath(tasksPath, entry.name));
+          const filePath = joinPath(tasksPath, entry.name);
+          const content = await readTextFile(filePath);
           const task = markdownToTask(content, projectId);
+          const canonicalName = taskFilename(task);
+
           if (seenTaskIds.has(task.id)) {
-            warnings.push(
-              `Duplicate task ID '${task.id}' found — using first found, skipping ${entry.name}`,
-            );
+            const existing = seenTaskIds.get(task.id)!;
+            // If current file is the canonical name, replace the stale one and remove stale file from disk
+            if (entry.name === canonicalName && existing.filename !== canonicalName) {
+              await remove(joinPath(tasksPath, existing.filename)).catch(() => {});
+              seenTaskIds.set(task.id, { task, filename: entry.name });
+              const idx = tasks.findIndex((t) => t.id === task.id);
+              if (idx !== -1) tasks[idx] = task;
+            } else if (existing.filename === canonicalName) {
+              // Existing is canonical, entry is stale — silently clean up stale file
+              await remove(filePath).catch(() => {});
+            } else {
+              warnings.push(
+                `Duplicate task ID '${task.id}' found — using first found, skipping ${entry.name}`,
+              );
+            }
             continue;
           }
-          seenTaskIds.add(task.id);
+
+          seenTaskIds.set(task.id, { task, filename: entry.name });
           tasks.push(task);
         } catch {
           warnings.push(`Failed to parse task file: ${entry.name}`);
@@ -578,7 +632,7 @@ export async function scanAgentDirectory(
     }
   }
 
-  const seenSprintIds = new Set<string>();
+  const seenSprintIds = new Map<string, { sprint: Sprint; filename: string }>();
   const sprintsExists = await exists(sprintsPath).catch(() => false);
   if (sprintsExists) {
     const entries = await readDir(sprintsPath).catch(() => []);
@@ -587,15 +641,29 @@ export async function scanAgentDirectory(
     for (const entry of entries) {
       if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
         try {
-          const content = await readTextFile(joinPath(sprintsPath, entry.name));
+          const filePath = joinPath(sprintsPath, entry.name);
+          const content = await readTextFile(filePath);
           const sprint = markdownToSprint(content, projectId);
+          const canonicalName = sprintFilename(sprint);
+
           if (seenSprintIds.has(sprint.id)) {
-            warnings.push(
-              `Duplicate sprint ID '${sprint.id}' found — using first found, skipping ${entry.name}`,
-            );
+            const existing = seenSprintIds.get(sprint.id)!;
+            if (entry.name === canonicalName && existing.filename !== canonicalName) {
+              await remove(joinPath(sprintsPath, existing.filename)).catch(() => {});
+              seenSprintIds.set(sprint.id, { sprint, filename: entry.name });
+              const idx = sprints.findIndex((s) => s.id === sprint.id);
+              if (idx !== -1) sprints[idx] = sprint;
+            } else if (existing.filename === canonicalName) {
+              await remove(filePath).catch(() => {});
+            } else {
+              warnings.push(
+                `Duplicate sprint ID '${sprint.id}' found — using first found, skipping ${entry.name}`,
+              );
+            }
             continue;
           }
-          seenSprintIds.add(sprint.id);
+
+          seenSprintIds.set(sprint.id, { sprint, filename: entry.name });
           sprints.push(sprint);
         } catch {
           warnings.push(`Failed to parse sprint file: ${entry.name}`);
@@ -1071,8 +1139,25 @@ export async function exportSingleTaskToAgent(task: Task, vaultPath: string): Pr
     if (!dirExists) {
       await mkdir(tasksDir, { recursive: true });
     }
-    const filePath = joinPath(tasksDir, taskFilename(task));
-    await writeTextFile(filePath, taskToMarkdown(task));
+
+    const targetName = taskFilename(task);
+    const targetPath = joinPath(tasksDir, targetName);
+    const shortId = task.id.slice(-6);
+
+    // Remove any stale files for this task (e.g. old slug or title)
+    const existingEntries = await readDir(tasksDir).catch(() => []);
+    for (const entry of existingEntries) {
+      if (entry.isDirectory || !entry.name.toLowerCase().endsWith('.md')) continue;
+      if (entry.name === targetName) continue;
+
+      const matchesPrefix =
+        entry.name.startsWith(`TASK-${shortId}-`) || entry.name.startsWith(`TASK-${task.id}-`);
+      if (matchesPrefix) {
+        await remove(joinPath(tasksDir, entry.name)).catch(() => {});
+      }
+    }
+
+    await writeTextFile(targetPath, taskToMarkdown(task));
     return true;
   } catch (err) {
     console.error('Failed to export single task to agent:', err);
@@ -1091,8 +1176,26 @@ export async function exportSingleSprintToAgent(
     if (!dirExists) {
       await mkdir(sprintsDir, { recursive: true });
     }
-    const filePath = joinPath(sprintsDir, sprintFilename(sprint));
-    await writeTextFile(filePath, sprintToMarkdown(sprint, sprintTasks));
+
+    const targetName = sprintFilename(sprint);
+    const targetPath = joinPath(sprintsDir, targetName);
+    const shortId = sprint.id.slice(-6);
+
+    // Remove any stale sprint files for this sprint
+    const existingEntries = await readDir(sprintsDir).catch(() => []);
+    for (const entry of existingEntries) {
+      if (entry.isDirectory || !entry.name.toLowerCase().endsWith('.md')) continue;
+      if (entry.name === targetName) continue;
+
+      const matchesPrefix =
+        entry.name.startsWith(`SPRINT-${shortId}-`) ||
+        entry.name.startsWith(`SPRINT-${sprint.id}-`);
+      if (matchesPrefix) {
+        await remove(joinPath(sprintsDir, entry.name)).catch(() => {});
+      }
+    }
+
+    await writeTextFile(targetPath, sprintToMarkdown(sprint, sprintTasks));
     return true;
   } catch (err) {
     console.error('Failed to export single sprint to agent:', err);

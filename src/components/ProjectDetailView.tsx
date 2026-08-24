@@ -157,6 +157,7 @@ export default function ProjectDetailView({
     isImporting,
     isScanning,
     error,
+    clearError,
     exportToAgent,
     scanForChanges,
     confirmImport,
@@ -733,7 +734,7 @@ export default function ProjectDetailView({
               />
             </div>
           ) : (
-            <div className="w-full h-[680px] rounded-xl border border-border-primary overflow-hidden shadow-xs bg-background">
+            <div className="w-full h-[760px] min-h-[680px] rounded-xl border border-border-primary overflow-hidden shadow-xs bg-background">
               <WorkflowView
                 project={project}
                 tasks={projectTasksAll.filter((t) => !t.archived)}
@@ -781,6 +782,7 @@ export default function ProjectDetailView({
                 hasVaultPath={!!project.vaultPath}
                 auditSummary={auditSummary}
                 error={error}
+                onDismissError={clearError}
                 onExport={exportToAgent}
                 onImport={handleScanForChanges}
                 onCleanUpArchived={cleanUpArchived}

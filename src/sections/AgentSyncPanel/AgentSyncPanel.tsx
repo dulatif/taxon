@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Bot,
   Check,
   ChevronDown,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   Trash2,
   UploadCloud,
+  X,
 } from 'lucide-react';
 import { useState } from 'react';
 import VaultFileTree from '../../components/VaultFileTree';
@@ -39,6 +41,7 @@ interface AgentSyncPanelProps {
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
   error?: string | null;
+  onDismissError?: () => void;
   isLiveSyncEnabled: boolean;
   onToggleLiveSync: (enabled: boolean) => void;
 }
@@ -62,6 +65,7 @@ export default function AgentSyncPanel({
   onSelectFile,
   onRefreshEntries,
   error,
+  onDismissError,
   isLiveSyncEnabled,
   onToggleLiveSync,
 }: AgentSyncPanelProps) {
@@ -71,6 +75,7 @@ export default function AgentSyncPanel({
   const [isInstallingHook, setIsInstallingHook] = useState(false);
   const [hookMessage, setHookMessage] = useState<string | null>(null);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
+  const [isErrorExpanded, setIsErrorExpanded] = useState(false);
 
   // Time formatting helper
   const getRelativeTime = (isoString: string | null) => {
@@ -162,8 +167,54 @@ export default function AgentSyncPanel({
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-xs font-mono">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg mb-4 text-xs font-mono overflow-hidden">
+          <div className="flex items-start justify-between p-3 gap-2">
+            <div className="flex items-start gap-2 min-w-0 flex-1">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <span className="font-bold block text-red-300">Sync Error</span>
+                <span className="text-red-400/90 break-words leading-relaxed">
+                  {error.length > 90 && !isErrorExpanded ? `${error.slice(0, 90)}...` : error}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {error.length > 90 && (
+                <button
+                  type="button"
+                  onClick={() => setIsErrorExpanded(!isErrorExpanded)}
+                  className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                  title={isErrorExpanded ? 'Hide details' : 'Show details'}
+                  aria-label={isErrorExpanded ? 'Hide details' : 'Show details'}
+                >
+                  {isErrorExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsErrorExpanded(false);
+                  onDismissError?.();
+                }}
+                className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-200 transition-colors cursor-pointer"
+                title="Dismiss error"
+                aria-label="Dismiss error"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          {isErrorExpanded && error.length > 90 && (
+            <div className="px-3 pb-3 pt-1 border-t border-red-500/20 bg-black/20">
+              <pre className="text-[11px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto text-red-300/90">
+                {error}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 
