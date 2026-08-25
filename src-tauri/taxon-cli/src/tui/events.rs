@@ -130,16 +130,44 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
 }
 
 fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
+    let display_items = app.get_display_task_items();
+    let task_indices: Vec<usize> = display_items
+        .iter()
+        .filter_map(|item| match item {
+            crate::tui::app::DisplayTaskItem::Task { task_index } => Some(*task_index),
+            _ => None,
+        })
+        .collect();
+
     match key.code {
         KeyCode::Up | KeyCode::Char('k') => {
-            if app.selected_task_index > 0 {
-                app.selected_task_index -= 1;
+            if !task_indices.is_empty() {
+                if let Some(pos) = task_indices.iter().position(|&idx| idx == app.selected_task_index) {
+                    if pos > 0 {
+                        app.selected_task_index = task_indices[pos - 1];
+                    } else {
+                        app.selected_task_index = *task_indices.last().unwrap();
+                    }
+                } else {
+                    app.selected_task_index = task_indices[0];
+                }
             }
         }
         KeyCode::Down | KeyCode::Char('j') => {
-            if app.selected_task_index + 1 < app.tasks.len() {
-                app.selected_task_index += 1;
+            if !task_indices.is_empty() {
+                if let Some(pos) = task_indices.iter().position(|&idx| idx == app.selected_task_index) {
+                    if pos + 1 < task_indices.len() {
+                        app.selected_task_index = task_indices[pos + 1];
+                    } else {
+                        app.selected_task_index = task_indices[0];
+                    }
+                } else {
+                    app.selected_task_index = task_indices[0];
+                }
             }
+        }
+        KeyCode::Char('g') | KeyCode::Char('v') => {
+            app.cycle_task_grouping();
         }
         KeyCode::Char(' ') => {
             app.toggle_current_task();
@@ -148,15 +176,17 @@ fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
             app.cycle_current_task_priority();
         }
         KeyCode::Char('m') => {
-            app.status_modal_open = true;
-            if let Some(t) = app.tasks.get(app.selected_task_index) {
-                app.status_modal_selected = match t.status.as_str() {
-                    "To Do" => 0,
-                    "In Progress" => 1,
-                    "Need to Test" => 2,
-                    "Done" => 3,
-                    _ => 0,
-                };
+            if !app.tasks.is_empty() {
+                app.status_modal_open = true;
+                if let Some(t) = app.tasks.get(app.selected_task_index) {
+                    app.status_modal_selected = match t.status.as_str() {
+                        "To Do" => 0,
+                        "In Progress" => 1,
+                        "Need to Test" => 2,
+                        "Done" => 3,
+                        _ => 0,
+                    };
+                }
             }
         }
         _ => {}

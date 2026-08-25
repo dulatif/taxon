@@ -17,6 +17,26 @@ pub enum Pane {
     Right,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TaskGrouping {
+    BySprint,
+    ByStatus,
+    All,
+}
+
+#[derive(Debug, Clone)]
+pub enum DisplayTaskItem {
+    Header {
+        title: String,
+        count: usize,
+        completed_count: usize,
+        is_active: bool,
+    },
+    Task {
+        task_index: usize,
+    },
+}
+
 #[derive(Debug, Clone)]
 pub struct FlattenedVaultItem {
     pub name: String,
@@ -40,6 +60,7 @@ pub struct App {
     pub tasks: Vec<Task>,
     pub sprints: Vec<Sprint>,
     pub selected_task_index: usize,
+    pub task_grouping: TaskGrouping,
 
     // Tab 2: Vault
     pub vault_entries: Vec<VaultEntry>,
@@ -121,6 +142,7 @@ impl App {
             tasks: Vec::new(),
             sprints: Vec::new(),
             selected_task_index: 0,
+            task_grouping: TaskGrouping::BySprint,
             vault_entries: Vec::new(),
             flattened_vault: Vec::new(),
             selected_vault_index: 0,
@@ -303,6 +325,137 @@ impl App {
                 }
             }
         }
+    }
+
+    pub fn get_display_task_items(&self) -> Vec<DisplayTaskItem> {
+        match self.task_grouping {
+            TaskGrouping::BySprint => {
+                let mut items = Vec::new();
+
+                // Sprints sorted: Active first, then Planned, then Completed
+                let mut sorted_sprints = self.sprints.clone();
+                sorted_sprints.sort_by(|a, b| {
+                    let order = |status: &str| match status {
+                        "Active" => 0,
+                        "Planned" => 1,
+                        "Completed" => 2,
+                        _ => 3,
+                    };
+                    order(&a.status).cmp(&order(&b.status))
+                });
+
+                for sprint in &sorted_sprints {
+                    let sprint_tasks: Vec<(usize, &Task)> = self
+                        .tasks
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, t)| t.sprint_id.as_deref() == Some(&sprint.id))
+                        .collect();
+
+                    let count = sprint_tasks.len();
+                    let completed_count = sprint_tasks.iter().filter(|(_, t)| t.completed).count();
+                    let is_active = sprint.status == "Active";
+
+                    let status_badge = match sprint.status.as_str() {
+                        "Active" => "Active",
+                        "Planned" => "Planned",
+                        "Completed" => "Completed",
+                        s => s,
+                    };
+
+                    items.push(DisplayTaskItem::Header {
+                        title: format!("🏃 {} [{}]", sprint.name, status_badge),
+                        count,
+                        completed_count,
+                        is_active,
+                    });
+
+                    for (idx, _) in sprint_tasks {
+                        items.push(DisplayTaskItem::Task { task_index: idx });
+                    }
+                }
+
+                // Backlog tasks (no sprint)
+                let backlog_tasks: Vec<(usize, &Task)> = self
+                    .tasks
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, t)| t.sprint_id.is_none() || t.sprint_id.as_deref() == Some(""))
+                    .collect();
+
+                if !backlog_tasks.is_empty() || self.sprints.is_empty() {
+                    let count = backlog_tasks.len();
+                    let completed_count = backlog_tasks.iter().filter(|(_, t)| t.completed).count();
+                    items.push(DisplayTaskItem::Header {
+                        title: "📦 Backlog / No Sprint".to_string(),
+                        count,
+                        completed_count,
+                        is_active: false,
+                    });
+                    for (idx, _) in backlog_tasks {
+                        items.push(DisplayTaskItem::Task { task_index: idx });
+                    }
+                }
+
+                items
+            }
+            TaskGrouping::ByStatus => {
+                let mut items = Vec::new();
+                let statuses = [
+                    ("📋 To Do", "To Do"),
+                    ("⚡ In Progress", "In Progress"),
+                    ("🧪 Need to Test", "Need to Test"),
+                    ("✅ Done", "Done"),
+                ];
+
+                for (label, status_key) in statuses {
+                    let group_tasks: Vec<(usize, &Task)> = self
+                        .tasks
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, t)| t.status.as_str() == status_key)
+                        .collect();
+
+                    let count = group_tasks.len();
+                    let completed_count = group_tasks.iter().filter(|(_, t)| t.completed).count();
+                    items.push(DisplayTaskItem::Header {
+                        title: label.to_string(),
+                        count,
+                        completed_count,
+                        is_active: status_key == "In Progress",
+                    });
+
+                    for (idx, _) in group_tasks {
+                        items.push(DisplayTaskItem::Task { task_index: idx });
+                    }
+                }
+
+                items
+            }
+            TaskGrouping::All => {
+                let mut items = Vec::new();
+                let count = self.tasks.len();
+                let completed_count = self.tasks.iter().filter(|t| t.completed).count();
+                items.push(DisplayTaskItem::Header {
+                    title: "📋 All Project Tasks".to_string(),
+                    count,
+                    completed_count,
+                    is_active: false,
+                });
+                for idx in 0..self.tasks.len() {
+                    items.push(DisplayTaskItem::Task { task_index: idx });
+                }
+                items
+            }
+        }
+    }
+
+    pub fn cycle_task_grouping(&mut self) {
+        self.task_grouping = match self.task_grouping {
+            TaskGrouping::BySprint => TaskGrouping::ByStatus,
+            TaskGrouping::ByStatus => TaskGrouping::All,
+            TaskGrouping::All => TaskGrouping::BySprint,
+        };
     }
 }
 

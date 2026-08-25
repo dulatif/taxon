@@ -1,4 +1,4 @@
-use crate::tui::app::{App, Pane, Tab};
+use crate::tui::app::{App, DisplayTaskItem, Pane, Tab, TaskGrouping};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -112,64 +112,104 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::DarkGray)
     };
 
-    let items: Vec<ListItem> = app
-        .tasks
-        .iter()
-        .enumerate()
-        .map(|(idx, task)| {
-            let is_selected = idx == app.selected_task_index;
-            let check_mark = if task.completed { "[✓]" } else { "[ ]" };
-            let check_color = if task.completed {
-                Color::Green
-            } else {
-                Color::DarkGray
-            };
+    let display_items = app.get_display_task_items();
+    let mut items: Vec<ListItem> = Vec::new();
 
-            let priority_color = match task.priority.as_str() {
-                "Critical" => Color::Red,
-                "High" => Color::LightRed,
-                "Medium" => Color::Yellow,
-                "Low" => Color::Blue,
-                _ => Color::White,
-            };
+    for item in &display_items {
+        match item {
+            DisplayTaskItem::Header {
+                title,
+                count,
+                completed_count,
+                is_active,
+            } => {
+                let badge = format!(" [{}/{}] ", completed_count, count);
+                let (header_fg, bg_color) = if *is_active {
+                    (Color::Cyan, Color::Rgb(20, 35, 50))
+                } else {
+                    (Color::Yellow, Color::Rgb(25, 25, 35))
+                };
 
-            let p_badge = format!("[{}]", &task.priority[..task.priority.len().min(4)]);
+                let line = Line::from(vec![
+                    Span::styled(format!("▼ {} ", title), Style::default().fg(header_fg).add_modifier(Modifier::BOLD)),
+                    Span::styled(badge, Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD)),
+                ]);
 
-            let mut spans = vec![
-                Span::styled(format!("{} ", check_mark), Style::default().fg(check_color)),
-                Span::styled(format!("{} ", p_badge), Style::default().fg(priority_color)),
-                Span::styled(
-                    task.title.clone(),
-                    if task.completed {
-                        Style::default()
-                            .fg(Color::DarkGray)
-                            .add_modifier(Modifier::CROSSED_OUT)
-                    } else if is_selected {
-                        Style::default()
-                            .fg(Color::White)
-                            .add_modifier(Modifier::BOLD)
-                    } else {
-                        Style::default().fg(Color::White)
-                    },
-                ),
-            ];
-
-            if let Some(ref mg) = task.module_group {
-                spans.push(Span::styled(
-                    format!(" ({})", mg),
-                    Style::default().fg(Color::Magenta),
-                ));
+                items.push(ListItem::new(line).style(Style::default().bg(bg_color)));
             }
+            DisplayTaskItem::Task { task_index } => {
+                if let Some(task) = app.tasks.get(*task_index) {
+                    let is_selected = *task_index == app.selected_task_index;
+                    let check_mark = if task.completed { "[✓]" } else { "[ ]" };
+                    let check_color = if task.completed {
+                        Color::Green
+                    } else {
+                        Color::DarkGray
+                    };
 
-            let style = if is_selected {
-                Style::default().bg(Color::Rgb(30, 40, 60))
-            } else {
-                Style::default()
-            };
+                    let priority_color = match task.priority.as_str() {
+                        "Critical" => Color::Red,
+                        "High" => Color::LightRed,
+                        "Medium" => Color::Yellow,
+                        "Low" => Color::Blue,
+                        _ => Color::White,
+                    };
 
-            ListItem::new(Line::from(spans)).style(style)
-        })
-        .collect();
+                    let p_badge = format!("[{}]", &task.priority[..task.priority.len().min(4)]);
+
+                    let (status_badge, status_color) = match task.status.as_str() {
+                        "To Do" => ("To Do", Color::DarkGray),
+                        "In Progress" => ("In Prog", Color::Cyan),
+                        "Need to Test" => ("Test", Color::LightYellow),
+                        "Done" => ("Done", Color::Green),
+                        s => (s, Color::White),
+                    };
+
+                    let mut spans = vec![
+                        Span::raw("  "),
+                        Span::styled(format!("{} ", check_mark), Style::default().fg(check_color)),
+                        Span::styled(format!("{} ", p_badge), Style::default().fg(priority_color)),
+                        Span::styled(format!("[{}] ", status_badge), Style::default().fg(status_color)),
+                        Span::styled(
+                            task.title.clone(),
+                            if task.completed {
+                                Style::default()
+                                    .fg(Color::DarkGray)
+                                    .add_modifier(Modifier::CROSSED_OUT)
+                            } else if is_selected {
+                                Style::default()
+                                    .fg(Color::White)
+                                    .add_modifier(Modifier::BOLD)
+                            } else {
+                                Style::default().fg(Color::White)
+                            },
+                        ),
+                    ];
+
+                    if let Some(ref mg) = task.module_group {
+                        spans.push(Span::styled(
+                            format!(" ({})", mg),
+                            Style::default().fg(Color::Magenta),
+                        ));
+                    }
+
+                    let style = if is_selected {
+                        Style::default().bg(Color::Rgb(40, 50, 75))
+                    } else {
+                        Style::default()
+                    };
+
+                    items.push(ListItem::new(Line::from(spans)).style(style));
+                }
+            }
+        }
+    }
+
+    let grouping_label = match app.task_grouping {
+        TaskGrouping::BySprint => "By Sprint",
+        TaskGrouping::ByStatus => "By Status",
+        TaskGrouping::All => "All",
+    };
 
     let list = List::new(items)
         .block(
@@ -181,9 +221,8 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
                     BorderType::Plain
                 })
                 .border_style(border_style)
-                .title(format!(" Tasks ({}) ", app.tasks.len())),
-        )
-        .highlight_symbol("▶ ");
+                .title(format!(" Tasks ({}) • Group: {} [g] ", app.tasks.len(), grouping_label)),
+        );
 
     f.render_widget(list, area);
 }
@@ -653,7 +692,7 @@ fn render_sync_right(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
-        Tab::Tasks => "[Tab] Pane  [1-3] Tabs  [Space] Toggle Done  [m] Status  [p] Priority  [P] Projects  [?] Help  [q] Quit",
+        Tab::Tasks => "[Tab] Pane  [1-3] Tabs  [g] Group (Sprint/Status)  [Space] Done  [m] Status  [p] Priority  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => "[Tab] Pane  [1-3] Tabs  [Enter] Open/Expand  [e] Edit ($EDITOR)  [j/k] Scroll  [P] Projects  [?] Help  [q] Quit",
         Tab::Sync => "[Tab] Pane  [1-3] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
     };
@@ -780,6 +819,7 @@ fn render_help_modal(f: &mut Frame) {
     • [q] / [Ctrl+C]      : Exit application
 
   Tab 1 (Tasks & Sprints):
+    • [g] / [v]           : Toggle Task Grouping (By Sprint → By Status → All)
     • [Space]             : Quick toggle task completion (Done / To Do)
     • [m]                 : Open Status Picker dialog
     • [p]                 : Cycle priority (Low → Med → High → Crit)
