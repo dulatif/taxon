@@ -705,7 +705,7 @@ fn render_status_modal(f: &mut Frame, app: &App) {
 }
 
 fn render_project_modal(f: &mut Frame, app: &App) {
-    let area = centered_rect(50, 40, f.area());
+    let area = centered_rect(65, 55, f.area());
     f.render_widget(Clear, area);
 
     let items: Vec<ListItem> = app
@@ -714,23 +714,52 @@ fn render_project_modal(f: &mut Frame, app: &App) {
         .enumerate()
         .map(|(idx, p)| {
             let is_selected = idx == app.project_modal_selected;
-            let style = if is_selected {
-                Style::default()
-                    .fg(Color::Yellow)
-                    .bg(Color::Rgb(40, 50, 70))
-                    .add_modifier(Modifier::BOLD)
+            let is_active = app.active_project_id.as_ref() == Some(&p.id);
+
+            let marker = if is_active { "● " } else { "  " };
+            let marker_style = if is_active {
+                Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+
+            let name_style = if is_selected {
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
             } else {
                 Style::default().fg(Color::White)
             };
-            ListItem::new(format!("  {} ({})  ", p.name, p.id)).style(style)
+
+            let category_str = p.category.as_deref().unwrap_or("General");
+            let progress_str = format!("{}%", p.progress.unwrap_or(0));
+            let vault_str = p.vault_path.as_deref().unwrap_or("-");
+
+            let line1 = Line::from(vec![
+                Span::styled(marker, marker_style),
+                Span::styled(&p.name, name_style),
+                Span::raw("  "),
+                Span::styled(format!("[{} • {}]", category_str, progress_str), Style::default().fg(Color::Cyan)),
+            ]);
+
+            let line2 = Line::from(vec![
+                Span::raw("    📁 "),
+                Span::styled(vault_str, Style::default().fg(Color::DarkGray)),
+            ]);
+
+            let bg_style = if is_selected {
+                Style::default().bg(Color::Rgb(40, 50, 70))
+            } else {
+                Style::default()
+            };
+
+            ListItem::new(vec![line1, line2]).style(bg_style)
         })
         .collect();
 
     let list = List::new(items).block(
         Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(Color::Blue))
-            .title(" Switch Active Project [Enter / Esc] "),
+            .border_style(Style::default().fg(Color::Cyan))
+            .title(" 🌿 Switch Project [↑/↓ Navigate • Enter Select • Esc Cancel] "),
     );
     f.render_widget(list, area);
 }

@@ -77,6 +77,10 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         app.should_quit = true;
         return;
     }
+    if key.modifiers.contains(KeyModifiers::CONTROL) && (key.code == KeyCode::Char('p') || key.code == KeyCode::Char('P')) {
+        app.project_modal_open = true;
+        return;
+    }
 
     match key.code {
         KeyCode::Char('q') => {
@@ -189,6 +193,9 @@ fn handle_vault_tab(app: &mut App, key: KeyEvent) {
                 }
             }
         }
+        KeyCode::Char('p') => {
+            app.project_modal_open = true;
+        }
         _ => {}
     }
 }
@@ -218,6 +225,9 @@ fn handle_sync_tab(app: &mut App, key: KeyEvent) {
         KeyCode::Char('s') => {
             app.reload_sync();
             app.sync_status_message = Some("Diff refreshed.".to_string());
+        }
+        KeyCode::Char('p') => {
+            app.project_modal_open = true;
         }
         _ => {}
     }
