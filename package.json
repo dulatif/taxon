@@ -21,6 +21,8 @@
     "check-all": "pnpm run format:check && pnpm run oxlint && pnpm run lint && pnpm run type-check && pnpm run test",
     "tauri": "tauri",
     "tauri:dev": "tauri dev -c src-tauri/tauri.dev.conf.json",
+    "cli:build": "cargo build --release --manifest-path src-tauri/Cargo.toml -p taxon-cli",
+    "cli:install": "cargo install --path src-tauri/taxon-cli",
     "prepare": "husky"
   },
   "dependencies": {
