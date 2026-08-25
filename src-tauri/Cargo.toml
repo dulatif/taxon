@@ -32,6 +32,8 @@ tauri-plugin-notification = "2.0.0"
 tauri-plugin-dialog = "2.0.2"
 tauri-plugin-fs = "2.0.2"
 tauri-plugin-shell = "2.0.2"
+taxon-cli = { path = "taxon-cli" }
+is-terminal = "0.4"
 tokio = { version = "1.52.3", features = ["rt", "time", "macros"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
