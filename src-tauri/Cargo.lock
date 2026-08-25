@@ -5200,6 +5200,7 @@ dependencies = [
 name = "taxon"
 version = "0.1.0"
 dependencies = [
+ "is-terminal",
  "log",
  "serde",
  "serde_json",
@@ -5212,6 +5213,7 @@ dependencies = [
  "tauri-plugin-notification",
  "tauri-plugin-shell",
  "tauri-plugin-sql",
+ "taxon-cli",
  "tokio",
 ]
 

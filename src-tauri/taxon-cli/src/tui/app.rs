@@ -24,6 +24,24 @@ pub enum TaskGrouping {
     All,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum SprintFilter {
+    All,
+    ActiveOnly,
+    PlannedOnly,
+    Specific(String),
+    BacklogOnly,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StatusFilter {
+    All,
+    InProgress,
+    ToDo,
+    NeedToTest,
+    Done,
+}
+
 #[derive(Debug, Clone)]
 pub enum DisplayTaskItem {
     Header {
@@ -61,6 +79,8 @@ pub struct App {
     pub sprints: Vec<Sprint>,
     pub selected_task_index: usize,
     pub task_grouping: TaskGrouping,
+    pub sprint_filter: SprintFilter,
+    pub status_filter: StatusFilter,
 
     // Tab 2: Vault
     pub vault_entries: Vec<VaultEntry>,
@@ -68,6 +88,8 @@ pub struct App {
     pub selected_vault_index: usize,
     pub doc_content: Option<String>,
     pub doc_scroll: usize,
+    pub vault_search_active: bool,
+    pub vault_search_query: String,
 
     // Tab 3: Sync
     pub sync_diff: Option<SyncDiff>,
@@ -79,6 +101,8 @@ pub struct App {
     pub status_modal_selected: usize,
     pub project_modal_open: bool,
     pub project_modal_selected: usize,
+    pub sprint_modal_open: bool,
+    pub sprint_modal_selected: usize,
     pub help_modal_open: bool,
 
     pub should_quit: bool,
@@ -143,11 +167,15 @@ impl App {
             sprints: Vec::new(),
             selected_task_index: 0,
             task_grouping: TaskGrouping::BySprint,
+            sprint_filter: SprintFilter::All,
+            status_filter: StatusFilter::All,
             vault_entries: Vec::new(),
             flattened_vault: Vec::new(),
             selected_vault_index: 0,
             doc_content: None,
             doc_scroll: 0,
+            vault_search_active: false,
+            vault_search_query: String::new(),
             sync_diff: None,
             selected_diff_index: 0,
             sync_status_message: None,
@@ -155,6 +183,8 @@ impl App {
             status_modal_selected: 0,
             project_modal_open: false,
             project_modal_selected: 0,
+            sprint_modal_open: false,
+            sprint_modal_selected: 0,
             help_modal_open: false,
             should_quit: false,
             suspend_for_editor: None,
@@ -203,8 +233,9 @@ impl App {
         if let Some(ref vp) = self.active_vault_path {
             if let Ok(entries) = scan_vault(vp) {
                 self.vault_entries = entries;
+                let filtered = filter_vault_entries(&self.vault_entries, &self.vault_search_query);
                 let mut flat = Vec::new();
-                flatten_entries(&self.vault_entries, 0, &mut flat);
+                flatten_entries(&filtered, 0, &mut flat);
                 self.flattened_vault = flat;
 
                 if self.selected_vault_index >= self.flattened_vault.len() && !self.flattened_vault.is_empty() {
@@ -328,11 +359,54 @@ impl App {
     }
 
     pub fn get_display_task_items(&self) -> Vec<DisplayTaskItem> {
+        let is_status_matched = |task: &Task| -> bool {
+            match self.status_filter {
+                StatusFilter::All => true,
+                StatusFilter::InProgress => task.status == "In Progress",
+                StatusFilter::ToDo => task.status == "To Do",
+                StatusFilter::NeedToTest => task.status == "Need to Test",
+                StatusFilter::Done => task.status == "Done",
+            }
+        };
+
+        let is_sprint_matched = |task: &Task| -> bool {
+            match &self.sprint_filter {
+                SprintFilter::All => true,
+                SprintFilter::ActiveOnly => {
+                    let active_ids: Vec<&str> = self
+                        .sprints
+                        .iter()
+                        .filter(|s| s.status == "Active")
+                        .map(|s| s.id.as_str())
+                        .collect();
+                    task.sprint_id
+                        .as_deref()
+                        .map(|id| active_ids.contains(&id))
+                        .unwrap_or(false)
+                }
+                SprintFilter::PlannedOnly => {
+                    let planned_ids: Vec<&str> = self
+                        .sprints
+                        .iter()
+                        .filter(|s| s.status == "Planned")
+                        .map(|s| s.id.as_str())
+                        .collect();
+                    task.sprint_id
+                        .as_deref()
+                        .map(|id| planned_ids.contains(&id))
+                        .unwrap_or(false)
+                }
+                SprintFilter::Specific(sid) => task.sprint_id.as_deref() == Some(sid.as_str()),
+                SprintFilter::BacklogOnly => {
+                    task.sprint_id.is_none() || task.sprint_id.as_deref() == Some("")
+                }
+            }
+        };
+
         match self.task_grouping {
             TaskGrouping::BySprint => {
                 let mut items = Vec::new();
 
-                // Sprints sorted: Active first, then Planned, then Completed
                 let mut sorted_sprints = self.sprints.clone();
                 sorted_sprints.sort_by(|a, b| {
                     let order = |status: &str| match status {
@@ -345,11 +419,24 @@ impl App {
                 });
 
                 for sprint in &sorted_sprints {
+                    let sprint_filter_allows = match &self.sprint_filter {
+                        SprintFilter::All => true,
+                        SprintFilter::ActiveOnly => sprint.status == "Active",
+                        SprintFilter::PlannedOnly => sprint.status == "Planned",
+                        SprintFilter::Specific(sid) => &sprint.id == sid,
+                        SprintFilter::BacklogOnly => false,
+                    };
+                    if !sprint_filter_allows {
+                        continue;
+                    }
+
                     let sprint_tasks: Vec<(usize, &Task)> = self
                         .tasks
                         .iter()
                         .enumerate()
-                        .filter(|(_, t)| t.sprint_id.as_deref() == Some(&sprint.id))
+                        .filter(|(_, t)| {
+                            t.sprint_id.as_deref() == Some(&sprint.id) && is_status_matched(t)
+                        })
                         .collect();
 
                     let count = sprint_tasks.len();
@@ -375,25 +462,34 @@ impl App {
                     }
                 }
 
-                // Backlog tasks (no sprint)
-                let backlog_tasks: Vec<(usize, &Task)> = self
-                    .tasks
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, t)| t.sprint_id.is_none() || t.sprint_id.as_deref() == Some(""))
-                    .collect();
+                let backlog_filter_allows = match &self.sprint_filter {
+                    SprintFilter::All | SprintFilter::BacklogOnly => true,
+                    _ => false,
+                };
 
-                if !backlog_tasks.is_empty() || self.sprints.is_empty() {
-                    let count = backlog_tasks.len();
-                    let completed_count = backlog_tasks.iter().filter(|(_, t)| t.completed).count();
-                    items.push(DisplayTaskItem::Header {
-                        title: "📦 Backlog / No Sprint".to_string(),
-                        count,
-                        completed_count,
-                        is_active: false,
-                    });
-                    for (idx, _) in backlog_tasks {
-                        items.push(DisplayTaskItem::Task { task_index: idx });
+                if backlog_filter_allows {
+                    let backlog_tasks: Vec<(usize, &Task)> = self
+                        .tasks
+                        .iter()
+                        .enumerate()
+                        .filter(|(_, t)| {
+                            (t.sprint_id.is_none() || t.sprint_id.as_deref() == Some(""))
+                                && is_status_matched(t)
+                        })
+                        .collect();
+
+                    if !backlog_tasks.is_empty() || (self.sprints.is_empty() && self.sprint_filter == SprintFilter::All) {
+                        let count = backlog_tasks.len();
+                        let completed_count = backlog_tasks.iter().filter(|(_, t)| t.completed).count();
+                        items.push(DisplayTaskItem::Header {
+                            title: "📦 Backlog / No Sprint".to_string(),
+                            count,
+                            completed_count,
+                            is_active: false,
+                        });
+                        for (idx, _) in backlog_tasks {
+                            items.push(DisplayTaskItem::Task { task_index: idx });
+                        }
                     }
                 }
 
@@ -402,18 +498,22 @@ impl App {
             TaskGrouping::ByStatus => {
                 let mut items = Vec::new();
                 let statuses = [
-                    ("📋 To Do", "To Do"),
-                    ("⚡ In Progress", "In Progress"),
-                    ("🧪 Need to Test", "Need to Test"),
-                    ("✅ Done", "Done"),
+                    ("📋 To Do", "To Do", StatusFilter::ToDo),
+                    ("⚡ In Progress", "In Progress", StatusFilter::InProgress),
+                    ("🧪 Need to Test", "Need to Test", StatusFilter::NeedToTest),
+                    ("✅ Done", "Done", StatusFilter::Done),
                 ];
 
-                for (label, status_key) in statuses {
+                for (label, status_key, s_filter) in statuses {
+                    if self.status_filter != StatusFilter::All && self.status_filter != s_filter {
+                        continue;
+                    }
+
                     let group_tasks: Vec<(usize, &Task)> = self
                         .tasks
                         .iter()
                         .enumerate()
-                        .filter(|(_, t)| t.status.as_str() == status_key)
+                        .filter(|(_, t)| t.status.as_str() == status_key && is_sprint_matched(t))
                         .collect();
 
                     let count = group_tasks.len();
@@ -434,15 +534,27 @@ impl App {
             }
             TaskGrouping::All => {
                 let mut items = Vec::new();
-                let count = self.tasks.len();
-                let completed_count = self.tasks.iter().filter(|t| t.completed).count();
+                let matching_tasks: Vec<usize> = self
+                    .tasks
+                    .iter()
+                    .enumerate()
+                    .filter(|(_, t)| is_status_matched(t) && is_sprint_matched(t))
+                    .map(|(idx, _)| idx)
+                    .collect();
+
+                let count = matching_tasks.len();
+                let completed_count = matching_tasks
+                    .iter()
+                    .filter(|&&idx| self.tasks[idx].completed)
+                    .count();
+
                 items.push(DisplayTaskItem::Header {
-                    title: "📋 All Project Tasks".to_string(),
+                    title: "📋 Filtered Tasks".to_string(),
                     count,
                     completed_count,
                     is_active: false,
                 });
-                for idx in 0..self.tasks.len() {
+                for idx in matching_tasks {
                     items.push(DisplayTaskItem::Task { task_index: idx });
                 }
                 items
@@ -457,6 +569,74 @@ impl App {
             TaskGrouping::All => TaskGrouping::BySprint,
         };
     }
+
+    pub fn cycle_sprint_filter(&mut self) {
+        self.sprint_filter = match &self.sprint_filter {
+            SprintFilter::All => SprintFilter::ActiveOnly,
+            SprintFilter::ActiveOnly => SprintFilter::PlannedOnly,
+            SprintFilter::PlannedOnly => SprintFilter::BacklogOnly,
+            SprintFilter::BacklogOnly | SprintFilter::Specific(_) => SprintFilter::All,
+        };
+    }
+
+    pub fn cycle_status_filter(&mut self) {
+        self.status_filter = match self.status_filter {
+            StatusFilter::All => StatusFilter::InProgress,
+            StatusFilter::InProgress => StatusFilter::ToDo,
+            StatusFilter::ToDo => StatusFilter::NeedToTest,
+            StatusFilter::NeedToTest => StatusFilter::Done,
+            StatusFilter::Done => StatusFilter::All,
+        };
+    }
+
+    pub fn cycle_tab_forward(&mut self) {
+        self.active_tab = match self.active_tab {
+            Tab::Tasks => Tab::Vault,
+            Tab::Vault => Tab::Sync,
+            Tab::Sync => Tab::Tasks,
+        };
+    }
+
+    pub fn cycle_tab_backward(&mut self) {
+        self.active_tab = match self.active_tab {
+            Tab::Tasks => Tab::Sync,
+            Tab::Vault => Tab::Tasks,
+            Tab::Sync => Tab::Vault,
+        };
+    }
+}
+
+fn filter_vault_entries(entries: &[VaultEntry], query: &str) -> Vec<VaultEntry> {
+    if query.trim().is_empty() {
+        return entries.to_vec();
+    }
+    let q = query.to_lowercase();
+    let mut out = Vec::new();
+
+    for entry in entries {
+        if entry.is_directory {
+            let filtered_children = entry
+                .children
+                .as_ref()
+                .map(|children| filter_vault_entries(children, query))
+                .unwrap_or_default();
+
+            let matches_self = entry.name.to_lowercase().contains(&q);
+            if matches_self || !filtered_children.is_empty() {
+                let mut cloned = entry.clone();
+                cloned.children = if matches_self && filtered_children.is_empty() {
+                    entry.children.clone()
+                } else {
+                    Some(filtered_children)
+                };
+                out.push(cloned);
+            }
+        } else if entry.name.to_lowercase().contains(&q) {
+            out.push(entry.clone());
+        }
+    }
+
+    out
 }
 
 fn flatten_entries(entries: &[VaultEntry], depth: usize, out: &mut Vec<FlattenedVaultItem>) {

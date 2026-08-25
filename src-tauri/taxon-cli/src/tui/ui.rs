@@ -1,4 +1,4 @@
-use crate::tui::app::{App, DisplayTaskItem, Pane, Tab, TaskGrouping};
+use crate::tui::app::{App, DisplayTaskItem, Pane, SprintFilter, StatusFilter, Tab, TaskGrouping};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -25,6 +25,9 @@ pub fn render(f: &mut Frame, app: &mut App) {
 
     if app.status_modal_open {
         render_status_modal(f, app);
+    }
+    if app.sprint_modal_open {
+        render_sprint_modal(f, app);
     }
     if app.project_modal_open {
         render_project_modal(f, app);
@@ -206,9 +209,27 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
     }
 
     let grouping_label = match app.task_grouping {
-        TaskGrouping::BySprint => "By Sprint",
-        TaskGrouping::ByStatus => "By Status",
-        TaskGrouping::All => "All",
+        TaskGrouping::BySprint => "Sprint",
+        TaskGrouping::ByStatus => "Status",
+        TaskGrouping::All => "Flat",
+    };
+
+    let sprint_label = match &app.sprint_filter {
+        SprintFilter::All => "All",
+        SprintFilter::ActiveOnly => "Active",
+        SprintFilter::PlannedOnly => "Planned",
+        SprintFilter::Specific(sid) => {
+            app.sprints.iter().find(|s| &s.id == sid).map(|s| s.name.as_str()).unwrap_or(sid.as_str())
+        }
+        SprintFilter::BacklogOnly => "Backlog",
+    };
+
+    let status_label = match app.status_filter {
+        StatusFilter::All => "All",
+        StatusFilter::InProgress => "In Prog",
+        StatusFilter::ToDo => "To Do",
+        StatusFilter::NeedToTest => "Test",
+        StatusFilter::Done => "Done",
     };
 
     let list = List::new(items)
@@ -221,7 +242,10 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
                     BorderType::Plain
                 })
                 .border_style(border_style)
-                .title(format!(" Tasks ({}) • Group: {} [g] ", app.tasks.len(), grouping_label)),
+                .title(format!(
+                    " Tasks ({}) • Sprint: {} [s/S] • Status: {} [f] • Group: {} [g] ",
+                    app.tasks.len(), sprint_label, status_label, grouping_label
+                )),
         );
 
     f.render_widget(list, area);
@@ -394,6 +418,34 @@ fn render_vault_left(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::DarkGray)
     };
 
+    let (search_area, list_area) = if app.vault_search_active || !app.vault_search_query.is_empty() {
+        let chunks = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([Constraint::Length(3), Constraint::Min(0)])
+            .split(area);
+        (Some(chunks[0]), chunks[1])
+    } else {
+        (None, area)
+    };
+
+    if let Some(sa) = search_area {
+        let cursor_marker = if app.vault_search_active { "▋" } else { "" };
+        let search_text = format!(" 🔍 Search: {}{} ", app.vault_search_query, cursor_marker);
+        let search_p = Paragraph::new(search_text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_style(if app.vault_search_active {
+                        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::DarkGray)
+                    })
+                    .title(" Filter Vault [/] [Esc clear] "),
+            )
+            .style(Style::default().fg(Color::Yellow));
+        f.render_widget(search_p, sa);
+    }
+
     let items: Vec<ListItem> = app
         .flattened_vault
         .iter()
@@ -433,6 +485,12 @@ fn render_vault_left(f: &mut Frame, app: &App, area: Rect) {
         })
         .collect();
 
+    let search_indicator = if !app.vault_search_query.is_empty() {
+        format!(" (Filtered: \"{}\")", app.vault_search_query)
+    } else {
+        String::new()
+    };
+
     let list = List::new(items)
         .block(
             Block::default()
@@ -443,11 +501,11 @@ fn render_vault_left(f: &mut Frame, app: &App, area: Rect) {
                     BorderType::Plain
                 })
                 .border_style(border_style)
-                .title(" Obsidian Vault Tree "),
+                .title(format!(" Obsidian Vault ({}){} [/ Search] ", app.flattened_vault.len(), search_indicator)),
         )
         .highlight_symbol("▶ ");
 
-    f.render_widget(list, area);
+    f.render_widget(list, list_area);
 }
 
 fn render_vault_right(f: &mut Frame, app: &App, area: Rect) {
@@ -692,9 +750,13 @@ fn render_sync_right(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
-        Tab::Tasks => "[Tab] Pane  [1-3] Tabs  [g] Group (Sprint/Status)  [Space] Done  [m] Status  [p] Priority  [P] Projects  [?] Help  [q] Quit",
-        Tab::Vault => "[Tab] Pane  [1-3] Tabs  [Enter] Open/Expand  [e] Edit ($EDITOR)  [j/k] Scroll  [P] Projects  [?] Help  [q] Quit",
-        Tab::Sync => "[Tab] Pane  [1-3] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
+        Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [g] Group  [Space] Done  [m] Status  [p] Priority  [P] Projects  [?] Help  [q] Quit",
+        Tab::Vault => if app.vault_search_active {
+            "Typing Search...  [Enter] Confirm  [Esc] Clear & Exit Search"
+        } else {
+            "[Tab] Pane  [1-3]/[[/]] Tabs  [/] Search Vault  [Enter] Preview  [e] Edit ($EDITOR)  [P] Projects  [?] Help  [q] Quit"
+        },
+        Tab::Sync => "[Tab] Pane  [1-3]/[[/]] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
     };
 
     let msg = app
@@ -739,6 +801,56 @@ fn render_status_modal(f: &mut Frame, app: &App) {
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow))
             .title(" Select Status [Enter / Esc] "),
+    );
+    f.render_widget(list, area);
+}
+
+fn render_sprint_modal(f: &mut Frame, app: &App) {
+    let area = centered_rect(65, 50, f.area());
+    f.render_widget(Clear, area);
+
+    let mut options = vec![
+        ("All Sprints (Full Project)".to_string(), "Show all tasks".to_string()),
+        ("Active Sprint Only".to_string(), "Filter to active sprint tasks".to_string()),
+        ("Planned Sprints Only".to_string(), "Filter to upcoming sprints".to_string()),
+        ("Backlog (No Sprint)".to_string(), "Filter to unassigned backlog tasks".to_string()),
+    ];
+
+    for s in &app.sprints {
+        let dates = format!("{} to {}", s.start_date, s.end_date);
+        options.push((format!("🏃 {} [{}]", s.name, s.status), dates));
+    }
+
+    let items: Vec<ListItem> = options
+        .iter()
+        .enumerate()
+        .map(|(idx, (title, sub))| {
+            let is_selected = idx == app.sprint_modal_selected;
+
+            let title_style = if is_selected {
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::White)
+            };
+
+            let line1 = Line::from(Span::styled(format!("  {}  ", title), title_style));
+            let line2 = Line::from(Span::styled(format!("    {}", sub), Style::default().fg(Color::DarkGray)));
+
+            let bg_style = if is_selected {
+                Style::default().bg(Color::Rgb(40, 50, 70))
+            } else {
+                Style::default()
+            };
+
+            ListItem::new(vec![line1, line2]).style(bg_style)
+        })
+        .collect();
+
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Cyan))
+            .title(" 🏃 Switch Sprint Filter [↑/↓ Navigate • Enter Select • Esc Cancel] "),
     );
     f.render_widget(list, area);
 }
@@ -804,28 +916,35 @@ fn render_project_modal(f: &mut Frame, app: &App) {
 }
 
 fn render_help_modal(f: &mut Frame) {
-    let area = centered_rect(60, 55, f.area());
+    let area = centered_rect(65, 60, f.area());
     f.render_widget(Clear, area);
 
     let help_text = "
-  Taxon TUI Keybindings Guide:
+  Taxon TUI Keybindings & GUI Parity Guide:
 
-  Global Navigation:
+  Global Navigation & Shortcuts:
     • [1], [2], [3]       : Switch directly between Tabs (Tasks, Vault, Sync)
+    • [ [ ], [ ] ]        : Quick cycle between Tabs (matching GUI sidebar toggle)
     • [Tab]               : Toggle focus between Left and Right panes
     • [j] / [↓], [k] / [↑]: Navigate items up / down
-    • [P]                 : Open Project Picker modal
+    • [P] / [Ctrl+P]      : Open Project Switcher modal
+    • [Alt+E]             : Export DB → .taxon files (any tab)
+    • [Alt+I]             : Scan & Import .taxon files → DB (any tab)
     • [?]                 : Toggle this Help dialog
     • [q] / [Ctrl+C]      : Exit application
 
   Tab 1 (Tasks & Sprints):
-    • [g] / [v]           : Toggle Task Grouping (By Sprint → By Status → All)
+    • [s] / [Alt+S]       : Cycle Sprint filter (All → Active → Planned → Backlog)
+    • [S] (Shift+S)       : Open interactive Sprint Selector modal
+    • [f] / [Alt+F]       : Cycle Task Status filter (All → In Prog → To Do → Test → Done)
+    • [g] / [v]           : Cycle Grouping mode (By Sprint → By Status → Flat)
     • [Space]             : Quick toggle task completion (Done / To Do)
-    • [m]                 : Open Status Picker dialog
+    • [m]                 : Open Status modification dialog
     • [p]                 : Cycle priority (Low → Med → High → Crit)
 
   Tab 2 (Vault Browser):
-    • [Enter]             : Open document preview
+    • [/] / [Ctrl+F]      : Live search/filter files inside vault (Esc to clear)
+    • [Enter]             : Open / expand document preview
     • [e]                 : Open selected file in external $EDITOR
     • [j] / [k] (Right)   : Scroll document text up / down
 

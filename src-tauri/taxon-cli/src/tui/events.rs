@@ -40,6 +40,46 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         return;
     }
 
+    if app.sprint_modal_open {
+        let max_options = 4 + app.sprints.len();
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                app.sprint_modal_open = false;
+            }
+            KeyCode::Up | KeyCode::Char('k') => {
+                if app.sprint_modal_selected > 0 {
+                    app.sprint_modal_selected -= 1;
+                } else if max_options > 0 {
+                    app.sprint_modal_selected = max_options - 1;
+                }
+            }
+            KeyCode::Down | KeyCode::Char('j') => {
+                if app.sprint_modal_selected + 1 < max_options {
+                    app.sprint_modal_selected += 1;
+                } else {
+                    app.sprint_modal_selected = 0;
+                }
+            }
+            KeyCode::Enter => {
+                match app.sprint_modal_selected {
+                    0 => app.sprint_filter = crate::tui::app::SprintFilter::All,
+                    1 => app.sprint_filter = crate::tui::app::SprintFilter::ActiveOnly,
+                    2 => app.sprint_filter = crate::tui::app::SprintFilter::PlannedOnly,
+                    3 => app.sprint_filter = crate::tui::app::SprintFilter::BacklogOnly,
+                    idx => {
+                        let sprint_idx = idx - 4;
+                        if let Some(s) = app.sprints.get(sprint_idx) {
+                            app.sprint_filter = crate::tui::app::SprintFilter::Specific(s.id.clone());
+                        }
+                    }
+                }
+                app.sprint_modal_open = false;
+            }
+            _ => {}
+        }
+        return;
+    }
+
     if app.project_modal_open {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {
@@ -72,13 +112,56 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         return;
     }
 
-    // 2. Global Shortcuts
+    // 2. Vault Search Mode captures keystrokes when active
+    if app.active_tab == Tab::Vault && app.vault_search_active {
+        match key.code {
+            KeyCode::Esc => {
+                app.vault_search_active = false;
+                app.vault_search_query.clear();
+                app.reload_vault();
+                return;
+            }
+            KeyCode::Enter => {
+                app.vault_search_active = false;
+                return;
+            }
+            KeyCode::Backspace => {
+                app.vault_search_query.pop();
+                app.reload_vault();
+                return;
+            }
+            KeyCode::Char(c) => {
+                app.vault_search_query.push(c);
+                app.reload_vault();
+                return;
+            }
+            _ => return,
+        }
+    }
+
+    // 3. Global Shortcuts (Any tab)
     if key.modifiers.contains(KeyModifiers::CONTROL) && key.code == KeyCode::Char('c') {
         app.should_quit = true;
         return;
     }
     if key.modifiers.contains(KeyModifiers::CONTROL) && (key.code == KeyCode::Char('p') || key.code == KeyCode::Char('P')) {
         app.project_modal_open = true;
+        return;
+    }
+    if key.modifiers.contains(KeyModifiers::ALT) && (key.code == KeyCode::Char('e') || key.code == KeyCode::Char('E')) {
+        app.force_export();
+        return;
+    }
+    if key.modifiers.contains(KeyModifiers::ALT) && (key.code == KeyCode::Char('i') || key.code == KeyCode::Char('I')) {
+        app.force_import();
+        return;
+    }
+    if key.modifiers.contains(KeyModifiers::ALT) && (key.code == KeyCode::Char('s') || key.code == KeyCode::Char('S')) {
+        app.cycle_sprint_filter();
+        return;
+    }
+    if key.modifiers.contains(KeyModifiers::ALT) && (key.code == KeyCode::Char('f') || key.code == KeyCode::Char('F')) {
+        app.cycle_status_filter();
         return;
     }
 
@@ -91,12 +174,16 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             app.help_modal_open = true;
             return;
         }
-        KeyCode::Char('P') | KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::SHIFT) => {
+        KeyCode::Char('P') => {
             app.project_modal_open = true;
             return;
         }
-        KeyCode::Char('P') => {
-            app.project_modal_open = true;
+        KeyCode::Char('[') => {
+            app.cycle_tab_backward();
+            return;
+        }
+        KeyCode::Char(']') => {
+            app.cycle_tab_forward();
             return;
         }
         KeyCode::Char('1') => {
@@ -166,6 +253,16 @@ fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
                 }
             }
         }
+        KeyCode::Char('S') => {
+            app.sprint_modal_open = true;
+            app.sprint_modal_selected = 0;
+        }
+        KeyCode::Char('s') => {
+            app.cycle_sprint_filter();
+        }
+        KeyCode::Char('f') => {
+            app.cycle_status_filter();
+        }
         KeyCode::Char('g') | KeyCode::Char('v') => {
             app.cycle_task_grouping();
         }
@@ -195,6 +292,18 @@ fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
 
 fn handle_vault_tab(app: &mut App, key: KeyEvent) {
     match key.code {
+        KeyCode::Char('/') => {
+            app.vault_search_active = true;
+        }
+        KeyCode::Char('f') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            app.vault_search_active = true;
+        }
+        KeyCode::Esc => {
+            if !app.vault_search_query.is_empty() {
+                app.vault_search_query.clear();
+                app.reload_vault();
+            }
+        }
         KeyCode::Up | KeyCode::Char('k') => {
             if app.focused_pane == Pane::Right {
                 if app.doc_scroll > 0 {
