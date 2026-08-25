@@ -8,7 +8,7 @@ use taxon_core::db::TaxonDb;
 
 #[derive(Parser, Debug)]
 #[command(name = "taxon")]
-#[command(about = "Taxon CLI companion & interactive TUI dashboard", long_about = None)]
+#[command(version, about = "Taxon CLI companion & interactive TUI dashboard", long_about = None)]
 pub struct Cli {
     #[arg(long, global = true, help = "Path to custom Taxon SQLite database")]
     pub db: Option<PathBuf>,
