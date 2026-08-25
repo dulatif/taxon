@@ -655,7 +655,7 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
         Tab::Tasks => "[Tab] Pane  [1-3] Tabs  [Space] Toggle Done  [m] Status  [p] Priority  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => "[Tab] Pane  [1-3] Tabs  [Enter] Open/Expand  [e] Edit ($EDITOR)  [j/k] Scroll  [P] Projects  [?] Help  [q] Quit",
-        Tab::Sync => "[Tab] Pane  [1-3] Tabs  [y] Apply Sync  [e] Force Export  [i] Force Import  [s] Refresh  [?] Help  [q] Quit",
+        Tab::Sync => "[Tab] Pane  [1-3] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
     };
 
     let msg = app

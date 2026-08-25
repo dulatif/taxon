@@ -87,6 +87,10 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             app.help_modal_open = true;
             return;
         }
+        KeyCode::Char('P') | KeyCode::Char('p') if key.modifiers.contains(KeyModifiers::SHIFT) => {
+            app.project_modal_open = true;
+            return;
+        }
         KeyCode::Char('P') => {
             app.project_modal_open = true;
             return;
