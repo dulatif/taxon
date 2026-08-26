@@ -680,7 +680,7 @@ impl App {
             SprintFilter::ActiveOnly => self.sprints.iter().find(|s| s.status == "Active"),
             SprintFilter::Specific(sid) => self.sprints.iter().find(|s| &s.id == sid),
             SprintFilter::PlannedOnly => self.sprints.iter().find(|s| s.status == "Planned"),
-            _ => self.sprints.iter().find(|s| s.status == "Active"),
+            SprintFilter::All | SprintFilter::BacklogOnly => None,
         };
 
         let filter_title = match &self.sprint_filter {

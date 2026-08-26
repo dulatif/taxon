@@ -131,7 +131,7 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::DarkGray)
     };
 
-    let (sprint_opt, filter_title, total_scope_tasks, completed_scope_tasks, percentage) =
+    let (sprint_opt, _filter_title, total_scope_tasks, completed_scope_tasks, percentage) =
         app.get_sprint_banner_info();
 
     let banner_height = if sprint_opt.and_then(|s| s.goal.as_ref()).is_some() {
@@ -148,14 +148,15 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
     // 1. Top Sprint Information & Progress Card
     let mut banner_lines = Vec::new();
 
-    let mut line1_spans = Vec::new();
     if let Some(sprint) = sprint_opt {
-        line1_spans.push(Span::styled(
-            format!("🏃 {}  ", sprint.name),
-            Style::default()
-                .fg(Color::Cyan)
-                .add_modifier(Modifier::BOLD),
-        ));
+        let mut line1_spans = vec![
+            Span::styled(
+                format!("🏃 {}  ", sprint.name),
+                Style::default()
+                    .fg(Color::Cyan)
+                    .add_modifier(Modifier::BOLD),
+            ),
+        ];
 
         let status_color = match sprint.status.as_str() {
             "Active" => Color::Green,
@@ -188,23 +189,61 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
             };
             line1_spans.push(Span::styled(format!("({})", rem_text), rem_style));
         }
-    } else {
-        line1_spans.push(Span::styled(
-            filter_title.clone(),
-            Style::default()
-                .fg(Color::Yellow)
-                .add_modifier(Modifier::BOLD),
-        ));
-    }
-    banner_lines.push(Line::from(line1_spans));
 
-    if let Some(sprint) = sprint_opt {
+        banner_lines.push(Line::from(line1_spans));
+
         if let Some(ref goal) = sprint.goal {
             banner_lines.push(Line::from(vec![
                 Span::styled("🎯 Goal: ", Style::default().fg(Color::Yellow)),
                 Span::styled(goal.clone(), Style::default().fg(Color::White)),
             ]));
         }
+    } else {
+        // Non-sprint filters: Backlog, All, or empty Active/Planned
+        let (icon, label, badge, badge_color, desc) = match &app.sprint_filter {
+            crate::tui::app::SprintFilter::BacklogOnly => (
+                "📦 ",
+                "Backlog Pool",
+                "[BACKLOG]",
+                Color::Yellow,
+                "Tasks not assigned to any sprint",
+            ),
+            crate::tui::app::SprintFilter::All => (
+                "📋 ",
+                "All Project Tasks",
+                "[FULL SCOPE]",
+                Color::Cyan,
+                "All tasks across sprints & backlog",
+            ),
+            crate::tui::app::SprintFilter::PlannedOnly => (
+                "📋 ",
+                "Planned Sprints",
+                "[NO PLANNED]",
+                Color::DarkGray,
+                "No upcoming planned sprints",
+            ),
+            _ => (
+                "🏃 ",
+                "Active Sprint",
+                "[NO ACTIVE]",
+                Color::DarkGray,
+                "No active sprint running right now",
+            ),
+        };
+
+        banner_lines.push(Line::from(vec![
+            Span::styled(
+                format!("{}{}", icon, label),
+                Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw("  "),
+            Span::styled(
+                format!("{} ", badge),
+                Style::default().fg(badge_color).add_modifier(Modifier::BOLD),
+            ),
+            Span::raw(" "),
+            Span::styled(desc, Style::default().fg(Color::DarkGray)),
+        ]));
     }
 
     // Progress Bar Line
@@ -228,10 +267,16 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
         ),
     ]));
 
+    let banner_title = match &app.sprint_filter {
+        crate::tui::app::SprintFilter::BacklogOnly => " 📦 Backlog Overview [s: Cycle • S: Switch] ",
+        crate::tui::app::SprintFilter::All => " 📋 Project Overview [s: Cycle • S: Switch] ",
+        _ => " 🏃 Sprint Overview [s: Cycle • S: Switch] ",
+    };
+
     let banner_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::Cyan))
-        .title(" 🏃 Sprint Overview [s: Cycle • S: Switch] ");
+        .title(banner_title);
 
     let banner_widget = Paragraph::new(banner_lines).block(banner_block);
     f.render_widget(banner_widget, chunks[0]);
@@ -314,6 +359,16 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
         StatusFilter::Done => "Done",
     };
 
+    let sprint_label = match &app.sprint_filter {
+        crate::tui::app::SprintFilter::All => "All",
+        crate::tui::app::SprintFilter::ActiveOnly => "Active",
+        crate::tui::app::SprintFilter::PlannedOnly => "Planned",
+        crate::tui::app::SprintFilter::Specific(sid) => {
+            app.sprints.iter().find(|s| &s.id == sid).map(|s| s.name.as_str()).unwrap_or(sid.as_str())
+        }
+        crate::tui::app::SprintFilter::BacklogOnly => "Backlog",
+    };
+
     let list = List::new(items)
         .block(
             Block::default()
@@ -325,8 +380,9 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
                 })
                 .border_style(border_style)
                 .title(format!(
-                    " Tasks ({}) • Filter: {} [f] ",
+                    " Tasks ({}) • Sprint: {} [s/S] • Status: {} [f] ",
                     filtered_tasks.len(),
+                    sprint_label,
                     status_label
                 )),
         );
