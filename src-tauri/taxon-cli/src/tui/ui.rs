@@ -369,8 +369,51 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
         crate::tui::app::SprintFilter::BacklogOnly => "Backlog",
     };
 
-    let list = List::new(items)
-        .block(
+    if filtered_tasks.is_empty() {
+        let empty_text = vec![
+            Line::from(""),
+            Line::from(vec![
+                Span::styled(
+                    "  📭 No tasks found in this view",
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("  • Sprint Filter: ", Style::default().fg(Color::DarkGray)),
+                Span::styled(sprint_label, Style::default().fg(Color::Cyan)),
+            ]),
+            Line::from(vec![
+                Span::styled("  • Status Filter: ", Style::default().fg(Color::DarkGray)),
+                Span::styled(status_label, Style::default().fg(Color::Cyan)),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled("  Tip: Press ", Style::default().fg(Color::DarkGray)),
+                Span::styled("[s]", Style::default().fg(Color::Yellow)),
+                Span::styled(" to cycle sprint or ", Style::default().fg(Color::DarkGray)),
+                Span::styled("[f]", Style::default().fg(Color::Yellow)),
+                Span::styled(" to reset status to 'All'", Style::default().fg(Color::DarkGray)),
+            ]),
+        ];
+
+        let empty_widget = Paragraph::new(empty_text).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(if is_focused {
+                    BorderType::Thick
+                } else {
+                    BorderType::Plain
+                })
+                .border_style(border_style)
+                .title(format!(
+                    " Tasks (0) • Sprint: {} [s/S] • Status: {} [f] ",
+                    sprint_label, status_label
+                )),
+        );
+        f.render_widget(empty_widget, chunks[1]);
+    } else {
+        let list = List::new(items).block(
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(if is_focused {
@@ -387,7 +430,8 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
                 )),
         );
 
-    f.render_widget(list, chunks[1]);
+        f.render_widget(list, chunks[1]);
+    }
 }
 
 fn render_tasks_right(f: &mut Frame, app: &App, area: Rect) {
@@ -398,7 +442,14 @@ fn render_tasks_right(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::DarkGray)
     };
 
-    if let Some(task) = app.tasks.get(app.selected_task_index) {
+    let filtered_tasks = app.get_filtered_tasks();
+    let selected_task = filtered_tasks
+        .iter()
+        .find(|(idx, _)| *idx == app.selected_task_index)
+        .map(|(_, t)| *t)
+        .or_else(|| filtered_tasks.first().map(|(_, t)| *t));
+
+    if let Some(task) = selected_task {
         let mut lines = Vec::new();
 
         lines.push(Line::from(vec![
@@ -533,11 +584,34 @@ fn render_tasks_right(f: &mut Frame, app: &App, area: Rect) {
             .wrap(Wrap { trim: false });
         f.render_widget(paragraph, area);
     } else {
-        let empty = Paragraph::new("No task selected")
+        let empty_lines = vec![
+            Line::from(""),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled(
+                    "📄 No Task Selected",
+                    Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+                ),
+            ]),
+            Line::from(""),
+            Line::from(vec![
+                Span::styled(
+                    "Select a task from the list or switch sprint/status filters.",
+                    Style::default().fg(Color::DarkGray),
+                ),
+            ]),
+        ];
+
+        let empty = Paragraph::new(empty_lines)
             .alignment(Alignment::Center)
             .block(
                 Block::default()
                     .borders(Borders::ALL)
+                    .border_type(if is_focused {
+                        BorderType::Thick
+                    } else {
+                        BorderType::Plain
+                    })
                     .border_style(border_style)
                     .title(" Task Details Inspector "),
             );
