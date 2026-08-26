@@ -855,7 +855,21 @@ pub fn import_from_taxon_files(
     let project_md_path = taxon_dir.join("project.md");
     if project_md_path.exists() {
         if let Ok(content) = fs::read_to_string(&project_md_path) {
-            if let Ok(project) = markdown_to_project(&content) {
+            if let Ok(mut project) = markdown_to_project(&content) {
+                if let Ok(Some(existing)) = db.get_project(&project.id) {
+                    if project.vault_path.is_none() {
+                        project.vault_path = existing.vault_path;
+                    }
+                    if project.workspace_paths.is_none() {
+                        project.workspace_paths = existing.workspace_paths;
+                    }
+                    project.pinned = existing.pinned;
+                    project.pinned_sort_order = existing.pinned_sort_order;
+                } else if project.vault_path.is_none() {
+                    if let Some(parent) = taxon_dir.parent() {
+                        project.vault_path = Some(parent.to_string_lossy().to_string());
+                    }
+                }
                 let _ = db.upsert_project(&project);
                 count += 1;
             }

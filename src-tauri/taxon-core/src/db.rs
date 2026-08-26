@@ -424,18 +424,20 @@ impl TaxonDb {
 
         self.conn
             .execute(
-                "INSERT INTO projects (id, name, description, category, progress, dueDays, dueDate, sortOrder, vaultPath, workspacePaths)
-                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)
+                "INSERT INTO projects (id, name, description, category, progress, dueDays, dueDate, sortOrder, vaultPath, workspacePaths, pinned, pinnedSortOrder)
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)
                  ON CONFLICT(id) DO UPDATE SET
                     name = excluded.name,
                     description = excluded.description,
                     category = excluded.category,
                     progress = excluded.progress,
-                    dueDays = excluded.dueDays,
-                    dueDate = excluded.dueDate,
-                    sortOrder = excluded.sortOrder,
-                    vaultPath = excluded.vaultPath,
-                    workspacePaths = excluded.workspacePaths",
+                    dueDays = COALESCE(excluded.dueDays, projects.dueDays),
+                    dueDate = COALESCE(excluded.dueDate, projects.dueDate),
+                    sortOrder = COALESCE(excluded.sortOrder, projects.sortOrder),
+                    vaultPath = COALESCE(excluded.vaultPath, projects.vaultPath),
+                    workspacePaths = COALESCE(excluded.workspacePaths, projects.workspacePaths),
+                    pinned = COALESCE(excluded.pinned, projects.pinned),
+                    pinnedSortOrder = COALESCE(excluded.pinnedSortOrder, projects.pinnedSortOrder)",
                 params![
                     project.id,
                     project.name,
@@ -446,7 +448,9 @@ impl TaxonDb {
                     project.due_date,
                     project.sort_order,
                     project.vault_path,
-                    ws_json
+                    ws_json,
+                    if project.pinned { 1 } else { 0 },
+                    project.pinned_sort_order
                 ],
             )
             .map_err(|e| e.to_string())?;
