@@ -274,6 +274,11 @@ impl App {
     }
 
     pub fn toggle_current_task(&mut self) {
+        let filtered_before = self.get_filtered_tasks();
+        let current_pos = filtered_before
+            .iter()
+            .position(|(idx, _)| *idx == self.selected_task_index);
+
         if let Some(task) = self.tasks.get(self.selected_task_index) {
             let task_id = task.id.clone();
             let task_title = task.title.clone();
@@ -285,6 +290,27 @@ impl App {
                     task_title,
                     if new_completed { "Done" } else { "To Do" }
                 ));
+
+                // Move focus to next task in filtered list
+                let filtered_after = self.get_filtered_tasks();
+                if !filtered_after.is_empty() {
+                    if let Some(pos) = current_pos {
+                        let still_present = filtered_after.iter().position(|(_, t)| t.id == task_id);
+                        let next_target_pos = match still_present {
+                            Some(p) => {
+                                if p + 1 < filtered_after.len() {
+                                    p + 1
+                                } else {
+                                    p
+                                }
+                            }
+                            None => pos.min(filtered_after.len() - 1),
+                        };
+                        self.selected_task_index = filtered_after[next_target_pos].0;
+                    } else {
+                        self.selected_task_index = filtered_after[0].0;
+                    }
+                }
             }
         }
     }
