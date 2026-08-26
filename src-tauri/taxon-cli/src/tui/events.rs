@@ -147,15 +147,32 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             }
             KeyCode::Enter => {
                 app.vault_search_active = false;
+                app.load_current_doc();
+                return;
+            }
+            KeyCode::Up => {
+                if app.selected_vault_index > 0 {
+                    app.selected_vault_index -= 1;
+                    app.load_current_doc();
+                }
+                return;
+            }
+            KeyCode::Down => {
+                if app.selected_vault_index + 1 < app.flattened_vault.len() {
+                    app.selected_vault_index += 1;
+                    app.load_current_doc();
+                }
                 return;
             }
             KeyCode::Backspace => {
                 app.vault_search_query.pop();
+                app.selected_vault_index = 0;
                 app.reload_vault();
                 return;
             }
             KeyCode::Char(c) => {
                 app.vault_search_query.push(c);
+                app.selected_vault_index = 0;
                 app.reload_vault();
                 return;
             }
@@ -346,6 +363,21 @@ fn handle_vault_tab(app: &mut App, key: KeyEvent) {
                     app.suspend_for_editor = Some(item.path.clone());
                 }
             }
+        }
+        KeyCode::Backspace => {
+            if !app.vault_search_query.is_empty() {
+                app.vault_search_active = true;
+                app.vault_search_query.pop();
+                app.selected_vault_index = 0;
+                app.reload_vault();
+            }
+        }
+        KeyCode::Char(c) => {
+            // Typing any non-shortcut key automatically focuses and searches the vault
+            app.vault_search_active = true;
+            app.vault_search_query.push(c);
+            app.selected_vault_index = 0;
+            app.reload_vault();
         }
         _ => {}
     }

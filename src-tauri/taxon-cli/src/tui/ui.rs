@@ -965,9 +965,11 @@ fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
         Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [Space] Done  [m] Status  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => if app.vault_search_active {
-            "Typing Search...  [Enter] Confirm  [Esc] Clear & Exit Search"
+            "Searching Vault...  [↑/↓] Navigate  [Enter] Confirm & Preview  [Esc] Clear & Exit"
+        } else if !app.vault_search_query.is_empty() {
+            "[Tab] Pane  [j/k] Navigate  [Type] Filter  [Enter] Preview  [e] Edit  [Esc] Clear Filter  [q] Quit"
         } else {
-            "[Tab] Pane  [1-3]/[[/]] Tabs  [/] Search Vault  [Enter] Preview  [e] Edit ($EDITOR)  [P] Projects  [?] Help  [q] Quit"
+            "[Tab] Pane  [1-3]/[[/]] Tabs  [Type / /] Live Search  [j/k] Navigate  [Enter] Preview  [e] Edit  [P] Projects  [?] Help  [q] Quit"
         },
         Tab::Sync => "[Tab] Pane  [1-3]/[[/]] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
     };
