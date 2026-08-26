@@ -1,4 +1,4 @@
-use crate::tui::app::{App, DisplayTaskItem, Pane, SprintFilter, StatusFilter, Tab, TaskGrouping};
+use crate::tui::app::{App, Pane, StatusFilter, Tab};
 use ratatui::{
     layout::{Alignment, Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
@@ -107,6 +107,22 @@ fn render_body(f: &mut Frame, app: &App, area: Rect) {
 // Tab 1: Tasks & Sprints View
 // -------------------------------------------------------------
 
+fn format_days_remaining(end_date_str: &str) -> Option<(String, bool)> {
+    if let Ok(end_date) = chrono::NaiveDate::parse_from_str(end_date_str, "%Y-%m-%d") {
+        let today = chrono::Local::now().date_naive();
+        let diff = (end_date - today).num_days();
+        if diff < 0 {
+            Some((format!("Overdue by {}d", diff.abs()), true))
+        } else if diff == 0 {
+            Some(("Ends today".to_string(), false))
+        } else {
+            Some((format!("{}d remaining", diff), false))
+        }
+    } else {
+        None
+    }
+}
+
 fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
     let is_focused = app.focused_pane == Pane::Left;
     let border_style = if is_focused {
@@ -115,114 +131,180 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
         Style::default().fg(Color::DarkGray)
     };
 
-    let display_items = app.get_display_task_items();
-    let mut items: Vec<ListItem> = Vec::new();
+    let (sprint_opt, filter_title, total_scope_tasks, completed_scope_tasks, percentage) =
+        app.get_sprint_banner_info();
 
-    for item in &display_items {
-        match item {
-            DisplayTaskItem::Header {
-                title,
-                count,
-                completed_count,
-                is_active,
-            } => {
-                let badge = format!(" [{}/{}] ", completed_count, count);
-                let (header_fg, bg_color) = if *is_active {
-                    (Color::Cyan, Color::Rgb(20, 35, 50))
-                } else {
-                    (Color::Yellow, Color::Rgb(25, 25, 35))
-                };
+    let banner_height = if sprint_opt.and_then(|s| s.goal.as_ref()).is_some() {
+        6
+    } else {
+        5
+    };
 
-                let line = Line::from(vec![
-                    Span::styled(format!("▼ {} ", title), Style::default().fg(header_fg).add_modifier(Modifier::BOLD)),
-                    Span::styled(badge, Style::default().fg(Color::LightGreen).add_modifier(Modifier::BOLD)),
-                ]);
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(banner_height), Constraint::Min(0)])
+        .split(area);
 
-                items.push(ListItem::new(line).style(Style::default().bg(bg_color)));
-            }
-            DisplayTaskItem::Task { task_index } => {
-                if let Some(task) = app.tasks.get(*task_index) {
-                    let is_selected = *task_index == app.selected_task_index;
-                    let check_mark = if task.completed { "[✓]" } else { "[ ]" };
-                    let check_color = if task.completed {
-                        Color::Green
-                    } else {
-                        Color::DarkGray
-                    };
+    // 1. Top Sprint Information & Progress Card
+    let mut banner_lines = Vec::new();
 
-                    let priority_color = match task.priority.as_str() {
-                        "Critical" => Color::Red,
-                        "High" => Color::LightRed,
-                        "Medium" => Color::Yellow,
-                        "Low" => Color::Blue,
-                        _ => Color::White,
-                    };
+    let mut line1_spans = Vec::new();
+    if let Some(sprint) = sprint_opt {
+        line1_spans.push(Span::styled(
+            format!("🏃 {}  ", sprint.name),
+            Style::default()
+                .fg(Color::Cyan)
+                .add_modifier(Modifier::BOLD),
+        ));
 
-                    let p_badge = format!("[{}]", &task.priority[..task.priority.len().min(4)]);
+        let status_color = match sprint.status.as_str() {
+            "Active" => Color::Green,
+            "Planned" => Color::Blue,
+            "Completed" => Color::DarkGray,
+            _ => Color::White,
+        };
 
-                    let (status_badge, status_color) = match task.status.as_str() {
-                        "To Do" => ("To Do", Color::DarkGray),
-                        "In Progress" => ("In Prog", Color::Cyan),
-                        "Need to Test" => ("Test", Color::LightYellow),
-                        "Done" => ("Done", Color::Green),
-                        s => (s, Color::White),
-                    };
+        line1_spans.push(Span::styled(
+            format!("[{}] ", sprint.status.to_uppercase()),
+            Style::default()
+                .fg(status_color)
+                .add_modifier(Modifier::BOLD),
+        ));
 
-                    let mut spans = vec![
-                        Span::raw("  "),
-                        Span::styled(format!("{} ", check_mark), Style::default().fg(check_color)),
-                        Span::styled(format!("{} ", p_badge), Style::default().fg(priority_color)),
-                        Span::styled(format!("[{}] ", status_badge), Style::default().fg(status_color)),
-                        Span::styled(
-                            task.title.clone(),
-                            if task.completed {
-                                Style::default()
-                                    .fg(Color::DarkGray)
-                                    .add_modifier(Modifier::CROSSED_OUT)
-                            } else if is_selected {
-                                Style::default()
-                                    .fg(Color::White)
-                                    .add_modifier(Modifier::BOLD)
-                            } else {
-                                Style::default().fg(Color::White)
-                            },
-                        ),
-                    ];
+        line1_spans.push(Span::raw(" 📅 "));
+        line1_spans.push(Span::styled(
+            format!("{} → {}", sprint.start_date, sprint.end_date),
+            Style::default().fg(Color::DarkGray),
+        ));
 
-                    if let Some(ref mg) = task.module_group {
-                        spans.push(Span::styled(
-                            format!(" ({})", mg),
-                            Style::default().fg(Color::Magenta),
-                        ));
-                    }
+        if let Some((rem_text, is_overdue)) = format_days_remaining(&sprint.end_date) {
+            line1_spans.push(Span::raw("  "));
+            let rem_style = if is_overdue {
+                Style::default()
+                    .fg(Color::Red)
+                    .add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::LightYellow)
+            };
+            line1_spans.push(Span::styled(format!("({})", rem_text), rem_style));
+        }
+    } else {
+        line1_spans.push(Span::styled(
+            filter_title.clone(),
+            Style::default()
+                .fg(Color::Yellow)
+                .add_modifier(Modifier::BOLD),
+        ));
+    }
+    banner_lines.push(Line::from(line1_spans));
 
-                    let style = if is_selected {
-                        Style::default().bg(Color::Rgb(40, 50, 75))
-                    } else {
-                        Style::default()
-                    };
-
-                    items.push(ListItem::new(Line::from(spans)).style(style));
-                }
-            }
+    if let Some(sprint) = sprint_opt {
+        if let Some(ref goal) = sprint.goal {
+            banner_lines.push(Line::from(vec![
+                Span::styled("🎯 Goal: ", Style::default().fg(Color::Yellow)),
+                Span::styled(goal.clone(), Style::default().fg(Color::White)),
+            ]));
         }
     }
 
-    let grouping_label = match app.task_grouping {
-        TaskGrouping::BySprint => "Sprint",
-        TaskGrouping::ByStatus => "Status",
-        TaskGrouping::All => "Flat",
-    };
+    // Progress Bar Line
+    let bar_width = 24;
+    let filled_len = (percentage * bar_width) / 100;
+    let empty_len = bar_width.saturating_sub(filled_len);
+    let bar_str = format!("[{}{}]", "■".repeat(filled_len), "·".repeat(empty_len));
 
-    let sprint_label = match &app.sprint_filter {
-        SprintFilter::All => "All",
-        SprintFilter::ActiveOnly => "Active",
-        SprintFilter::PlannedOnly => "Planned",
-        SprintFilter::Specific(sid) => {
-            app.sprints.iter().find(|s| &s.id == sid).map(|s| s.name.as_str()).unwrap_or(sid.as_str())
-        }
-        SprintFilter::BacklogOnly => "Backlog",
-    };
+    banner_lines.push(Line::from(vec![
+        Span::styled("Progress: ", Style::default().fg(Color::DarkGray)),
+        Span::styled(bar_str, Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::styled(
+            format!("  {}% ", percentage),
+            Style::default()
+                .fg(Color::LightGreen)
+                .add_modifier(Modifier::BOLD),
+        ),
+        Span::styled(
+            format!("({}/{} Tasks)", completed_scope_tasks, total_scope_tasks),
+            Style::default().fg(Color::DarkGray),
+        ),
+    ]));
+
+    let banner_block = Block::default()
+        .borders(Borders::ALL)
+        .border_style(Style::default().fg(Color::Cyan))
+        .title(" 🏃 Sprint Overview [s: Cycle • S: Switch] ");
+
+    let banner_widget = Paragraph::new(banner_lines).block(banner_block);
+    f.render_widget(banner_widget, chunks[0]);
+
+    // 2. Filtered Tasks Flat List
+    let filtered_tasks = app.get_filtered_tasks();
+
+    let items: Vec<ListItem> = filtered_tasks
+        .iter()
+        .map(|(idx, task)| {
+            let is_selected = *idx == app.selected_task_index;
+            let check_mark = if task.completed { "[✓]" } else { "[ ]" };
+            let check_color = if task.completed {
+                Color::Green
+            } else {
+                Color::DarkGray
+            };
+
+            let priority_color = match task.priority.as_str() {
+                "Critical" => Color::Red,
+                "High" => Color::LightRed,
+                "Medium" => Color::Yellow,
+                "Low" => Color::Blue,
+                _ => Color::White,
+            };
+
+            let p_badge = format!("[{}]", &task.priority[..task.priority.len().min(4)]);
+
+            let (status_badge, status_color) = match task.status.as_str() {
+                "To Do" => ("To Do", Color::DarkGray),
+                "In Progress" => ("In Prog", Color::Cyan),
+                "Need to Test" => ("Test", Color::LightYellow),
+                "Done" => ("Done", Color::Green),
+                s => (s, Color::White),
+            };
+
+            let mut spans = vec![
+                Span::raw(" "),
+                Span::styled(format!("{} ", check_mark), Style::default().fg(check_color)),
+                Span::styled(format!("{} ", p_badge), Style::default().fg(priority_color)),
+                Span::styled(format!("[{}] ", status_badge), Style::default().fg(status_color)),
+                Span::styled(
+                    task.title.clone(),
+                    if task.completed {
+                        Style::default()
+                            .fg(Color::DarkGray)
+                            .add_modifier(Modifier::CROSSED_OUT)
+                    } else if is_selected {
+                        Style::default()
+                            .fg(Color::White)
+                            .add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::White)
+                    },
+                ),
+            ];
+
+            if let Some(ref mg) = task.module_group {
+                spans.push(Span::styled(
+                    format!(" ({})", mg),
+                    Style::default().fg(Color::Magenta),
+                ));
+            }
+
+            let style = if is_selected {
+                Style::default().bg(Color::Rgb(40, 50, 75))
+            } else {
+                Style::default()
+            };
+
+            ListItem::new(Line::from(spans)).style(style)
+        })
+        .collect();
 
     let status_label = match app.status_filter {
         StatusFilter::All => "All",
@@ -243,12 +325,13 @@ fn render_tasks_left(f: &mut Frame, app: &App, area: Rect) {
                 })
                 .border_style(border_style)
                 .title(format!(
-                    " Tasks ({}) • Sprint: {} [s/S] • Status: {} [f] • Group: {} [g] ",
-                    app.tasks.len(), sprint_label, status_label, grouping_label
+                    " Tasks ({}) • Filter: {} [f] ",
+                    filtered_tasks.len(),
+                    status_label
                 )),
         );
 
-    f.render_widget(list, area);
+    f.render_widget(list, chunks[1]);
 }
 
 fn render_tasks_right(f: &mut Frame, app: &App, area: Rect) {
@@ -750,7 +833,7 @@ fn render_sync_right(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
-        Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [g] Group  [Space] Done  [m] Status  [P] Projects  [?] Help  [q] Quit",
+        Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [Space] Done  [m] Status  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => if app.vault_search_active {
             "Typing Search...  [Enter] Confirm  [Esc] Clear & Exit Search"
         } else {

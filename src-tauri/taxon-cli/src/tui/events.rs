@@ -241,14 +241,8 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
 }
 
 fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
-    let display_items = app.get_display_task_items();
-    let task_indices: Vec<usize> = display_items
-        .iter()
-        .filter_map(|item| match item {
-            crate::tui::app::DisplayTaskItem::Task { task_index } => Some(*task_index),
-            _ => None,
-        })
-        .collect();
+    let filtered_tasks = app.get_filtered_tasks();
+    let task_indices: Vec<usize> = filtered_tasks.iter().map(|(idx, _)| *idx).collect();
 
     match key.code {
         KeyCode::Up | KeyCode::Char('k') => {

@@ -168,7 +168,7 @@ impl App {
             sprints: Vec::new(),
             selected_task_index: 0,
             task_grouping: TaskGrouping::BySprint,
-            sprint_filter: SprintFilter::All,
+            sprint_filter: SprintFilter::ActiveOnly,
             status_filter: StatusFilter::All,
             vault_entries: Vec::new(),
             flattened_vault: Vec::new(),
@@ -621,6 +621,125 @@ impl App {
                     || p.vault_path.as_deref().unwrap_or("").to_lowercase().contains(&q)
             })
             .collect()
+    }
+
+    pub fn get_filtered_tasks(&self) -> Vec<(usize, &Task)> {
+        let is_status_matched = |task: &Task| -> bool {
+            match self.status_filter {
+                StatusFilter::All => true,
+                StatusFilter::InProgress => task.status == "In Progress",
+                StatusFilter::ToDo => task.status == "To Do",
+                StatusFilter::NeedToTest => task.status == "Need to Test",
+                StatusFilter::Done => task.status == "Done",
+            }
+        };
+
+        let is_sprint_matched = |task: &Task| -> bool {
+            match &self.sprint_filter {
+                SprintFilter::All => true,
+                SprintFilter::ActiveOnly => {
+                    let active_ids: Vec<&str> = self
+                        .sprints
+                        .iter()
+                        .filter(|s| s.status == "Active")
+                        .map(|s| s.id.as_str())
+                        .collect();
+                    task.sprint_id
+                        .as_deref()
+                        .map(|id| active_ids.contains(&id))
+                        .unwrap_or(false)
+                }
+                SprintFilter::PlannedOnly => {
+                    let planned_ids: Vec<&str> = self
+                        .sprints
+                        .iter()
+                        .filter(|s| s.status == "Planned")
+                        .map(|s| s.id.as_str())
+                        .collect();
+                    task.sprint_id
+                        .as_deref()
+                        .map(|id| planned_ids.contains(&id))
+                        .unwrap_or(false)
+                }
+                SprintFilter::Specific(sid) => task.sprint_id.as_deref() == Some(sid.as_str()),
+                SprintFilter::BacklogOnly => {
+                    task.sprint_id.is_none() || task.sprint_id.as_deref() == Some("")
+                }
+            }
+        };
+
+        self.tasks
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| is_status_matched(t) && is_sprint_matched(t))
+            .collect()
+    }
+
+    pub fn get_sprint_banner_info(&self) -> (Option<&Sprint>, String, usize, usize, usize) {
+        let matching_sprint = match &self.sprint_filter {
+            SprintFilter::ActiveOnly => self.sprints.iter().find(|s| s.status == "Active"),
+            SprintFilter::Specific(sid) => self.sprints.iter().find(|s| &s.id == sid),
+            SprintFilter::PlannedOnly => self.sprints.iter().find(|s| s.status == "Planned"),
+            _ => self.sprints.iter().find(|s| s.status == "Active"),
+        };
+
+        let filter_title = match &self.sprint_filter {
+            SprintFilter::All => "All Tasks (Full Project)".to_string(),
+            SprintFilter::ActiveOnly => {
+                if let Some(s) = matching_sprint {
+                    format!("🏃 {} [Active]", s.name)
+                } else {
+                    "No Active Sprint".to_string()
+                }
+            }
+            SprintFilter::PlannedOnly => {
+                if let Some(s) = matching_sprint {
+                    format!("📋 {} [Planned]", s.name)
+                } else {
+                    "Planned Sprints".to_string()
+                }
+            }
+            SprintFilter::Specific(sid) => {
+                if let Some(s) = matching_sprint {
+                    format!("🏃 {} [{}]", s.name, s.status)
+                } else {
+                    format!("Sprint {}", sid)
+                }
+            }
+            SprintFilter::BacklogOnly => "📦 Backlog (Unassigned Tasks)".to_string(),
+        };
+
+        let tasks_in_scope: Vec<&Task> = self
+            .tasks
+            .iter()
+            .filter(|t| match &self.sprint_filter {
+                SprintFilter::All => true,
+                SprintFilter::ActiveOnly => {
+                    if let Some(s) = matching_sprint {
+                        t.sprint_id.as_deref() == Some(&s.id)
+                    } else {
+                        false
+                    }
+                }
+                SprintFilter::PlannedOnly => {
+                    let planned_ids: Vec<&str> = self
+                        .sprints
+                        .iter()
+                        .filter(|s| s.status == "Planned")
+                        .map(|s| s.id.as_str())
+                        .collect();
+                    t.sprint_id.as_deref().map(|id| planned_ids.contains(&id)).unwrap_or(false)
+                }
+                SprintFilter::Specific(sid) => t.sprint_id.as_deref() == Some(sid.as_str()),
+                SprintFilter::BacklogOnly => t.sprint_id.is_none() || t.sprint_id.as_deref() == Some(""),
+            })
+            .collect();
+
+        let total = tasks_in_scope.len();
+        let completed = tasks_in_scope.iter().filter(|t| t.completed).count();
+        let percentage = if total > 0 { (completed * 100) / total } else { 0 };
+
+        (matching_sprint, filter_title, total, completed, percentage)
     }
 }
 
