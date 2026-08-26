@@ -239,6 +239,10 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             app.active_tab = Tab::Sync;
             return;
         }
+        KeyCode::Char('4') => {
+            app.active_tab = Tab::Pomodoro;
+            return;
+        }
         KeyCode::Tab => {
             app.focused_pane = match app.focused_pane {
                 Pane::Left => Pane::Right,
@@ -254,6 +258,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         Tab::Tasks => handle_tasks_tab(app, key),
         Tab::Vault => handle_vault_tab(app, key),
         Tab::Sync => handle_sync_tab(app, key),
+        Tab::Pomodoro => handle_pomodoro_tab(app, key),
     }
 }
 
@@ -303,6 +308,9 @@ fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
         }
         KeyCode::Char(' ') => {
             app.toggle_current_task();
+        }
+        KeyCode::Char('F') => {
+            app.start_focus_on_task(app.selected_task_index);
         }
         KeyCode::Char('m') => {
             if !app.tasks.is_empty() {
@@ -408,6 +416,71 @@ fn handle_sync_tab(app: &mut App, key: KeyEvent) {
         KeyCode::Char('s') => {
             app.reload_sync();
             app.sync_status_message = Some("Diff refreshed.".to_string());
+        }
+        _ => {}
+    }
+}
+
+fn handle_pomodoro_tab(app: &mut App, key: KeyEvent) {
+    match key.code {
+        KeyCode::Char(' ') => {
+            app.pomodoro.toggle();
+        }
+        KeyCode::Char('r') | KeyCode::Char('R') => {
+            app.pomodoro.reset();
+        }
+        KeyCode::Char('s') | KeyCode::Char('n') => {
+            app.pomodoro.skip();
+        }
+        KeyCode::Char('w') | KeyCode::Char('W') => {
+            app.pomodoro.switch_phase(crate::tui::app::PomodoroPhase::Work);
+        }
+        KeyCode::Char('b') | KeyCode::Char('B') => {
+            app.pomodoro.switch_phase(crate::tui::app::PomodoroPhase::ShortBreak);
+        }
+        KeyCode::Char('l') => {
+            app.pomodoro.switch_phase(crate::tui::app::PomodoroPhase::LongBreak);
+        }
+        KeyCode::Char('u') | KeyCode::Char('U') => {
+            app.pomodoro.unlink_task();
+            app.sync_status_message = Some("Unlinked task from focus timer.".to_string());
+        }
+        KeyCode::Char('L') => {
+            if let Some(task) = app.tasks.get(app.selected_task_index) {
+                app.pomodoro.link_task(task.id.clone(), task.title.clone());
+                app.sync_status_message = Some(format!("Linked task '{}' to focus timer.", task.title));
+            }
+        }
+        KeyCode::Char('c') => {
+            if let Some(ref tid) = app.pomodoro.active_task_id {
+                let tid_clone = tid.clone();
+                let _ = app.db.update_task_status(&tid_clone, "Done");
+                app.reload_tasks();
+                app.sync_status_message = Some("Marked focus task as Done!".to_string());
+            }
+        }
+        KeyCode::Char('m') => {
+            if let Some(ref tid) = app.pomodoro.active_task_id {
+                if let Some(pos) = app.tasks.iter().position(|t| &t.id == tid) {
+                    app.selected_task_index = pos;
+                    app.status_modal_open = true;
+                    if let Some(t) = app.tasks.get(pos) {
+                        app.status_modal_selected = match t.status.as_str() {
+                            "To Do" => 0,
+                            "In Progress" => 1,
+                            "Need to Test" => 2,
+                            "Done" => 3,
+                            _ => 0,
+                        };
+                    }
+                }
+            }
+        }
+        KeyCode::Char('+') | KeyCode::Char('=') => {
+            app.pomodoro.adjust_duration(1);
+        }
+        KeyCode::Char('-') | KeyCode::Char('_') => {
+            app.pomodoro.adjust_duration(-1);
         }
         _ => {}
     }

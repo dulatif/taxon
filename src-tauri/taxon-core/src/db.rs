@@ -270,6 +270,16 @@ impl TaxonDb {
         Ok(())
     }
 
+    pub fn increment_task_time_spent(&self, task_id: &str, minutes: i64) -> Result<(), String> {
+        self.conn
+            .execute(
+                "UPDATE tasks SET timeSpent = COALESCE(timeSpent, 0) + ?1 WHERE id = ?2",
+                params![minutes, task_id],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
     pub fn toggle_task_completed(&self, task_id: &str) -> Result<bool, String> {
         let current = self.get_task(task_id)?.ok_or_else(|| "Task not found".to_string())?;
         let next_completed = !current.completed;

@@ -40,14 +40,15 @@ pub fn render(f: &mut Frame, app: &mut App) {
 fn render_header(f: &mut Frame, app: &App, area: Rect) {
     let header_chunks = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Min(40), Constraint::Length(30)])
+        .constraints([Constraint::Min(45), Constraint::Length(22), Constraint::Length(28)])
         .split(area);
 
-    let tab_titles = vec!["[1] Tasks & Sprints", "[2] Vault Browser", "[3] Sync Center"];
+    let tab_titles = vec!["[1] Tasks", "[2] Vault", "[3] Sync", "[4] Pomodoro"];
     let tab_index = match app.active_tab {
         Tab::Tasks => 0,
         Tab::Vault => 1,
         Tab::Sync => 2,
+        Tab::Pomodoro => 3,
     };
 
     let tabs = Tabs::new(tab_titles)
@@ -66,25 +67,52 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
         );
     f.render_widget(tabs, header_chunks[0]);
 
-    let project_badge = Paragraph::new(format!(" Project: {} [P] ", app.active_project_name))
+    // Live Mini Pomodoro Widget
+    let pomodoro_text = if app.pomodoro.is_running {
+        format!(" {} {} ({}) ", app.pomodoro.phase.emoji(), app.pomodoro.format_time(), app.pomodoro.phase.label())
+    } else {
+        format!(" ⏸ {} ({}) ", app.pomodoro.format_time(), app.pomodoro.phase.label())
+    };
+    let pomodoro_style = if app.pomodoro.is_running {
+        Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+    let pomodoro_badge = Paragraph::new(pomodoro_text)
+        .alignment(Alignment::Center)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(if app.pomodoro.is_running {
+                    Style::default().fg(Color::Green)
+                } else {
+                    Style::default().fg(Color::DarkGray)
+                })
+                .title(" Focus [4] "),
+        )
+        .style(pomodoro_style);
+    f.render_widget(pomodoro_badge, header_chunks[1]);
+
+    let project_badge = Paragraph::new(format!(" {} [P] ", app.active_project_name))
         .alignment(Alignment::Right)
         .block(
             Block::default()
                 .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::Blue)),
+                .border_style(Style::default().fg(Color::Blue))
+                .title(" Project "),
         )
         .style(
             Style::default()
                 .fg(Color::Cyan)
                 .add_modifier(Modifier::BOLD),
         );
-    f.render_widget(project_badge, header_chunks[1]);
+    f.render_widget(project_badge, header_chunks[2]);
 }
 
 fn render_body(f: &mut Frame, app: &App, area: Rect) {
     let columns = Layout::default()
         .direction(Direction::Horizontal)
-        .constraints([Constraint::Percentage(35), Constraint::Percentage(65)])
+        .constraints([Constraint::Percentage(40), Constraint::Percentage(60)])
         .split(area);
 
     match app.active_tab {
@@ -99,6 +127,10 @@ fn render_body(f: &mut Frame, app: &App, area: Rect) {
         Tab::Sync => {
             render_sync_left(f, app, columns[0]);
             render_sync_right(f, app, columns[1]);
+        }
+        Tab::Pomodoro => {
+            render_pomodoro_left(f, app, columns[0]);
+            render_pomodoro_right(f, app, columns[1]);
         }
     }
 }
@@ -958,20 +990,455 @@ fn render_sync_right(f: &mut Frame, app: &App, area: Rect) {
 }
 
 // -------------------------------------------------------------
+// Tab 4: Pomodoro Focus Session View
+// -------------------------------------------------------------
+
+const DIGITS: [&[&str; 5]; 11] = [
+    // 0
+    &[
+        " ████ ",
+        "██  ██",
+        "██  ██",
+        "██  ██",
+        " ████ ",
+    ],
+    // 1
+    &[
+        "  ██  ",
+        " ███  ",
+        "  ██  ",
+        "  ██  ",
+        "██████",
+    ],
+    // 2
+    &[
+        " ████ ",
+        "    ██",
+        " ████ ",
+        "██    ",
+        "██████",
+    ],
+    // 3
+    &[
+        " ████ ",
+        "    ██",
+        "  ███ ",
+        "    ██",
+        " ████ ",
+    ],
+    // 4
+    &[
+        "██  ██",
+        "██  ██",
+        "██████",
+        "    ██",
+        "    ██",
+    ],
+    // 5
+    &[
+        "██████",
+        "██    ",
+        "█████ ",
+        "    ██",
+        "█████ ",
+    ],
+    // 6
+    &[
+        " ████ ",
+        "██    ",
+        "█████ ",
+        "██  ██",
+        " ████ ",
+    ],
+    // 7
+    &[
+        "██████",
+        "    ██",
+        "   ██ ",
+        "  ██  ",
+        "  ██  ",
+    ],
+    // 8
+    &[
+        " ████ ",
+        "██  ██",
+        " ████ ",
+        "██  ██",
+        " ████ ",
+    ],
+    // 9
+    &[
+        " ████ ",
+        "██  ██",
+        " █████",
+        "    ██",
+        " ████ ",
+    ],
+    // : (10)
+    &[
+        "  ",
+        "██",
+        "  ",
+        "██",
+        "  ",
+    ],
+];
+
+fn render_large_ascii_time(time_str: &str) -> Vec<String> {
+    let mut lines = vec![String::new(), String::new(), String::new(), String::new(), String::new()];
+    for ch in time_str.chars() {
+        let digit_idx = match ch {
+            '0'..='9' => (ch as usize) - ('0' as usize),
+            ':' => 10,
+            _ => continue,
+        };
+        let pattern = DIGITS[digit_idx];
+        for (row_idx, row_str) in pattern.iter().enumerate() {
+            if !lines[row_idx].is_empty() {
+                lines[row_idx].push(' ');
+            }
+            lines[row_idx].push_str(row_str);
+        }
+    }
+    lines
+}
+
+fn render_pomodoro_left(f: &mut Frame, app: &App, area: Rect) {
+    let is_focused = app.focused_pane == Pane::Left;
+    let border_style = if is_focused {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+
+    let total_secs = app.pomodoro.current_phase_total_seconds();
+    let elapsed_secs = total_secs.saturating_sub(app.pomodoro.timer_seconds);
+    let progress_pct = if total_secs > 0 {
+        (elapsed_secs * 100) / total_secs
+    } else {
+        0
+    };
+
+    let mut lines = Vec::new();
+    lines.push(Line::from(""));
+
+    // Phase selector line
+    let work_badge = if app.pomodoro.phase == crate::tui::app::PomodoroPhase::Work {
+        Span::styled(
+            format!(" [1. 🍅 Work Focus ({}m)] ", app.pomodoro.work_duration),
+            Style::default().fg(Color::Red).bg(Color::Rgb(50, 20, 20)).add_modifier(Modifier::BOLD),
+        )
+    } else {
+        Span::styled(
+            format!("  1. Work Focus ({}m)  ", app.pomodoro.work_duration),
+            Style::default().fg(Color::DarkGray),
+        )
+    };
+
+    let short_badge = if app.pomodoro.phase == crate::tui::app::PomodoroPhase::ShortBreak {
+        Span::styled(
+            format!(" [2. ☕ Short Break ({}m)] ", app.pomodoro.short_break),
+            Style::default().fg(Color::Green).bg(Color::Rgb(20, 50, 20)).add_modifier(Modifier::BOLD),
+        )
+    } else {
+        Span::styled(
+            format!("  2. Short Break ({}m)  ", app.pomodoro.short_break),
+            Style::default().fg(Color::DarkGray),
+        )
+    };
+
+    let long_badge = if app.pomodoro.phase == crate::tui::app::PomodoroPhase::LongBreak {
+        Span::styled(
+            format!(" [3. 🌴 Long Break ({}m)] ", app.pomodoro.long_break),
+            Style::default().fg(Color::Blue).bg(Color::Rgb(20, 30, 60)).add_modifier(Modifier::BOLD),
+        )
+    } else {
+        Span::styled(
+            format!("  3. Long Break ({}m)  ", app.pomodoro.long_break),
+            Style::default().fg(Color::DarkGray),
+        )
+    };
+
+    lines.push(Line::from(vec![
+        Span::raw("  "),
+        work_badge,
+        Span::raw(" "),
+        short_badge,
+        Span::raw(" "),
+        long_badge,
+    ]));
+
+    lines.push(Line::from(""));
+
+    // Large digital timer
+    let time_str = app.pomodoro.format_time();
+    let timer_color = if app.pomodoro.is_running {
+        match app.pomodoro.phase {
+            crate::tui::app::PomodoroPhase::Work => Color::Green,
+            crate::tui::app::PomodoroPhase::ShortBreak => Color::Cyan,
+            crate::tui::app::PomodoroPhase::LongBreak => Color::Blue,
+        }
+    } else {
+        Color::Yellow
+    };
+
+    if area.height >= 18 {
+        let ascii_lines = render_large_ascii_time(&time_str);
+        for l in ascii_lines {
+            lines.push(Line::from(vec![
+                Span::raw("    "),
+                Span::styled(l, Style::default().fg(timer_color).add_modifier(Modifier::BOLD)),
+            ]));
+        }
+    } else {
+        lines.push(Line::from(vec![
+            Span::raw("    "),
+            Span::styled(
+                format!("⏱ [ {} ]", time_str),
+                Style::default().fg(timer_color).add_modifier(Modifier::BOLD),
+            ),
+        ]));
+    }
+
+    lines.push(Line::from(""));
+
+    // Play/Pause State & Phase indicator
+    let state_badge = if app.pomodoro.is_running {
+        Span::styled(" ▶ RUNNING ", Style::default().fg(Color::Black).bg(Color::Green).add_modifier(Modifier::BOLD))
+    } else {
+        Span::styled(" ⏸ PAUSED ", Style::default().fg(Color::Black).bg(Color::Yellow).add_modifier(Modifier::BOLD))
+    };
+
+    let session_in_round = (app.pomodoro.completed_sessions % app.pomodoro.long_break_interval) + 1;
+    let mut dots_spans = Vec::new();
+    dots_spans.push(Span::raw(format!("  Session {}/{} : [ ", session_in_round, app.pomodoro.long_break_interval)));
+    for i in 0..app.pomodoro.long_break_interval {
+        if i < (app.pomodoro.completed_sessions % app.pomodoro.long_break_interval) {
+            dots_spans.push(Span::styled("● ", Style::default().fg(Color::Green)));
+        } else if i == (app.pomodoro.completed_sessions % app.pomodoro.long_break_interval) && app.pomodoro.is_running && app.pomodoro.phase == crate::tui::app::PomodoroPhase::Work {
+            dots_spans.push(Span::styled("● ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)));
+        } else {
+            dots_spans.push(Span::styled("○ ", Style::default().fg(Color::DarkGray)));
+        }
+    }
+    dots_spans.push(Span::raw("]"));
+
+    lines.push(Line::from(vec![
+        Span::raw("    "),
+        state_badge,
+        Span::raw("  "),
+        Span::styled(
+            format!("{} {}", app.pomodoro.phase.emoji(), app.pomodoro.phase.label()),
+            Style::default().fg(Color::White).add_modifier(Modifier::BOLD),
+        ),
+    ]));
+
+    lines.push(Line::from(dots_spans));
+    lines.push(Line::from(""));
+
+    // Visual ASCII Progress Bar
+    let bar_width = 30;
+    let filled_width = ((progress_pct as usize) * bar_width) / 100;
+    let empty_width = bar_width.saturating_sub(filled_width);
+    let bar_filled = "■".repeat(filled_width);
+    let bar_empty = "·".repeat(empty_width);
+
+    lines.push(Line::from(vec![
+        Span::raw("    Progress: ["),
+        Span::styled(bar_filled, Style::default().fg(Color::Cyan)),
+        Span::styled(bar_empty, Style::default().fg(Color::DarkGray)),
+        Span::raw(format!("] {}% ({:02}:{:02} / {:02}:{:02})",
+            progress_pct,
+            elapsed_secs / 60, elapsed_secs % 60,
+            total_secs / 60, total_secs % 60
+        )),
+    ]));
+
+    lines.push(Line::from(""));
+    lines.push(Line::from(vec![
+        Span::styled("  Quick Actions: ", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        Span::raw("[Space] Toggle  [r] Reset  [s] Skip  [w/b/l] Switch Phase  [+/-] Duration"),
+    ]));
+
+    let paragraph = Paragraph::new(lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(if is_focused { BorderType::Thick } else { BorderType::Plain })
+                .border_style(border_style)
+                .title(" 🍅 Pomodoro Focus Timer "),
+        );
+    f.render_widget(paragraph, area);
+}
+
+fn render_pomodoro_right(f: &mut Frame, app: &App, area: Rect) {
+    let is_focused = app.focused_pane == Pane::Right;
+    let border_style = if is_focused {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Percentage(55), Constraint::Percentage(45)])
+        .split(area);
+
+    // 1. Linked Task Box
+    let mut task_lines = Vec::new();
+    if let Some(task) = app.get_linked_focus_task() {
+        task_lines.push(Line::from(vec![
+            Span::styled("📌 Active Focus Task:", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+        ]));
+        task_lines.push(Line::from(""));
+        task_lines.push(Line::from(vec![
+            Span::styled(&task.title, Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+        ]));
+        task_lines.push(Line::from(""));
+
+        let p_color = match task.priority.as_str() {
+            "Critical" => Color::Red,
+            "High" => Color::LightRed,
+            "Medium" => Color::Yellow,
+            "Low" => Color::Blue,
+            _ => Color::White,
+        };
+
+        let s_color = match task.status.as_str() {
+            "Done" => Color::Green,
+            "In Progress" => Color::Yellow,
+            "Need to Test" => Color::Magenta,
+            _ => Color::DarkGray,
+        };
+
+        task_lines.push(Line::from(vec![
+            Span::raw("  ID: "),
+            Span::styled(&task.id, Style::default().fg(Color::DarkGray)),
+            Span::raw("  Priority: "),
+            Span::styled(format!("[{}]", task.priority), Style::default().fg(p_color)),
+            Span::raw("  Status: "),
+            Span::styled(format!("[{}]", task.status), Style::default().fg(s_color)),
+        ]));
+
+        if let Some(spent) = task.time_spent {
+            task_lines.push(Line::from(vec![
+                Span::raw("  Time Tracked: "),
+                Span::styled(format!("{} minutes logged", spent), Style::default().fg(Color::Cyan)),
+            ]));
+        }
+
+        if let Some(ref subtasks) = task.subtasks {
+            if !subtasks.is_empty() {
+                let done = subtasks.iter().filter(|s| s.completed).count();
+                task_lines.push(Line::from(vec![
+                    Span::raw(format!("  Subtasks ({} of {} done):", done, subtasks.len())),
+                ]));
+                for st in subtasks.iter().take(4) {
+                    let check = if st.completed { "[✓] " } else { "[ ] " };
+                    let c = if st.completed { Color::Green } else { Color::DarkGray };
+                    task_lines.push(Line::from(vec![
+                        Span::raw("    "),
+                        Span::styled(check, Style::default().fg(c)),
+                        Span::raw(&st.title),
+                    ]));
+                }
+            }
+        }
+
+        task_lines.push(Line::from(""));
+        task_lines.push(Line::from(vec![
+            Span::styled("  Task Actions: ", Style::default().fg(Color::Cyan)),
+            Span::raw("[u] Unlink  [c] Mark Done  [m] Change Status"),
+        ]));
+    } else {
+        task_lines.push(Line::from(vec![
+            Span::styled("📄 Standalone Focus Session", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+        ]));
+        task_lines.push(Line::from(""));
+        task_lines.push(Line::from("  No task linked to this timer. Running in standalone mode."));
+        task_lines.push(Line::from(""));
+        task_lines.push(Line::from("  • Press [L] to link the task currently highlighted in Tab 1."));
+        task_lines.push(Line::from("  • Or navigate to Tab [1] (Tasks) and press [F] to start focus."));
+    }
+
+    let task_p = Paragraph::new(task_lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(if is_focused { BorderType::Thick } else { BorderType::Plain })
+                .border_style(border_style)
+                .title(" Focus Task Inspector "),
+        )
+        .wrap(Wrap { trim: false });
+    f.render_widget(task_p, chunks[0]);
+
+    // 2. Focus Analytics & Settings Box
+    let mut stats_lines = Vec::new();
+    stats_lines.push(Line::from(vec![
+        Span::styled("📊 Today's Focus Summary:", Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)),
+    ]));
+    stats_lines.push(Line::from(""));
+
+    let hours = app.pomodoro.total_focus_seconds_today / 3600;
+    let mins = (app.pomodoro.total_focus_seconds_today % 3600) / 60;
+    let time_str = if hours > 0 {
+        format!("{}h {}m", hours, mins)
+    } else {
+        format!("{}m", mins)
+    };
+
+    stats_lines.push(Line::from(vec![
+        Span::raw("  • Completed Pomodoro Sessions: "),
+        Span::styled(format!("{} 🍅", app.pomodoro.completed_sessions), Style::default().fg(Color::Green).add_modifier(Modifier::BOLD)),
+    ]));
+    stats_lines.push(Line::from(vec![
+        Span::raw("  • Total Focused Time Today:    "),
+        Span::styled(time_str, Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+    ]));
+
+    let remaining_to_long = app.pomodoro.long_break_interval.saturating_sub(app.pomodoro.completed_sessions % app.pomodoro.long_break_interval);
+    stats_lines.push(Line::from(vec![
+        Span::raw("  • Next Long Break in:          "),
+        Span::styled(format!("{} session(s)", remaining_to_long), Style::default().fg(Color::Blue)),
+    ]));
+
+    stats_lines.push(Line::from(""));
+    stats_lines.push(Line::from(vec![
+        Span::styled("⚙ Phase Durations: ", Style::default().fg(Color::Cyan)),
+        Span::raw(format!("Work: {}m | Short: {}m | Long: {}m",
+            app.pomodoro.work_duration,
+            app.pomodoro.short_break,
+            app.pomodoro.long_break,
+        )),
+    ]));
+
+    let stats_p = Paragraph::new(stats_lines)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(border_style)
+                .title(" Session Analytics & Settings "),
+        )
+        .wrap(Wrap { trim: false });
+    f.render_widget(stats_p, chunks[1]);
+}
+
+// -------------------------------------------------------------
 // Footer & Modals
 // -------------------------------------------------------------
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
-        Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [Space] Done  [m] Status  [P] Projects  [?] Help  [q] Quit",
+        Tab::Tasks => "[Tab] Pane  [1-4]/[[/]] Tabs  [s/S] Sprint  [f] Status  [Space] Done  [F] Focus Task  [m] Status  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => if app.vault_search_active {
             "Searching Vault...  [↑/↓] Navigate  [Enter] Confirm & Preview  [Esc] Clear & Exit"
         } else if !app.vault_search_query.is_empty() {
             "[Tab] Pane  [j/k] Navigate  [Type] Filter  [Enter] Preview  [e] Edit  [Esc] Clear Filter  [q] Quit"
         } else {
-            "[Tab] Pane  [1-3]/[[/]] Tabs  [Type / /] Live Search  [j/k] Navigate  [Enter] Preview  [e] Edit  [P] Projects  [?] Help  [q] Quit"
+            "[Tab] Pane  [1-4]/[[/]] Tabs  [Type / /] Live Search  [j/k] Navigate  [Enter] Preview  [e] Edit  [P] Projects  [?] Help  [q] Quit"
         },
-        Tab::Sync => "[Tab] Pane  [1-3]/[[/]] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
+        Tab::Sync => "[Tab] Pane  [1-4]/[[/]] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
+        Tab::Pomodoro => "[Tab] Pane  [1-4]/[[/]] Tabs  [Space] Start/Pause  [r] Reset  [s] Skip  [w/b/l] Phase  [u] Unlink  [L] Link  [c] Done  [m] Status  [+/-] Min  [q] Quit",
     };
 
     let msg = app
@@ -1174,7 +1641,7 @@ fn render_help_modal(f: &mut Frame) {
   Taxon TUI Keybindings & GUI Parity Guide:
 
   Global Navigation & Shortcuts:
-    • [1], [2], [3]       : Switch directly between Tabs (Tasks, Vault, Sync)
+    • [1], [2], [3], [4]  : Switch directly between Tabs (Tasks, Vault, Sync, Focus)
     • [ [ ], [ ] ]        : Quick cycle between Tabs (matching GUI sidebar toggle)
     • [Tab]               : Toggle focus between Left and Right panes
     • [j] / [↓], [k] / [↑]: Navigate items up / down
@@ -1189,11 +1656,13 @@ fn render_help_modal(f: &mut Frame) {
     • [S] (Shift+S)       : Open interactive Sprint Selector modal
     • [f] / [Alt+F]       : Cycle Task Status filter (All → In Prog → To Do → Test → Done)
     • [g] / [v]           : Cycle Grouping mode (By Sprint → By Status → Flat)
-    • [Space]             : Quick toggle task completion (Done / To Do)
+    • [Space]             : Quick toggle task completion (Done / To Do) & auto-advance
+    • [F] (Shift+F)       : Start Focus / Pomodoro Session on selected task
     • [m]                 : Open Status modification dialog
 
   Tab 2 (Vault Browser):
-    • [/] / [Ctrl+F]      : Live search/filter files inside vault (Esc to clear)
+    • [Type to Search]    : Auto-filter files in vault tree (Esc to clear)
+    • [/] / [Ctrl+F]      : Focus live search bar
     • [Enter]             : Open / expand document preview
     • [e]                 : Open selected file in external $EDITOR
     • [j] / [k] (Right)   : Scroll document text up / down
@@ -1203,6 +1672,17 @@ fn render_help_modal(f: &mut Frame) {
     • [e]                 : Force Export (DB → .taxon files)
     • [i]                 : Force Import (.taxon files → DB)
     • [s]                 : Refresh diff calculation
+
+  Tab 4 (Pomodoro Focus Timer):
+    • [Space]             : Start / Pause session timer
+    • [r] / [R]           : Reset current timer
+    • [s] / [n]           : Skip to next phase (Work → Break)
+    • [w] / [b] / [l]     : Switch phase (Work 25m, Short Break 5m, Long Break 15m)
+    • [u]                 : Unlink active task
+    • [L]                 : Link highlighted task from Tab 1
+    • [c]                 : Mark linked task as Done
+    • [m]                 : Change linked task status
+    • [+] / [-]           : Adjust current phase duration by 1 minute
 
   Press [Esc] or [?] to close this help window.
 ";

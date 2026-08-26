@@ -9,6 +9,221 @@ pub enum Tab {
     Tasks,
     Vault,
     Sync,
+    Pomodoro,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PomodoroPhase {
+    Work,
+    ShortBreak,
+    LongBreak,
+}
+
+impl PomodoroPhase {
+    pub fn label(&self) -> &'static str {
+        match self {
+            PomodoroPhase::Work => "Work Focus",
+            PomodoroPhase::ShortBreak => "Short Break",
+            PomodoroPhase::LongBreak => "Long Break",
+        }
+    }
+
+    pub fn emoji(&self) -> &'static str {
+        match self {
+            PomodoroPhase::Work => "🍅",
+            PomodoroPhase::ShortBreak => "☕",
+            PomodoroPhase::LongBreak => "🌴",
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct PomodoroState {
+    pub phase: PomodoroPhase,
+    pub timer_seconds: u32,
+    pub is_running: bool,
+    pub completed_sessions: u32,
+    pub active_task_id: Option<String>,
+    pub active_task_title: Option<String>,
+
+    // Duration configurations (in minutes)
+    pub work_duration: u32,       // default 25 min
+    pub short_break: u32,         // default 5 min
+    pub long_break: u32,          // default 15 min
+    pub long_break_interval: u32, // default 4 sessions
+    pub auto_start_breaks: bool,
+    pub auto_start_pomodoros: bool,
+
+    // Timing tracking
+    pub last_tick: Option<std::time::Instant>,
+    pub total_focus_seconds_today: u64,
+    pub session_tick_counter: u32,
+}
+
+impl Default for PomodoroState {
+    fn default() -> Self {
+        Self {
+            phase: PomodoroPhase::Work,
+            timer_seconds: 25 * 60,
+            is_running: false,
+            completed_sessions: 0,
+            active_task_id: None,
+            active_task_title: None,
+            work_duration: 25,
+            short_break: 5,
+            long_break: 15,
+            long_break_interval: 4,
+            auto_start_breaks: false,
+            auto_start_pomodoros: false,
+            last_tick: None,
+            total_focus_seconds_today: 0,
+            session_tick_counter: 0,
+        }
+    }
+}
+
+impl PomodoroState {
+    pub fn current_phase_total_seconds(&self) -> u32 {
+        match self.phase {
+            PomodoroPhase::Work => self.work_duration * 60,
+            PomodoroPhase::ShortBreak => self.short_break * 60,
+            PomodoroPhase::LongBreak => self.long_break * 60,
+        }
+    }
+
+    pub fn format_time(&self) -> String {
+        let mins = self.timer_seconds / 60;
+        let secs = self.timer_seconds % 60;
+        format!("{:02}:{:02}", mins, secs)
+    }
+
+    pub fn toggle(&mut self) {
+        self.is_running = !self.is_running;
+        if self.is_running {
+            self.last_tick = Some(std::time::Instant::now());
+        } else {
+            self.last_tick = None;
+        }
+    }
+
+    pub fn reset(&mut self) {
+        self.timer_seconds = self.current_phase_total_seconds();
+        self.is_running = false;
+        self.last_tick = None;
+    }
+
+    pub fn switch_phase(&mut self, new_phase: PomodoroPhase) {
+        self.phase = new_phase;
+        self.timer_seconds = self.current_phase_total_seconds();
+        self.is_running = false;
+        self.last_tick = None;
+    }
+
+    pub fn skip(&mut self) {
+        self.last_tick = None;
+        if self.phase == PomodoroPhase::Work {
+            self.completed_sessions += 1;
+            let next_phase = if self.completed_sessions % self.long_break_interval == 0 {
+                PomodoroPhase::LongBreak
+            } else {
+                PomodoroPhase::ShortBreak
+            };
+            self.switch_phase(next_phase);
+        } else {
+            self.switch_phase(PomodoroPhase::Work);
+        }
+    }
+
+    pub fn link_task(&mut self, task_id: String, task_title: String) {
+        self.active_task_id = Some(task_id);
+        self.active_task_title = Some(task_title);
+        if self.phase != PomodoroPhase::Work {
+            self.switch_phase(PomodoroPhase::Work);
+        }
+    }
+
+    pub fn unlink_task(&mut self) {
+        self.active_task_id = None;
+        self.active_task_title = None;
+    }
+
+    pub fn adjust_duration(&mut self, delta_minutes: i32) {
+        let current_dur = match self.phase {
+            PomodoroPhase::Work => self.work_duration as i32,
+            PomodoroPhase::ShortBreak => self.short_break as i32,
+            PomodoroPhase::LongBreak => self.long_break as i32,
+        };
+        let new_dur = (current_dur + delta_minutes).max(1) as u32;
+        match self.phase {
+            PomodoroPhase::Work => self.work_duration = new_dur,
+            PomodoroPhase::ShortBreak => self.short_break = new_dur,
+            PomodoroPhase::LongBreak => self.long_break = new_dur,
+        }
+        if !self.is_running {
+            self.timer_seconds = self.current_phase_total_seconds();
+        }
+    }
+
+    pub fn tick(&mut self) -> Option<String> {
+        if !self.is_running {
+            return None;
+        }
+
+        let now = std::time::Instant::now();
+        let last = self.last_tick.unwrap_or(now);
+        let elapsed = now.duration_since(last).as_secs() as u32;
+
+        if elapsed >= 1 {
+            self.last_tick = Some(now);
+
+            if self.phase == PomodoroPhase::Work {
+                self.total_focus_seconds_today += elapsed as u64;
+                self.session_tick_counter += elapsed;
+            }
+
+            if self.timer_seconds <= elapsed {
+                let msg = self.complete_phase();
+                print!("\x07");
+                return Some(msg);
+            } else {
+                self.timer_seconds -= elapsed;
+            }
+        }
+
+        None
+    }
+
+    fn complete_phase(&mut self) -> String {
+        match self.phase {
+            PomodoroPhase::Work => {
+                self.completed_sessions += 1;
+                let next_phase = if self.completed_sessions % self.long_break_interval == 0 {
+                    PomodoroPhase::LongBreak
+                } else {
+                    PomodoroPhase::ShortBreak
+                };
+                self.phase = next_phase;
+                self.timer_seconds = self.current_phase_total_seconds();
+                self.is_running = self.auto_start_breaks;
+                if !self.is_running {
+                    self.last_tick = None;
+                }
+
+                let task_str = self.active_task_title.as_deref().unwrap_or("Focus session");
+                format!("🎉 Work session completed on '{}'! Time for a break.", task_str)
+            }
+            PomodoroPhase::ShortBreak | PomodoroPhase::LongBreak => {
+                self.phase = PomodoroPhase::Work;
+                self.timer_seconds = self.current_phase_total_seconds();
+                self.is_running = self.auto_start_pomodoros;
+                if !self.is_running {
+                    self.last_tick = None;
+                }
+
+                "☕ Break completed! Ready to get back to work?".to_string()
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,6 +311,9 @@ pub struct App {
     pub selected_diff_index: usize,
     pub sync_status_message: Option<String>,
 
+    // Tab 4: Pomodoro
+    pub pomodoro: PomodoroState,
+
     // Modals
     pub status_modal_open: bool,
     pub status_modal_selected: usize,
@@ -180,6 +398,7 @@ impl App {
             sync_diff: None,
             selected_diff_index: 0,
             sync_status_message: None,
+            pomodoro: PomodoroState::default(),
             status_modal_open: false,
             status_modal_selected: 0,
             project_modal_open: false,
@@ -621,16 +840,53 @@ impl App {
         self.active_tab = match self.active_tab {
             Tab::Tasks => Tab::Vault,
             Tab::Vault => Tab::Sync,
-            Tab::Sync => Tab::Tasks,
+            Tab::Sync => Tab::Pomodoro,
+            Tab::Pomodoro => Tab::Tasks,
         };
     }
 
     pub fn cycle_tab_backward(&mut self) {
         self.active_tab = match self.active_tab {
-            Tab::Tasks => Tab::Sync,
+            Tab::Tasks => Tab::Pomodoro,
             Tab::Vault => Tab::Tasks,
             Tab::Sync => Tab::Vault,
+            Tab::Pomodoro => Tab::Sync,
         };
+    }
+
+    pub fn tick(&mut self) {
+        if let Some(msg) = self.pomodoro.tick() {
+            self.sync_status_message = Some(msg);
+        }
+
+        if self.pomodoro.session_tick_counter >= 60 {
+            let minutes = self.pomodoro.session_tick_counter / 60;
+            self.pomodoro.session_tick_counter %= 60;
+            if let Some(ref tid) = self.pomodoro.active_task_id {
+                let _ = self.db.increment_task_time_spent(tid, minutes as i64);
+                self.reload_tasks();
+            }
+        }
+    }
+
+    pub fn start_focus_on_task(&mut self, task_index: usize) {
+        if let Some(task) = self.tasks.get(task_index) {
+            let tid = task.id.clone();
+            let title = task.title.clone();
+            self.pomodoro.link_task(tid, title.clone());
+            self.pomodoro.is_running = true;
+            self.pomodoro.last_tick = Some(std::time::Instant::now());
+            self.active_tab = Tab::Pomodoro;
+            self.sync_status_message = Some(format!("Started focus session on '{}'", title));
+        }
+    }
+
+    pub fn get_linked_focus_task(&self) -> Option<&Task> {
+        if let Some(ref tid) = self.pomodoro.active_task_id {
+            self.tasks.iter().find(|t| &t.id == tid)
+        } else {
+            None
+        }
     }
 
     pub fn get_filtered_projects(&self) -> Vec<(usize, &Project)> {

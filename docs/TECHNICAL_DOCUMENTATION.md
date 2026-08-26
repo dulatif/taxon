@@ -150,6 +150,24 @@ ON CONFLICT(id) DO UPDATE SET
   - `[i]` to force import `.taxon/` → DB.
   - `[s]` to refresh diff.
 
+#### Tab 4: Pomodoro Focus Timer
+- **Live Header Indicator**:
+  - Visible across all tabs: displays active timer ticking (`🍅 24:58 (Work)`) or paused status (`⏸ 25:00`).
+- **Large Digital Clock Display**:
+  - High-visibility stylized block numbers (`████`) rendering `MM:SS`.
+  - Color-coded by phase (Work = Green/Red, Short Break = Cyan, Long Break = Blue).
+- **Phases & Round Tracking**:
+  - Work Focus (25m), Short Break (5m), Long Break (15m).
+  - Round progress dots: `Session 2/4 : [ ●  ●  ○  ○ ]` (advances to Long Break after 4 sessions).
+  - ASCII progress bar showing elapsed vs total duration.
+- **Active Task Linking & Time Tracking**:
+  - Shows linked task title, ID, status, priority, subtasks, and total time spent.
+  - Automatically increments task's `timeSpent` in SQLite database every minute.
+  - `[F]` keystroke from Tab 1 immediately links highlighted task and starts focus mode.
+  - Task actions: `[u]` Unlink Task, `[c]` Mark Done, `[m]` Change Status.
+- **Session Analytics**:
+  - Tracks total completed pomodoros today and total focused hours/minutes.
+
 ---
 
 ## 5. Keyboard Navigation & Keybindings Reference
@@ -157,7 +175,7 @@ ON CONFLICT(id) DO UPDATE SET
 ### Global Shortcuts (Any Tab)
 | Shortcut | Action |
 |---|---|
-| `1`, `2`, `3` | Switch directly to Tab 1 (Tasks), Tab 2 (Vault), Tab 3 (Sync) |
+| `1`, `2`, `3`, `4` | Switch directly to Tab 1 (Tasks), Tab 2 (Vault), Tab 3 (Sync), Tab 4 (Pomodoro) |
 | `[`, `]` | Quick cycle tabs backward / forward (matches GUI sidebar toggle) |
 | `Tab` | Switch focus between Left and Right panes |
 | `p`, `P`, `Ctrl+P` | Open Project Switcher modal with real-time search |
@@ -171,6 +189,7 @@ ON CONFLICT(id) DO UPDATE SET
 |---|---|
 | `↑` / `k`, `↓` / `j` | Navigate tasks list |
 | `Space` | Toggle task completion (`Done` ↔ `To Do`) and auto-advance to next task |
+| `F` (`Shift+F`) | Start Pomodoro Focus Session on highlighted task & switch to Tab 4 |
 | `s`, `Alt+S` | Cycle sprint filter (`Active` → `Planned` → `Backlog` → `All`) |
 | `S` (`Shift+S`) | Open interactive Sprint Selection modal |
 | `f`, `Alt+F` | Cycle status filter (`All` → `In Progress` → `To Do` → `Need to Test` → `Done`) |
@@ -194,6 +213,22 @@ ON CONFLICT(id) DO UPDATE SET
 | `e` | Export database records to markdown |
 | `i` | Import markdown files to database |
 | `s` | Refresh diff status |
+
+### Tab 4 (Pomodoro Focus Timer)
+| Shortcut | Action |
+|---|---|
+| `Space` | Start / Pause session timer |
+| `r`, `R` | Reset current timer |
+| `s`, `n` | Skip to next phase (Work → Break) |
+| `w`, `W` | Switch to Work phase (25m) |
+| `b`, `B` | Switch to Short Break phase (5m) |
+| `l` | Switch to Long Break phase (15m) |
+| `u`, `U` | Unlink active task |
+| `L` | Link highlighted task from Tab 1 |
+| `c` | Mark linked task as Done |
+| `m` | Change linked task status |
+| `+` / `=` | Add 1 minute to current phase |
+| `-` / `_` | Subtract 1 minute from current phase |
 
 ---
 

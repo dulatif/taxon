@@ -50,6 +50,8 @@ fn run_app(
     app: &mut App,
 ) -> io::Result<()> {
     loop {
+        app.tick();
+
         terminal.draw(|f| ui::render(f, app))?;
 
         if app.should_quit {
