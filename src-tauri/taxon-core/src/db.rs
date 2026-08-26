@@ -64,7 +64,9 @@ impl TaxonDb {
                     dueDate TEXT,
                     sortOrder INTEGER,
                     vaultPath TEXT,
-                    workspacePaths TEXT
+                    workspacePaths TEXT,
+                    pinned INTEGER DEFAULT 0,
+                    pinnedSortOrder INTEGER
                 );
                 CREATE TABLE IF NOT EXISTS tasks (
                     id TEXT PRIMARY KEY,
@@ -104,6 +106,11 @@ impl TaxonDb {
                 );",
             )
             .map_err(|e| e.to_string())?;
+
+        // Best effort column migrations
+        let _ = self.conn.execute("ALTER TABLE projects ADD COLUMN pinned INTEGER DEFAULT 0", []);
+        let _ = self.conn.execute("ALTER TABLE projects ADD COLUMN pinnedSortOrder INTEGER", []);
+
         Ok(())
     }
 
@@ -340,13 +347,14 @@ impl TaxonDb {
     pub fn list_projects(&self) -> Result<Vec<Project>, String> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, description, category, progress, dueDays, dueDate, sortOrder, vaultPath, workspacePaths FROM projects")
+            .prepare("SELECT id, name, description, category, progress, dueDays, dueDate, sortOrder, vaultPath, workspacePaths, COALESCE(pinned, 0), pinnedSortOrder FROM projects ORDER BY COALESCE(pinned, 0) DESC, CASE WHEN COALESCE(pinned, 0) = 1 THEN COALESCE(pinnedSortOrder, 999999) ELSE COALESCE(sortOrder, 999999) END ASC, name ASC")
             .map_err(|e| e.to_string())?;
 
         let rows = stmt
             .query_map([], |row| {
                 let ws_raw: Option<String> = row.get(9)?;
                 let workspace_paths = ws_raw.and_then(|s| serde_json::from_str(&s).ok());
+                let pinned_num: i64 = row.get(10).unwrap_or(0);
                 Ok(Project {
                     id: row.get(0)?,
                     name: row.get(1)?,
@@ -358,6 +366,8 @@ impl TaxonDb {
                     sort_order: row.get(7)?,
                     vault_path: row.get(8)?,
                     workspace_paths,
+                    pinned: pinned_num != 0,
+                    pinned_sort_order: row.get(11).ok(),
                 })
             })
             .map_err(|e| e.to_string())?;
@@ -374,13 +384,14 @@ impl TaxonDb {
     pub fn get_project(&self, project_id: &str) -> Result<Option<Project>, String> {
         let mut stmt = self
             .conn
-            .prepare("SELECT id, name, description, category, progress, dueDays, dueDate, sortOrder, vaultPath, workspacePaths FROM projects WHERE id = ?1")
+            .prepare("SELECT id, name, description, category, progress, dueDays, dueDate, sortOrder, vaultPath, workspacePaths, COALESCE(pinned, 0), pinnedSortOrder FROM projects WHERE id = ?1")
             .map_err(|e| e.to_string())?;
 
         let mut rows = stmt
             .query_map(params![project_id], |row| {
                 let ws_raw: Option<String> = row.get(9)?;
                 let workspace_paths = ws_raw.and_then(|s| serde_json::from_str(&s).ok());
+                let pinned_num: i64 = row.get(10).unwrap_or(0);
                 Ok(Project {
                     id: row.get(0)?,
                     name: row.get(1)?,
@@ -392,6 +403,8 @@ impl TaxonDb {
                     sort_order: row.get(7)?,
                     vault_path: row.get(8)?,
                     workspace_paths,
+                    pinned: pinned_num != 0,
+                    pinned_sort_order: row.get(11).ok(),
                 })
             })
             .map_err(|e| e.to_string())?;

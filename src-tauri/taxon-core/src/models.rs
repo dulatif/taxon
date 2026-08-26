@@ -107,6 +107,10 @@ pub struct Project {
     pub vault_path: Option<String>,
     #[serde(rename = "workspacePaths", default)]
     pub workspace_paths: Option<Vec<String>>,
+    #[serde(default)]
+    pub pinned: bool,
+    #[serde(rename = "pinnedSortOrder", default)]
+    pub pinned_sort_order: Option<i64>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]

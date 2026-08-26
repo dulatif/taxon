@@ -101,6 +101,7 @@ pub struct App {
     pub status_modal_selected: usize,
     pub project_modal_open: bool,
     pub project_modal_selected: usize,
+    pub project_search_query: String,
     pub sprint_modal_open: bool,
     pub sprint_modal_selected: usize,
     pub help_modal_open: bool,
@@ -183,6 +184,7 @@ impl App {
             status_modal_selected: 0,
             project_modal_open: false,
             project_modal_selected: 0,
+            project_search_query: String::new(),
             sprint_modal_open: false,
             sprint_modal_selected: 0,
             help_modal_open: false,
@@ -603,6 +605,22 @@ impl App {
             Tab::Vault => Tab::Tasks,
             Tab::Sync => Tab::Vault,
         };
+    }
+
+    pub fn get_filtered_projects(&self) -> Vec<(usize, &Project)> {
+        if self.project_search_query.trim().is_empty() {
+            return self.projects.iter().enumerate().collect();
+        }
+        let q = self.project_search_query.to_lowercase();
+        self.projects
+            .iter()
+            .enumerate()
+            .filter(|(_, p)| {
+                p.name.to_lowercase().contains(&q)
+                    || p.category.as_deref().unwrap_or("").to_lowercase().contains(&q)
+                    || p.vault_path.as_deref().unwrap_or("").to_lowercase().contains(&q)
+            })
+            .collect()
     }
 }
 

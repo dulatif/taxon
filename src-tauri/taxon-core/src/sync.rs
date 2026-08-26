@@ -581,6 +581,8 @@ pub fn markdown_to_project(markdown: &str) -> Result<Project, String> {
         sort_order: None,
         vault_path: None,
         workspace_paths: None,
+        pinned: false,
+        pinned_sort_order: None,
     })
 }
 
@@ -789,6 +791,8 @@ pub fn export_to_taxon_files(
         sort_order: None,
         vault_path: None,
         workspace_paths: None,
+        pinned: false,
+        pinned_sort_order: None,
     });
 
     let mut count = 0;

@@ -81,31 +81,55 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
     }
 
     if app.project_modal_open {
+        let max_items = app.get_filtered_projects().len();
+
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => {
-                app.project_modal_open = false;
-            }
-            KeyCode::Up | KeyCode::Char('k') => {
-                if app.project_modal_selected > 0 {
-                    app.project_modal_selected -= 1;
-                } else if !app.projects.is_empty() {
-                    app.project_modal_selected = app.projects.len() - 1;
+            KeyCode::Esc => {
+                if !app.project_search_query.is_empty() {
+                    app.project_search_query.clear();
+                    app.project_modal_selected = 0;
+                } else {
+                    app.project_modal_open = false;
                 }
             }
-            KeyCode::Down | KeyCode::Char('j') => {
-                if app.project_modal_selected + 1 < app.projects.len() {
-                    app.project_modal_selected += 1;
-                } else {
-                    app.project_modal_selected = 0;
+            KeyCode::Up => {
+                if app.project_modal_selected > 0 {
+                    app.project_modal_selected -= 1;
+                } else if max_items > 0 {
+                    app.project_modal_selected = max_items - 1;
+                }
+            }
+            KeyCode::Down => {
+                if max_items > 0 {
+                    if app.project_modal_selected + 1 < max_items {
+                        app.project_modal_selected += 1;
+                    } else {
+                        app.project_modal_selected = 0;
+                    }
                 }
             }
             KeyCode::Enter => {
-                if let Some(p) = app.projects.get(app.project_modal_selected) {
-                    app.active_project_id = Some(p.id.clone());
-                    app.active_vault_path = p.vault_path.as_ref().map(std::path::PathBuf::from);
+                let chosen = {
+                    let filtered = app.get_filtered_projects();
+                    filtered
+                        .get(app.project_modal_selected)
+                        .map(|(_, p)| (p.id.clone(), p.vault_path.clone()))
+                };
+                if let Some((pid, vp)) = chosen {
+                    app.active_project_id = Some(pid);
+                    app.active_vault_path = vp.map(std::path::PathBuf::from);
                     app.refresh_project_state();
                 }
+                app.project_search_query.clear();
                 app.project_modal_open = false;
+            }
+            KeyCode::Backspace => {
+                app.project_search_query.pop();
+                app.project_modal_selected = 0;
+            }
+            KeyCode::Char(c) => {
+                app.project_search_query.push(c);
+                app.project_modal_selected = 0;
             }
             _ => {}
         }

@@ -856,15 +856,35 @@ fn render_sprint_modal(f: &mut Frame, app: &App) {
 }
 
 fn render_project_modal(f: &mut Frame, app: &App) {
-    let area = centered_rect(65, 55, f.area());
+    let area = centered_rect(70, 65, f.area());
     f.render_widget(Clear, area);
 
-    let items: Vec<ListItem> = app
-        .projects
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(3), Constraint::Min(0)])
+        .split(area);
+
+    // 1. Search Bar
+    let search_text = format!(" 🔍 Search: {}▋ ", app.project_search_query);
+    let search_p = Paragraph::new(search_text)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD))
+                .title(" Filter Projects [Type to Search • Esc Clear/Close] "),
+        )
+        .style(Style::default().fg(Color::Yellow));
+    f.render_widget(search_p, chunks[0]);
+
+    // 2. Filtered Projects List
+    let filtered_projects = app.get_filtered_projects();
+    let total_projects = app.projects.len();
+
+    let items: Vec<ListItem> = filtered_projects
         .iter()
         .enumerate()
-        .map(|(idx, p)| {
-            let is_selected = idx == app.project_modal_selected;
+        .map(|(list_idx, (_orig_idx, p))| {
+            let is_selected = list_idx == app.project_modal_selected;
             let is_active = app.active_project_id.as_ref() == Some(&p.id);
 
             let marker = if is_active { "● " } else { "  " };
@@ -884,12 +904,22 @@ fn render_project_modal(f: &mut Frame, app: &App) {
             let progress_str = format!("{}%", p.progress.unwrap_or(0));
             let vault_str = p.vault_path.as_deref().unwrap_or("-");
 
-            let line1 = Line::from(vec![
+            let mut line1_spans = vec![
                 Span::styled(marker, marker_style),
-                Span::styled(&p.name, name_style),
-                Span::raw("  "),
-                Span::styled(format!("[{} • {}]", category_str, progress_str), Style::default().fg(Color::Cyan)),
-            ]);
+            ];
+
+            if p.pinned {
+                line1_spans.push(Span::styled("📌 ", Style::default().fg(Color::Yellow)));
+            }
+
+            line1_spans.push(Span::styled(&p.name, name_style));
+            line1_spans.push(Span::raw("  "));
+            line1_spans.push(Span::styled(
+                format!("[{} • {}]", category_str, progress_str),
+                Style::default().fg(Color::Cyan),
+            ));
+
+            let line1 = Line::from(line1_spans);
 
             let line2 = Line::from(vec![
                 Span::raw("    📁 "),
@@ -906,13 +936,19 @@ fn render_project_modal(f: &mut Frame, app: &App) {
         })
         .collect();
 
+    let title = format!(
+        " 🌿 Switch Project ({}/{}) [↑/↓ Navigate • Enter Switch • Esc Close] ",
+        filtered_projects.len(),
+        total_projects
+    );
+
     let list = List::new(items).block(
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Cyan))
-            .title(" 🌿 Switch Project [↑/↓ Navigate • Enter Select • Esc Cancel] "),
+            .title(title),
     );
-    f.render_widget(list, area);
+    f.render_widget(list, chunks[1]);
 }
 
 fn render_help_modal(f: &mut Frame) {
