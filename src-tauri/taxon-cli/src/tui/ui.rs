@@ -750,7 +750,7 @@ fn render_sync_right(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
-        Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [g] Group  [Space] Done  [m] Status  [p] Priority  [P] Projects  [?] Help  [q] Quit",
+        Tab::Tasks => "[Tab] Pane  [1-3]/[[/]] Tabs  [s/S] Sprint  [f] Status Filter  [g] Group  [Space] Done  [m] Status  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => if app.vault_search_active {
             "Typing Search...  [Enter] Confirm  [Esc] Clear & Exit Search"
         } else {
@@ -940,7 +940,6 @@ fn render_help_modal(f: &mut Frame) {
     • [g] / [v]           : Cycle Grouping mode (By Sprint → By Status → Flat)
     • [Space]             : Quick toggle task completion (Done / To Do)
     • [m]                 : Open Status modification dialog
-    • [p]                 : Cycle priority (Low → Med → High → Crit)
 
   Tab 2 (Vault Browser):
     • [/] / [Ctrl+F]      : Live search/filter files inside vault (Esc to clear)

@@ -174,7 +174,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             app.help_modal_open = true;
             return;
         }
-        KeyCode::Char('P') => {
+        KeyCode::Char('p') | KeyCode::Char('P') => {
             app.project_modal_open = true;
             return;
         }
@@ -269,9 +269,6 @@ fn handle_tasks_tab(app: &mut App, key: KeyEvent) {
         KeyCode::Char(' ') => {
             app.toggle_current_task();
         }
-        KeyCode::Char('p') => {
-            app.cycle_current_task_priority();
-        }
         KeyCode::Char('m') => {
             if !app.tasks.is_empty() {
                 app.status_modal_open = true;
@@ -332,9 +329,6 @@ fn handle_vault_tab(app: &mut App, key: KeyEvent) {
                 }
             }
         }
-        KeyCode::Char('p') => {
-            app.project_modal_open = true;
-        }
         _ => {}
     }
 }
@@ -364,9 +358,6 @@ fn handle_sync_tab(app: &mut App, key: KeyEvent) {
         KeyCode::Char('s') => {
             app.reload_sync();
             app.sync_status_message = Some("Diff refreshed.".to_string());
-        }
-        KeyCode::Char('p') => {
-            app.project_modal_open = true;
         }
         _ => {}
     }
