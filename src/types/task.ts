@@ -37,4 +37,6 @@ export interface Task {
   linkedFiles?: string[];
   dependsOn?: string[];
   moduleGroup?: string;
+  inputs?: string[];
+  outputs?: string[];
 }

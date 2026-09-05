@@ -43,6 +43,17 @@
   --accent-pink: #ec4899;
   --accent-cyan: #06b6d4;
 
+  /* ─── Workflow DAG Connector Lines & Nodes ─── */
+  --workflow-edge-stroke: var(--_workflow-edge-stroke, #94a3b8);
+  --workflow-node-bg: var(--_workflow-node-bg, #141416);
+  --workflow-node-border: var(--_workflow-node-border, #27272a);
+  --workflow-node-done-bg: var(--_workflow-node-done-bg, #0a2e1d);
+  --workflow-node-done-border: var(--_workflow-node-done-border, rgba(16, 185, 129, 0.35));
+  --workflow-node-test-bg: var(--_workflow-node-test-bg, #220e36);
+  --workflow-node-test-border: var(--_workflow-node-test-border, rgba(168, 85, 247, 0.35));
+  --workflow-group-border: var(--_workflow-group-border, rgba(148, 163, 184, 0.4));
+  --workflow-group-bg: var(--_workflow-group-bg, rgba(255, 255, 255, 0.02));
+
   /* ─── Priority Colors ─── */
   --priority-critical-text: #f87171;
   --priority-critical-bg: rgba(239, 68, 68, 0.1);

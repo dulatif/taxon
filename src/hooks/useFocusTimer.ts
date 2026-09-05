@@ -1,6 +1,25 @@
-import { sendNotification } from '@tauri-apps/plugin-notification';
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from '@tauri-apps/plugin-notification';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Task } from '../types';
+
+async function sendNotificationSafely(title: string, body: string) {
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const permission = await requestPermission();
+      granted = permission === 'granted';
+    }
+    if (granted) {
+      sendNotification({ title, body });
+    }
+  } catch (err) {
+    console.warn('Failed to send desktop notification:', err);
+  }
+}
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 
@@ -180,12 +199,12 @@ export function useFocusTimer({
               const nextCount = completedWorkSessionsRef.current + 1;
               completedWorkSessionsRef.current = nextCount;
               setCompletedWorkSessions(nextCount);
-              sendNotification({
-                title: 'Work Session Complete!',
-                body: currentTask
+              sendNotificationSafely(
+                'Work Session Complete!',
+                currentTask
                   ? `Good job on: ${currentTask.title}. Time for a break!`
                   : 'Time for a break!',
-              });
+              );
               onTimerCompleteRef.current(currentTask, 'work');
 
               const nextPhase: PomodoroPhase =
@@ -201,10 +220,7 @@ export function useFocusTimer({
                 ? longBreakRef.current * 60
                 : shortBreakRef.current * 60;
             } else {
-              sendNotification({
-                title: 'Break Ended!',
-                body: 'Time to get back to focus.',
-              });
+              sendNotificationSafely('Break Ended!', 'Time to get back to focus.');
               onTimerCompleteRef.current(currentTask, currentPhase);
               phaseRef.current = 'work';
               setPhase('work');

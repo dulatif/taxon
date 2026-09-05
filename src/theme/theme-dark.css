@@ -26,4 +26,14 @@
   --_interactive-primary: #ffffff;
   --_interactive-primary-text: #000000;
   --_interactive-hover: rgba(255, 255, 255, 0.9);
+
+  --_workflow-edge-stroke: #94a3b8;
+  --_workflow-node-bg: #141416;
+  --_workflow-node-border: #27272a;
+  --_workflow-node-done-bg: #0a2e1d;
+  --_workflow-node-done-border: rgba(16, 185, 129, 0.35);
+  --_workflow-node-test-bg: #220e36;
+  --_workflow-node-test-border: rgba(168, 85, 247, 0.35);
+  --_workflow-group-border: rgba(148, 163, 184, 0.4);
+  --_workflow-group-bg: rgba(255, 255, 255, 0.02);
 }

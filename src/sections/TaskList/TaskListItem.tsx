@@ -130,9 +130,9 @@ export default function TaskListItem({
             />
           </button>
         )}
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <span
-            className={`text-xs font-semibold truncate block max-w-sm ${
+            className={`text-xs font-semibold truncate block ${
               task.completed && !isReadOnly ? 'line-through text-text-muted' : 'text-text-primary'
             }`}
           >

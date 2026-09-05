@@ -1,4 +1,14 @@
-import { Bot, Filter, Layers, Maximize2, Search, Sparkles, ZoomIn, ZoomOut } from 'lucide-react';
+import {
+  Bot,
+  Filter,
+  Layers,
+  LayoutGrid,
+  Maximize2,
+  Search,
+  Sparkles,
+  ZoomIn,
+  ZoomOut,
+} from 'lucide-react';
 import React from 'react';
 import type { Sprint } from '../../types';
 
@@ -6,6 +16,7 @@ export interface WorkflowToolbarProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitView: () => void;
+  onTidyLayout?: () => void;
   moduleGroups: string[];
   selectedGroup: string | null;
   onSelectGroup: (group: string | null) => void;
@@ -24,6 +35,7 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
   onZoomIn,
   onZoomOut,
   onFitView,
+  onTidyLayout,
   moduleGroups,
   selectedGroup,
   onSelectGroup,
@@ -60,7 +72,7 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
             <select
               value={selectedSprintId || 'all'}
               onChange={(e) => onSelectSprint(e.target.value)}
-              className="text-xs bg-muted/40 hover:bg-muted/70 text-foreground py-1 px-2 rounded-lg border border-transparent focus:border-primary/40 focus:outline-hidden cursor-pointer transition-colors"
+              className="text-xs bg-muted/40 hover:bg-muted/70 text-foreground py-1 px-2 rounded-lg border border-transparent focus:border-primary/40 focus:outline-hidden cursor-pointer transition-colors max-w-[180px] truncate"
             >
               <option value="all">All Sprints ({sprints.length})</option>
               <option value="backlog">Backlog Only</option>
@@ -143,6 +155,20 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
         >
           <Maximize2 className="w-4 h-4" />
         </button>
+        {onTidyLayout && (
+          <>
+            <div className="h-4 w-px bg-border/60 mx-0.5" />
+            <button
+              type="button"
+              onClick={onTidyLayout}
+              title="Tidy Graph Layout"
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors flex items-center gap-1 text-xs px-2"
+            >
+              <LayoutGrid className="w-4 h-4" />
+              <span className="hidden sm:inline">Tidy</span>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

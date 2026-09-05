@@ -7,6 +7,8 @@ export interface TaskNodeData {
   task: Task;
   isAgentActive?: boolean;
   isAgentNext?: boolean;
+  isSelected?: boolean;
+  selected?: boolean;
   onSelectTask?: (task: Task) => void;
   [key: string]: unknown;
 }
@@ -31,7 +33,9 @@ export const TaskNode: React.FC<NodeProps> = memo(({ data, selected }) => {
 
   if (!task) return null;
 
+  const isSelected = Boolean(selected || nodeData.selected || nodeData.isSelected);
   const isDone = task.completed || task.status === 'Done';
+  const isNeedToTest = task.status === 'Need to Test';
   const completedSubtasks = task.subtasks?.filter((st) => st.completed).length || 0;
   const totalSubtasks = task.subtasks?.length || 0;
 
@@ -40,31 +44,78 @@ export const TaskNode: React.FC<NodeProps> = memo(({ data, selected }) => {
     return (
       <div
         onClick={() => onSelectTask?.(task)}
-        className={`w-[220px] h-[45px] rounded-lg border px-3 py-2 flex items-center justify-between cursor-pointer select-none transition-all duration-200 bg-card/70 backdrop-blur-xs opacity-40 hover:opacity-100 ${
-          selected ? 'border-primary ring-2 ring-primary/30' : 'border-border/60'
+        data-testid={`task-node-${task.id}`}
+        className={`workflow-task-node workflow-task-node-done w-[220px] h-[45px] rounded-lg border px-3 py-2 flex items-center justify-between cursor-pointer select-none transition-all duration-200 shadow-xs ${
+          isSelected
+            ? 'border-primary ring-2 ring-primary/60 shadow-md ring-offset-1 ring-offset-background z-10'
+            : 'hover:border-emerald-400/80'
         }`}
       >
+        {/* Multi-directional Target Handles */}
         <Handle
+          id="target-top"
           type="target"
           position={Position.Top}
-          className="!w-2 !h-2 !bg-border/80 !border-background"
+          className="!opacity-0 !pointer-events-none"
+        />
+        <Handle
+          id="target-left"
+          type="target"
+          position={Position.Left}
+          className="!opacity-0 !pointer-events-none"
+        />
+        <Handle
+          id="target-bottom"
+          type="target"
+          position={Position.Bottom}
+          className="!opacity-0 !pointer-events-none"
+        />
+        <Handle
+          id="target-right"
+          type="target"
+          position={Position.Right}
+          className="!opacity-0 !pointer-events-none"
         />
 
-        <div className="flex items-center gap-2 min-w-0 flex-1">
-          <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-          <span className="text-xs font-medium text-muted-foreground truncate line-through">
+        <div
+          className={`flex items-center gap-1.5 min-w-0 flex-1 transition-opacity ${
+            isSelected ? 'opacity-100' : 'opacity-85 hover:opacity-100'
+          }`}
+        >
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+          <span className="text-xs font-medium text-emerald-100/90 dark:text-emerald-100/90 truncate line-through">
             {task.title}
           </span>
         </div>
 
-        <span className="text-[10px] font-mono text-muted-foreground/60 shrink-0 ml-1">
+        <span className="text-[10px] font-mono text-emerald-300/60 shrink-0 ml-1">
           {(task.id || '').slice(-6)}
         </span>
 
+        {/* Multi-directional Source Handles */}
         <Handle
+          id="source-bottom"
           type="source"
           position={Position.Bottom}
-          className="!w-2 !h-2 !bg-border/80 !border-background"
+          className="!opacity-0 !pointer-events-none"
+        />
+        <Handle
+          id="source-right"
+          type="source"
+          position={Position.Right}
+          className="!opacity-0 !pointer-events-none"
+        />
+        <Handle
+          id="source-top"
+          type="source"
+          position={Position.Top}
+          className="!opacity-0 !pointer-events-none"
+        />
+        <Handle
+          id="source-left"
+          type="source"
+          position={Position.Left}
+          className="!opacity-0 !pointer-events-none"
         />
       </div>
     );
@@ -74,34 +125,55 @@ export const TaskNode: React.FC<NodeProps> = memo(({ data, selected }) => {
   return (
     <div
       onClick={() => onSelectTask?.(task)}
-      className={`w-[220px] h-[90px] rounded-xl border p-3 flex flex-col justify-between cursor-pointer select-none bg-card/95 relative ${
+      data-testid={`task-node-${task.id}`}
+      className={`workflow-task-node ${
+        isDone ? 'workflow-task-node-done' : isNeedToTest ? 'workflow-task-node-test' : ''
+      } w-[220px] h-[90px] rounded-xl border p-3 flex flex-col justify-between cursor-pointer select-none relative ${
         isAgentActive || isAgentNext || task.status === 'In Progress'
           ? ''
           : 'transition-all duration-200'
       } ${
+        isSelected
+          ? 'border-primary ring-2 ring-primary/60 shadow-md ring-offset-1 ring-offset-background z-10'
+          : isDone
+            ? 'hover:border-emerald-400/80 shadow-xs'
+            : isNeedToTest
+              ? 'hover:border-purple-400/80 shadow-xs'
+              : 'border-border-primary hover:border-border-hover shadow-xs'
+      } ${
         isAgentActive
           ? 'animate-workflow-purple'
           : isAgentNext
-            ? 'animate-workflow-cyan border-dashed bg-cyan-950/5'
+            ? 'animate-workflow-cyan border-dashed'
             : task.status === 'In Progress'
               ? 'animate-workflow-blue'
-              : selected
-                ? 'border-primary ring-2 ring-primary/30 shadow-md'
-                : 'border-border hover:border-border/80 shadow-xs'
+              : ''
       }`}
     >
+      {/* Multi-directional Target Handles */}
       <Handle
+        id="target-top"
         type="target"
         position={Position.Top}
-        className={`!w-2.5 !h-2.5 !border-background ${
-          isAgentActive
-            ? '!bg-purple-500'
-            : isAgentNext
-              ? '!bg-cyan-400'
-              : task.status === 'In Progress'
-                ? '!bg-blue-400'
-                : '!bg-muted-foreground/40'
-        }`}
+        className="!opacity-0 !pointer-events-none"
+      />
+      <Handle
+        id="target-left"
+        type="target"
+        position={Position.Left}
+        className="!opacity-0 !pointer-events-none"
+      />
+      <Handle
+        id="target-bottom"
+        type="target"
+        position={Position.Bottom}
+        className="!opacity-0 !pointer-events-none"
+      />
+      <Handle
+        id="target-right"
+        type="target"
+        position={Position.Right}
+        className="!opacity-0 !pointer-events-none"
       />
 
       {/* Top row: Status/Agent badges and Priority */}
@@ -142,15 +214,18 @@ export const TaskNode: React.FC<NodeProps> = memo(({ data, selected }) => {
       </div>
 
       {/* Bottom row: Subtasks and ID */}
-      <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-        <div className="flex items-center gap-2">
+      <div className="flex items-center justify-between text-[10px] text-muted-foreground gap-1">
+        <div className="flex items-center gap-1.5 min-w-0">
           {totalSubtasks > 0 ? (
-            <span className="flex items-center gap-1">
+            <span
+              className="flex items-center gap-1 shrink-0"
+              title={`${completedSubtasks}/${totalSubtasks} subtasks completed`}
+            >
               <ListTodo className="w-3 h-3" />
               {completedSubtasks}/{totalSubtasks}
             </span>
           ) : (
-            <span className="flex items-center gap-1">
+            <span className="flex items-center gap-1 shrink-0">
               {task.status === 'In Progress' ? (
                 <Clock className="w-3 h-3 text-blue-400" />
               ) : (
@@ -160,21 +235,35 @@ export const TaskNode: React.FC<NodeProps> = memo(({ data, selected }) => {
           )}
         </div>
 
-        <span className="font-mono text-muted-foreground/60 text-[9px]">
+        <span className="font-mono text-muted-foreground/60 text-[9px] shrink-0 ml-auto">
           {(task.id || '').slice(-6)}
         </span>
       </div>
 
+      {/* Multi-directional Source Handles */}
       <Handle
+        id="source-bottom"
         type="source"
         position={Position.Bottom}
-        className={`!w-2.5 !h-2.5 !border-background ${
-          isAgentActive
-            ? '!bg-purple-500'
-            : isAgentNext
-              ? '!bg-cyan-400'
-              : '!bg-muted-foreground/40'
-        }`}
+        className="!opacity-0 !pointer-events-none"
+      />
+      <Handle
+        id="source-right"
+        type="source"
+        position={Position.Right}
+        className="!opacity-0 !pointer-events-none"
+      />
+      <Handle
+        id="source-top"
+        type="source"
+        position={Position.Top}
+        className="!opacity-0 !pointer-events-none"
+      />
+      <Handle
+        id="source-left"
+        type="source"
+        position={Position.Left}
+        className="!opacity-0 !pointer-events-none"
       />
     </div>
   );

@@ -191,7 +191,7 @@ export default function ProjectTaskList({
                             : 'hover:bg-surface-secondary/10'
                         }`}
                       >
-                        <div className="flex items-start gap-4 flex-1 mr-4">
+                        <div className="flex items-start gap-4 flex-1 mr-4 min-w-0">
                           <button
                             type="button"
                             onClick={(e) => {
@@ -225,7 +225,7 @@ export default function ProjectTaskList({
                               title={`Priority: ${task.priority || 'None'}`}
                             />
                             <p
-                              className={`text-xs font-semibold leading-relaxed ${
+                              className={`text-xs font-semibold leading-relaxed truncate block ${
                                 task.completed || task.status === 'Done'
                                   ? 'line-through text-text-muted'
                                   : 'text-text-primary'

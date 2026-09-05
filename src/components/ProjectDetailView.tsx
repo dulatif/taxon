@@ -565,6 +565,7 @@ export default function ProjectDetailView({
                   .map((s) => ({ value: s.id, label: s.name })),
               ]}
               size="sm"
+              className="max-w-[200px]"
             />
           </div>
 
@@ -738,7 +739,7 @@ export default function ProjectDetailView({
               <WorkflowView
                 project={project}
                 tasks={projectTasksAll.filter((t) => !t.archived)}
-                sprints={sprints}
+                sprints={sprints?.filter((s) => s.projectId === project.id)}
                 selectedSprintId={selectedSprintId}
                 onSelectSprint={setSelectedSprintId}
                 onSelectTask={onSelectTask}

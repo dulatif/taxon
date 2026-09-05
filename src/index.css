@@ -25,6 +25,25 @@
   /* Interactive */
   --color-interactive-primary: var(--interactive-primary);
   --color-interactive-primary-text: var(--interactive-primary-text);
+
+  /* Workflow & Compatibility aliases */
+  --color-background: var(--surface-app);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-secondary);
+  --color-card-foreground: var(--text-primary);
+  --color-muted: var(--surface-tertiary);
+  --color-muted-foreground: var(--text-muted);
+  --color-border: var(--border-primary);
+  --color-primary: var(--interactive-primary);
+  --color-primary-foreground: var(--interactive-primary-text);
+  --color-workflow-node: var(--workflow-node-bg);
+  --color-workflow-node-border: var(--workflow-node-border);
+  --color-workflow-node-done: var(--workflow-node-done-bg);
+  --color-workflow-node-done-border: var(--workflow-node-done-border);
+  --color-workflow-node-test: var(--workflow-node-test-bg);
+  --color-workflow-node-test-border: var(--workflow-node-test-border);
+  --color-workflow-group-border: var(--workflow-group-border);
+  --color-workflow-group-bg: var(--workflow-group-bg);
 }
 
 /* Theme System */
@@ -216,4 +235,81 @@ select optgroup {
 .animate-workflow-beacon {
   animation: workflow-beacon 2s ease-in-out infinite;
   will-change: transform, opacity;
+}
+
+/* ─── Workflow DAG Connector Edges ─── */
+@keyframes workflow-dash-flow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__edge.workflow-edge path.react-flow__edge-path {
+  stroke: var(--workflow-edge-stroke, #94a3b8) !important;
+  stroke-width: 1.75px !important;
+}
+
+.react-flow__edge.workflow-edge .react-flow__arrowhead path,
+.react-flow__edge.workflow-edge marker path {
+  fill: var(--workflow-edge-stroke, #94a3b8) !important;
+  stroke: var(--workflow-edge-stroke, #94a3b8) !important;
+}
+
+/* Dash animation for current task -> next queue task */
+.react-flow__edge.workflow-edge-queue path.react-flow__edge-path {
+  stroke: #60a5fa !important;
+  stroke-width: 2.25px !important;
+  stroke-dasharray: 8 5 !important;
+  animation: workflow-dash-flow 1s linear infinite !important;
+}
+
+.react-flow__edge.workflow-edge-queue .react-flow__arrowhead path,
+.react-flow__edge.workflow-edge-queue marker path {
+  fill: #60a5fa !important;
+  stroke: #60a5fa !important;
+}
+
+/* Agent Trajectory Edge */
+.react-flow__edge.workflow-edge-agent path.react-flow__edge-path {
+  stroke: #c084fc !important;
+  stroke-width: 2.5px !important;
+  stroke-dasharray: 8 5 !important;
+  animation: workflow-dash-flow 0.8s linear infinite !important;
+}
+
+.react-flow__edge.workflow-edge-agent .react-flow__arrowhead path,
+.react-flow__edge.workflow-edge-agent marker path {
+  fill: #c084fc !important;
+  stroke: #c084fc !important;
+}
+
+/* Generic fallback for any animated edge in React Flow */
+.react-flow__edge.animated path.react-flow__edge-path {
+  stroke-dasharray: 8 5 !important;
+  animation: workflow-dash-flow 1s linear infinite !important;
+}
+
+/* ─── Workflow DAG Task Node Styling ─── */
+.workflow-task-node {
+  background-color: var(--workflow-node-bg, #141416);
+  border-color: var(--workflow-node-border, #27272a);
+}
+
+.workflow-task-node-done {
+  background-color: var(--workflow-node-done-bg, #0a2e1d) !important;
+  border-color: var(--workflow-node-done-border, rgba(16, 185, 129, 0.35));
+}
+
+.workflow-task-node-test {
+  background-color: var(--workflow-node-test-bg, #220e36) !important;
+  border-color: var(--workflow-node-test-border, rgba(168, 85, 247, 0.35));
+}
+
+/* ─── Workflow Module Group Container ─── */
+.workflow-module-group {
+  border: 1.5px dashed var(--workflow-group-border, rgba(148, 163, 184, 0.4)) !important;
+  background-color: var(--workflow-group-bg, rgba(255, 255, 255, 0.02)) !important;
 }

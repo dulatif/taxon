@@ -145,7 +145,10 @@ export const initDb = (): Promise<Database> => {
         'linkedFiles',
         'dependsOn',
         'moduleGroup',
+        'inputs',
+        'outputs',
       ];
+
       for (const col of cols) {
         try {
           await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`);
@@ -339,6 +342,8 @@ export const getTasks = async (): Promise<Task[]> => {
       recurrence: parseJSON(t.recurrence),
       linkedFiles: parseJSON(t.linkedFiles),
       dependsOn: parseJSON(t.dependsOn),
+      inputs: parseJSON(t.inputs),
+      outputs: parseJSON(t.outputs),
       workspacePath: (t.workspacePath as string) || undefined,
       moduleGroup: (t.moduleGroup as string) || undefined,
       timeEffort: timeEffortNum,
@@ -357,9 +362,11 @@ export const saveTask = async (t: Task) => {
   const recurrenceStr = t.recurrence ? JSON.stringify(t.recurrence) : null;
   const linkedFilesStr = t.linkedFiles ? JSON.stringify(t.linkedFiles) : null;
   const dependsOnStr = t.dependsOn ? JSON.stringify(t.dependsOn) : null;
+  const inputsStr = t.inputs ? JSON.stringify(t.inputs) : null;
+  const outputsStr = t.outputs ? JSON.stringify(t.outputs) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
     [
       t.id ?? null,
       t.projectId ?? null,
@@ -385,6 +392,8 @@ export const saveTask = async (t: Task) => {
       linkedFilesStr,
       dependsOnStr,
       t.moduleGroup ?? null,
+      inputsStr,
+      outputsStr,
     ],
   );
 

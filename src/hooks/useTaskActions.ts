@@ -188,7 +188,12 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
             } else if (taskToSave.status) {
               taskToSave.completed = false;
             }
-            if ((taskToSave.completed || taskToSave.status === 'Done') && !taskToSave.dueDate) {
+            if (
+              (taskToSave.completed ||
+                taskToSave.status === 'Done' ||
+                taskToSave.status === 'Need to Test') &&
+              !taskToSave.dueDate
+            ) {
               taskToSave.dueDate = getTodayStr();
             }
 

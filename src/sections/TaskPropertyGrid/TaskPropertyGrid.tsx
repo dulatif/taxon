@@ -3,6 +3,8 @@ import {
   CheckCircle2,
   Clock,
   FileCode2,
+  FileDown,
+  FileUp,
   Flag,
   Folder,
   FolderOpen,
@@ -60,6 +62,10 @@ export default function TaskPropertyGrid({
   const [newLabelText, setNewLabelText] = useState('');
   const [isAddingFile, setIsAddingFile] = useState(false);
   const [newFileText, setNewFileText] = useState('');
+  const [isAddingInput, setIsAddingInput] = useState(false);
+  const [newInputText, setNewInputText] = useState('');
+  const [isAddingOutput, setIsAddingOutput] = useState(false);
+  const [newOutputText, setNewOutputText] = useState('');
   const [moduleGroupInput, setModuleGroupInput] = useState(task.moduleGroup || '');
   const [customDepInput, setCustomDepInput] = useState('');
 
@@ -93,6 +99,36 @@ export default function TaskPropertyGrid({
       onChange('linkedFiles', [...currentFiles, newFileText.trim()]);
     }
     setNewFileText('');
+  };
+
+  const handleAddInput = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInputText.trim()) return;
+    const currentInputs = task.inputs || [];
+    if (!currentInputs.includes(newInputText.trim())) {
+      onChange('inputs', [...currentInputs, newInputText.trim()]);
+    }
+    setNewInputText('');
+  };
+
+  const handleRemoveInput = (idx: number) => {
+    const updated = (task.inputs || []).filter((_, i) => i !== idx);
+    onChange('inputs', updated.length > 0 ? updated : undefined);
+  };
+
+  const handleAddOutput = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOutputText.trim()) return;
+    const currentOutputs = task.outputs || [];
+    if (!currentOutputs.includes(newOutputText.trim())) {
+      onChange('outputs', [...currentOutputs, newOutputText.trim()]);
+    }
+    setNewOutputText('');
+  };
+
+  const handleRemoveOutput = (idx: number) => {
+    const updated = (task.outputs || []).filter((_, i) => i !== idx);
+    onChange('outputs', updated.length > 0 ? updated : undefined);
   };
 
   const existingModuleGroups = useMemo(() => {
@@ -638,6 +674,108 @@ export default function TaskPropertyGrid({
                 <button
                   type="submit"
                   disabled={!newFileText.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
+        </PropertyCard>
+
+        {/* Inputs (Contracts) */}
+        <PropertyCard
+          icon={<FileDown className="w-5 h-5" />}
+          label="Inputs"
+          value={
+            task.inputs && task.inputs.length > 0 ? `${task.inputs.length} input(s)` : 'None (Root)'
+          }
+          isActive={isAddingInput}
+          onClick={() => setIsAddingInput(!isAddingInput)}
+        >
+          {isAddingInput && (
+            <div onClick={(e) => e.stopPropagation()} className="p-1 space-y-2">
+              {task.inputs?.map((input, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span
+                    className="flex-1 text-[10px] bg-surface-primary px-1.5 py-1 rounded border border-border-primary text-text-secondary font-mono truncate"
+                    title={input}
+                  >
+                    {input}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveInput(idx)}
+                    className="text-text-muted hover:text-red-400 p-1"
+                    title="Remove input"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <form onSubmit={handleAddInput} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newInputText}
+                  onChange={(e) => setNewInputText(e.target.value)}
+                  placeholder="docs/contract.md or file.ts..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!newInputText.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
+        </PropertyCard>
+
+        {/* Outputs (Targets) */}
+        <PropertyCard
+          icon={<FileUp className="w-5 h-5" />}
+          label="Outputs"
+          value={
+            task.outputs && task.outputs.length > 0
+              ? `${task.outputs.length} output(s)`
+              : 'None Target'
+          }
+          isActive={isAddingOutput}
+          onClick={() => setIsAddingOutput(!isAddingOutput)}
+        >
+          {isAddingOutput && (
+            <div onClick={(e) => e.stopPropagation()} className="p-1 space-y-2">
+              {task.outputs?.map((output, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span
+                    className="flex-1 text-[10px] bg-surface-primary px-1.5 py-1 rounded border border-border-primary text-text-secondary font-mono truncate"
+                    title={output}
+                  >
+                    {output}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveOutput(idx)}
+                    className="text-text-muted hover:text-red-400 p-1"
+                    title="Remove output"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <form onSubmit={handleAddOutput} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newOutputText}
+                  onChange={(e) => setNewOutputText(e.target.value)}
+                  placeholder="src/components/Output.tsx..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!newOutputText.trim()}
                   className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
                 >
                   Add

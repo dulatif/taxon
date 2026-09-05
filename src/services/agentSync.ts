@@ -15,7 +15,7 @@ export function parseFrontmatter(markdown: string): {
   data: Record<string, unknown>;
   body: string;
 } {
-  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
+  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
   const match = markdown.match(frontmatterRegex);
 
   if (!match) {
@@ -27,20 +27,43 @@ export function parseFrontmatter(markdown: string): {
   const data: Record<string, unknown> = {};
 
   const lines = frontmatterStr.split(/\r?\n/);
+  let currentArrayKey: string | null = null;
+
   for (const line of lines) {
+    const listItemMatch = line.match(/^\s*-\s*(.*)$/);
+    if (listItemMatch?.[1] !== undefined && currentArrayKey) {
+      const itemVal = listItemMatch[1].trim().replace(/^['"]|['"]$/g, '');
+      if (Array.isArray(data[currentArrayKey])) {
+        (data[currentArrayKey] as string[]).push(itemVal);
+      } else {
+        data[currentArrayKey] = [itemVal];
+      }
+      continue;
+    }
+
     const colonIndex = line.indexOf(':');
-    if (colonIndex === -1) continue;
+    if (colonIndex === -1) {
+      currentArrayKey = null;
+      continue;
+    }
 
     const key = line.slice(0, colonIndex).trim();
     const value = line.slice(colonIndex + 1).trim();
 
-    if (value === 'true') {
+    if (value === '') {
+      currentArrayKey = key;
+      data[key] = '';
+    } else if (value === 'true') {
+      currentArrayKey = null;
       data[key] = true;
     } else if (value === 'false') {
+      currentArrayKey = null;
       data[key] = false;
     } else if (!isNaN(Number(value)) && value !== '') {
+      currentArrayKey = null;
       data[key] = Number(value);
     } else if (value.startsWith('[') && value.endsWith(']')) {
+      currentArrayKey = null;
       const arrContent = value.slice(1, -1).trim();
       if (arrContent) {
         data[key] = arrContent.split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, ''));
@@ -48,6 +71,7 @@ export function parseFrontmatter(markdown: string): {
         data[key] = [];
       }
     } else {
+      currentArrayKey = null;
       data[key] = value.replace(/^['"]|['"]$/g, '');
     }
   }
@@ -93,6 +117,104 @@ export function sprintFilename(sprint: Sprint): string {
   return `SPRINT-${shortId}-${slugify(sprint.name)}.md`;
 }
 
+export interface TaskMarkdownSections {
+  description: string;
+  deliverables?: string;
+  acceptanceCriteria?: string;
+  subtasks: SubTask[];
+  customSections: { title: string; content: string }[];
+}
+
+export function extractTaskSections(body: string): TaskMarkdownSections {
+  const sections: { title: string; content: string }[] = [];
+  const lines = body.split(/\r?\n/);
+
+  let currentTitle: string | null = null;
+  let currentContentLines: string[] = [];
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^##\s+(.*)$/);
+    if (headingMatch?.[1] !== undefined) {
+      if (currentTitle !== null) {
+        sections.push({
+          title: currentTitle,
+          content: currentContentLines.join('\n').trim(),
+        });
+      } else if (currentContentLines.some((l) => l.trim() !== '')) {
+        sections.push({
+          title: 'Description',
+          content: currentContentLines.join('\n').trim(),
+        });
+      }
+      currentTitle = headingMatch[1].trim();
+      currentContentLines = [];
+    } else {
+      currentContentLines.push(line);
+    }
+  }
+
+  if (currentTitle !== null) {
+    sections.push({
+      title: currentTitle,
+      content: currentContentLines.join('\n').trim(),
+    });
+  } else if (currentContentLines.some((l) => l.trim() !== '')) {
+    sections.push({
+      title: 'Description',
+      content: currentContentLines.join('\n').trim(),
+    });
+  }
+
+  let description = '';
+  let deliverables: string | undefined;
+  let acceptanceCriteria: string | undefined;
+  let subtasksText: string | undefined;
+  const customSections: { title: string; content: string }[] = [];
+
+  for (const section of sections) {
+    const lowerTitle = section.title.toLowerCase();
+    if (lowerTitle === 'description') {
+      description = section.content;
+    } else if (lowerTitle === 'deliverables') {
+      deliverables = section.content;
+    } else if (lowerTitle === 'acceptance criteria') {
+      acceptanceCriteria = section.content;
+    } else if (lowerTitle === 'subtasks') {
+      subtasksText = section.content;
+    } else {
+      customSections.push(section);
+    }
+  }
+
+  const subtasks: SubTask[] = [];
+  if (subtasksText) {
+    const subtaskLines = subtasksText.split(/\r?\n/);
+    for (const line of subtaskLines) {
+      const match = line.match(/^-\s*\[([ xX])\]\s+(.*)$/);
+      if (match?.[1] && match?.[2]) {
+        const title = match[2].trim();
+        let hash = 0;
+        for (let i = 0; i < title.length; i++) {
+          hash = (Math.imul(31, hash) + title.charCodeAt(i)) | 0;
+        }
+        subtasks.push({
+          id: `sub-${Math.abs(hash).toString(16).substring(0, 8)}`,
+          title,
+          completed: match[1].toLowerCase() === 'x',
+        });
+      }
+    }
+  }
+
+  return {
+    description,
+    deliverables,
+    acceptanceCriteria,
+    subtasks,
+    customSections,
+  };
+}
+
 // AGENT-104: Task ↔ markdown serializer
 export function taskToMarkdown(task: Task): string {
   const frontmatterData: Record<string, unknown> = {
@@ -113,12 +235,44 @@ export function taskToMarkdown(task: Task): string {
     linkedFiles: task.linkedFiles,
     dependsOn: task.dependsOn,
     moduleGroup: task.moduleGroup,
+    inputs: task.inputs,
+    outputs: task.outputs,
   };
 
   let markdown = serializeFrontmatter(frontmatterData);
+
+  const {
+    description: descText,
+    deliverables,
+    acceptanceCriteria,
+    customSections,
+  } = extractTaskSections(task.description || '');
+
   markdown += '\n## Description\n\n';
-  markdown += task.description || '';
-  markdown += '\n\n## Subtasks\n\n';
+  markdown += descText || '';
+  markdown += '\n';
+
+  if (deliverables !== undefined && deliverables !== '') {
+    markdown += '\n## Deliverables\n\n';
+    markdown += deliverables;
+    markdown += '\n';
+  }
+
+  if (acceptanceCriteria !== undefined && acceptanceCriteria !== '') {
+    markdown += '\n## Acceptance Criteria\n\n';
+    markdown += acceptanceCriteria;
+    markdown += '\n';
+  }
+
+  for (const custom of customSections) {
+    if (custom.content) {
+      markdown += `\n## ${custom.title}\n\n`;
+      markdown += custom.content;
+      markdown += '\n';
+    }
+  }
+
+  markdown += '\n## Subtasks\n\n';
 
   if (task.subtasks && task.subtasks.length > 0) {
     for (const subtask of task.subtasks) {
@@ -133,33 +287,37 @@ export function taskToMarkdown(task: Task): string {
 export function markdownToTask(markdown: string, projectId: string): Task {
   const { data, body } = parseFrontmatter(markdown);
 
-  // Parse description and subtasks
-  const descMatch = body.match(/## Description\s*\n([\s\S]*?)(?:## Subtasks|$)/);
-  const description = descMatch?.[1]?.trim() ?? '';
+  const {
+    description: descText,
+    deliverables,
+    acceptanceCriteria,
+    subtasks,
+    customSections,
+  } = extractTaskSections(body);
 
-  const subtasksMatch = body.match(/## Subtasks\s*\n([\s\S]*)$/);
-  const subtasks: SubTask[] = [];
-
-  if (subtasksMatch?.[1]) {
-    const subtasksText = subtasksMatch[1];
-    const lines = subtasksText.split(/\r?\n/);
-    for (const line of lines) {
-      const match = line.match(/^-\s*\[([ xX])\]\s+(.*)$/);
-      if (match?.[1] && match?.[2]) {
-        // use hash of title for deterministic ID if possible, otherwise random
-        const title = match[2].trim();
-        let hash = 0;
-        for (let i = 0; i < title.length; i++) {
-          hash = (Math.imul(31, hash) + title.charCodeAt(i)) | 0;
-        }
-        subtasks.push({
-          id: `sub-${Math.abs(hash).toString(16).substring(0, 8)}`,
-          title,
-          completed: match[1].toLowerCase() === 'x',
-        });
-      }
+  const descParts: string[] = [];
+  if (descText) {
+    descParts.push(descText);
+  }
+  if (deliverables !== undefined && deliverables !== '') {
+    descParts.push(`## Deliverables\n${deliverables}`);
+  }
+  if (acceptanceCriteria !== undefined && acceptanceCriteria !== '') {
+    descParts.push(`## Acceptance Criteria\n${acceptanceCriteria}`);
+  }
+  for (const custom of customSections) {
+    if (custom.content) {
+      descParts.push(`## ${custom.title}\n${custom.content}`);
     }
   }
+
+  const description = descParts.join('\n\n');
+
+  const parseArrayField = (val: unknown): string[] => {
+    if (Array.isArray(val)) return val.map((item) => String(item).trim()).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) return [val.trim()];
+    return [];
+  };
 
   return {
     id: (data.id as string) || generateShortId(),
@@ -169,22 +327,27 @@ export function markdownToTask(markdown: string, projectId: string): Task {
     priority: (data.priority as Task['priority']) || 'Medium',
     status: (data.status as Task['status']) || 'To Do',
     completed: (data.completed as boolean) || false,
-    sprintId: data.sprintId as string | undefined,
-    dueDate: data.dueDate as string | undefined,
-    labels: (data.labels as string[]) || [],
+    sprintId: (data.sprintId as string) || undefined,
+    dueDate: (data.dueDate as string) || undefined,
+    labels: parseArrayField(data.labels),
     subtasks,
     duration: '',
     timeEffort: data.timeEffort as number | undefined,
     timeSpent: (data.timeSpent as number) || 0,
     sortOrder: (data.sortOrder as number) || 0,
     archived: (data.archived as boolean) || false,
-    archivedAt: data.archivedAt as string | undefined,
-    workspacePath: data.workspacePath as string | undefined,
-    linkedFiles: (data.linkedFiles as string[]) || [],
-    dependsOn: (data.dependsOn as string[]) || [],
-    moduleGroup: data.moduleGroup as string | undefined,
+    archivedAt: (data.archivedAt as string) || undefined,
+    workspacePath: (data.workspacePath as string) || undefined,
+    linkedFiles: parseArrayField(data.linkedFiles),
+    dependsOn: parseArrayField(data.dependsOn),
+    moduleGroup: (data.moduleGroup as string) || undefined,
+    inputs: parseArrayField(data.inputs),
+    outputs: parseArrayField(data.outputs),
   } as Task;
 }
+
+export const parseTaskMarkdown = markdownToTask;
+export const exportTaskMarkdown = taskToMarkdown;
 
 // AGENT-105: Sprint ↔ markdown serializer
 export function sprintToMarkdown(sprint: Sprint, tasks: Task[]): string {
@@ -330,21 +493,23 @@ All task files are stored in \`.taxon/tasks/\`[cite: 1].
 - DO NOT list or scan all files in \`.taxon/tasks/\` blindly[cite: 1].
 - Use the \`File Path\` provided in \`.taxon/project.md\` to open only the specific task file you need[cite: 1].
 
-### Creating New Tasks
+### Creating New Tasks (Task Contracts)
 Create a new \`.md\` file in \`.taxon/tasks/\` with this format:
 - Filename: \`TASK-{6-char-id}-{slugified-title}.md\`
 - Generate a unique 6-character alphanumeric ID (e.g. \`a1b2c3\`)
 - Required frontmatter: \`id\`, \`title\`, \`priority\`, \`status\`
-- Recommended frontmatter: \`moduleGroup\`, \`dependsOn\` (these power the Workflow DAG view)
+- Workflow frontmatter: \`moduleGroup\`, \`dependsOn\`, \`inputs\`, \`outputs\`, \`linkedFiles\`
 - Valid priorities: \`Critical\`, \`High\`, \`Medium\`, \`Low\`
 - Valid statuses: \`To Do\`, \`In Progress\`, \`Need to Test\`, \`Done\`
 
-**Workflow Fields (Recommended)**:
-- \`moduleGroup\`: A short technical category name (e.g., "Frontend UI", "Database", "Authentication", "API"). Tasks with the same \`moduleGroup\` are visually grouped together in the Workflow DAG.
-  - **Clustering Rule**: Keep total module groups per sprint small (typically **2 to 4 module groups per sprint**, maximum 5). Group related tasks together under the same group (e.g. all auth UI, state, and services under "Authentication") rather than inventing a separate module group for each individual task.
-- \`dependsOn\`: An array of task IDs that must be completed before this task. This creates directional edges in the Workflow DAG. Reference tasks using their full ID (e.g., \`TASK-a1b2c3\` or just \`a1b2c3\`).
+**Task Contract & Workflow Fields**:
+- \`moduleGroup\`: Short architectural category (e.g., "Frontend UI", "Database", "Authentication", "API"). Cluster into **2 to 4 module groups per sprint**.
+- \`dependsOn\`: Array of prerequisite task IDs that must be completed before starting this task.
+- \`inputs\`: Array of prerequisite files, contracts, or parent task files the agent must read before coding.
+- \`outputs\`: Array of target file paths to be created or modified by this task.
+- \`linkedFiles\`: Array of relevant workspace file paths.
 
-Example Task File:
+Example Task Contract File:
 \`\`\`markdown
 ---
 id: a1b2c3
@@ -352,21 +517,39 @@ title: Implement Login Screen
 priority: High
 status: To Do
 completed: false
-sprintId: 
+sprintId: sp1234
 moduleGroup: Authentication
 dependsOn:
   - x9y8z7
+inputs:
+  - docs/contracts/auth-ipc.md
+  - .taxon/tasks/TASK-x9y8z7-auth-ipc.md
+outputs:
+  - src/components/LoginScreen.tsx
+  - src/hooks/useAuth.ts
+linkedFiles:
+  - src/components/LoginScreen.tsx
 labels:
   - frontend
   - auth
 ---
 ## Description
-Implement the login screen using React Hook Form.
+Implement the login screen using React Hook Form and connect to IPC auth service.
+
+## Deliverables
+<!-- Filled upon completion -->
+- [LoginScreen.tsx](file:///mnt/Linux/Projects/taxon/src/components/LoginScreen.tsx): UI component with validation.
+- [useAuth.ts](file:///mnt/Linux/Projects/taxon/src/hooks/useAuth.ts): Hook binding IPC auth events.
+
+## Acceptance Criteria
+- [ ] Renders email and password fields with validation.
+- [ ] Error messages display on invalid credentials.
+- [ ] Successfully invokes IPC login command on submit.
 
 ## Subtasks
-- [x] Create form component
+- [ ] Create form component
 - [ ] Add validation
-- [ ] Connect to API
+- [ ] Connect to IPC API
 \`\`\`
 
 ### Modifying Tasks
@@ -412,6 +595,24 @@ When organizing tasks:
      - TASK-a1b2c3
    \`\`\`
 3. Use your best judgment to create a natural, top-to-bottom execution flow. Do not leave tasks entirely orphaned if they logically belong to a sequence.
+
+### Artifact Chaining & Task Execution Protocol
+
+1. **Read Prerequisites**: Before writing code for any task, read all files listed in \`inputs\` and review the \`## Deliverables\` section of parent tasks listed in \`dependsOn\`.
+2. **Blocker Check**:
+   - If working autonomously: Find the highest priority task in \`To Do\` where ALL \`dependsOn\` tasks have status \`Need to Test\` or \`Done\`.
+   - If assigned a specific task ID: Verify that all \`dependsOn\` tasks are already \`Need to Test\` or \`Done\`. If any blocker is \`To Do\` or \`In Progress\`, **REFUSE** to implement and warn the user about the unresolved dependency.
+3. **Fulfill Acceptance Criteria**: Implement code following the \`## Acceptance Criteria\` checklist.
+4. **Record Deliverables**: When finished, populate the task's \`## Deliverables\` section with file links, check off completed acceptance criteria, and set \`status: Need to Test\`.
+
+### Multi-Agent Parallel Execution Protocol
+
+When multiple AI coding agents (or subagents) work concurrently on a project:
+1. **DAG Graph Independence**: Agents may only work in parallel on tasks from different branches of the DAG. A task is eligible for execution only when all tasks in its \`dependsOn\` array are already \`Need to Test\` or \`Done\`.
+2. **Disjoint File Boundaries**: Before starting, verify that the task's \`outputs\` and \`linkedFiles\` do not overlap with any other concurrently running task. If two tasks touch the same files, they must be executed sequentially.
+3. **Task Status Locking**: An agent starting work on a task should mark the task as \`status: In Progress\` to signal other agents that the task is actively being handled.
+4. **Git Branch / Worktree Isolation**: If using multiple agents with autonomous git commit capabilities, use isolated git worktrees or branches per agent to prevent merge conflicts before integrating into the main branch.
+5. **Completion & Sync**: Upon completion, populate \`## Deliverables\`, check off \`Acceptance Criteria\`, and set \`status: Need to Test\`. Never set \`status: Done\`.
 `;
 }
 
@@ -450,7 +651,7 @@ fi
 
 for FULL_ID in $TASK_IDS; do
   SHORT_ID=\${FULL_ID#TASK-}
-  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 0, status = 'Need to Test' WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
+  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 0, status = 'Need to Test', dueDate = CASE WHEN dueDate IS NULL OR dueDate = '' THEN date('now') ELSE dueDate END WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
 done
 `;
 }
@@ -728,6 +929,8 @@ function normalizeTask(task: Task): Task {
     linkedFiles: task.linkedFiles || [],
     dependsOn: task.dependsOn || [],
     moduleGroup: task.moduleGroup || undefined,
+    inputs: task.inputs || [],
+    outputs: task.outputs || [],
   };
 }
 
@@ -814,6 +1017,11 @@ export function diffAgentChanges(
       agentTask.recurrence = existingTask.recurrence;
       if (existingTask.dueDate && (!agentTask.dueDate || agentTask.dueDate.trim() === '')) {
         agentTask.dueDate = existingTask.dueDate;
+      }
+      const statusChangedToNeedToTest =
+        agentTask.status === 'Need to Test' && existingTask.status !== 'Need to Test';
+      if (statusChangedToNeedToTest && (!agentTask.dueDate || agentTask.dueDate.trim() === '')) {
+        agentTask.dueDate = getTodayStr();
       }
       if (agentTask.timeEffort === undefined) agentTask.timeEffort = existingTask.timeEffort;
       if (agentTask.timeSpent === 0) agentTask.timeSpent = existingTask.timeSpent;

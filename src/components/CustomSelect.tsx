@@ -73,9 +73,9 @@ export default function CustomSelect<T extends string = string>({
           e.stopPropagation();
           setIsOpen(!isOpen);
         }}
-        className={`flex items-center justify-between gap-2.5 font-mono text-left rounded-sm border transition-all cursor-pointer bg-surface-primary text-text-primary border-border-primary hover:border-interactive-primary/50 focus:outline-none focus:border-interactive-primary focus:ring-1 focus:ring-interactive-primary/50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${buttonClassName}`}
+        className={`w-full min-w-0 flex items-center justify-between gap-2.5 font-mono text-left rounded-sm border transition-all cursor-pointer bg-surface-primary text-text-primary border-border-primary hover:border-interactive-primary/50 focus:outline-none focus:border-interactive-primary focus:ring-1 focus:ring-interactive-primary/50 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${sizeClasses[size]} ${buttonClassName}`}
       >
-        <span className="flex items-center gap-1.5 truncate">
+        <span className="flex items-center gap-1.5 truncate min-w-0">
           {selectedOption?.icon && <span className="shrink-0">{selectedOption.icon}</span>}
           <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
           {selectedOption?.badge !== undefined && (
