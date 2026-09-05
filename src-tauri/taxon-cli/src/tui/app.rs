@@ -10,6 +10,7 @@ pub enum Tab {
     Vault,
     Sync,
     Pomodoro,
+    Today,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -314,6 +315,9 @@ pub struct App {
     // Tab 4: Pomodoro
     pub pomodoro: PomodoroState,
 
+    // Tab 5: Today
+    pub selected_today_index: usize,
+
     // Modals
     pub status_modal_open: bool,
     pub status_modal_selected: usize,
@@ -399,6 +403,7 @@ impl App {
             selected_diff_index: 0,
             sync_status_message: None,
             pomodoro: PomodoroState::default(),
+            selected_today_index: 0,
             status_modal_open: false,
             status_modal_selected: 0,
             project_modal_open: false,
@@ -841,21 +846,30 @@ impl App {
             Tab::Tasks => Tab::Vault,
             Tab::Vault => Tab::Sync,
             Tab::Sync => Tab::Pomodoro,
-            Tab::Pomodoro => Tab::Tasks,
+            Tab::Pomodoro => Tab::Today,
+            Tab::Today => Tab::Tasks,
         };
     }
 
     pub fn cycle_tab_backward(&mut self) {
         self.active_tab = match self.active_tab {
-            Tab::Tasks => Tab::Pomodoro,
+            Tab::Tasks => Tab::Today,
             Tab::Vault => Tab::Tasks,
             Tab::Sync => Tab::Vault,
             Tab::Pomodoro => Tab::Sync,
+            Tab::Today => Tab::Pomodoro,
         };
     }
 
     pub fn tick(&mut self) {
+        let active_id = self.pomodoro.active_task_id.clone();
+        let active_title = self.pomodoro.active_task_title.clone();
+        let was_work = self.pomodoro.phase == PomodoroPhase::Work;
+
         if let Some(msg) = self.pomodoro.tick() {
+            if was_work {
+                let _ = self.db.log_activity_entry(active_id.as_deref(), active_title.as_deref());
+            }
             self.sync_status_message = Some(msg);
         }
 
@@ -866,6 +880,37 @@ impl App {
                 let _ = self.db.increment_task_time_spent(tid, minutes as i64);
                 self.reload_tasks();
             }
+        }
+    }
+
+    pub fn today_str(&self) -> String {
+        chrono::Local::now().format("%Y-%m-%d").to_string()
+    }
+
+    pub fn today_tasks(&self) -> Vec<&Task> {
+        let today = self.today_str();
+        self.tasks
+            .iter()
+            .filter(|t| !t.archived)
+            .filter(|t| {
+                if let Some(ref d) = t.due_date {
+                    let d_str = d.trim();
+                    !d_str.is_empty() && (d_str == today || d_str < &today)
+                } else {
+                    false
+                }
+            })
+            .collect()
+    }
+
+    pub fn toggle_task_by_id(&mut self, task_id: &str) {
+        if let Ok(new_completed) = self.db.toggle_task_completed(task_id) {
+            self.reload_tasks();
+            self.reload_sync();
+            self.sync_status_message = Some(format!(
+                "Task marked as {}",
+                if new_completed { "Done" } else { "To Do" }
+            ));
         }
     }
 

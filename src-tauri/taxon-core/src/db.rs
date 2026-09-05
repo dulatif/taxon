@@ -251,12 +251,21 @@ impl TaxonDb {
 
     pub fn update_task_status(&self, task_id: &str, status: &str) -> Result<(), String> {
         let completed = status == "Done";
-        self.conn
-            .execute(
-                "UPDATE tasks SET status = ?1, completed = ?2 WHERE id = ?3",
-                params![status, if completed { 1 } else { 0 }, task_id],
-            )
-            .map_err(|e| e.to_string())?;
+        if status == "Need to Test" {
+            self.conn
+                .execute(
+                    "UPDATE tasks SET status = ?1, completed = ?2, dueDate = CASE WHEN dueDate IS NULL OR dueDate = '' THEN date('now') ELSE dueDate END WHERE id = ?3",
+                    params![status, if completed { 1 } else { 0 }, task_id],
+                )
+                .map_err(|e| e.to_string())?;
+        } else {
+            self.conn
+                .execute(
+                    "UPDATE tasks SET status = ?1, completed = ?2 WHERE id = ?3",
+                    params![status, if completed { 1 } else { 0 }, task_id],
+                )
+                .map_err(|e| e.to_string())?;
+        }
         Ok(())
     }
 
@@ -275,6 +284,28 @@ impl TaxonDb {
             .execute(
                 "UPDATE tasks SET timeSpent = COALESCE(timeSpent, 0) + ?1 WHERE id = ?2",
                 params![minutes, task_id],
+            )
+            .map_err(|e| e.to_string())?;
+        Ok(())
+    }
+
+    pub fn log_activity_entry(&self, task_id: Option<&str>, task_title: Option<&str>) -> Result<(), String> {
+        let id = format!("log_{}", chrono::Utc::now().timestamp_millis());
+        let completed_at = chrono::Utc::now().to_rfc3339();
+        let _ = self.conn.execute(
+            "CREATE TABLE IF NOT EXISTS activityLog (
+                id TEXT PRIMARY KEY,
+                taskId TEXT,
+                taskTitle TEXT,
+                completedAt TEXT
+            );",
+            [],
+        );
+
+        self.conn
+            .execute(
+                "INSERT INTO activityLog (id, taskId, taskTitle, completedAt) VALUES (?1, ?2, ?3, ?4)",
+                params![id, task_id.unwrap_or(""), task_title.unwrap_or("Focus Session"), completed_at],
             )
             .map_err(|e| e.to_string())?;
         Ok(())

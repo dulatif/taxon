@@ -243,6 +243,10 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
             app.active_tab = Tab::Pomodoro;
             return;
         }
+        KeyCode::Char('5') => {
+            app.active_tab = Tab::Today;
+            return;
+        }
         KeyCode::Tab => {
             app.focused_pane = match app.focused_pane {
                 Pane::Left => Pane::Right,
@@ -259,6 +263,7 @@ pub fn handle_key(app: &mut App, key: KeyEvent) {
         Tab::Vault => handle_vault_tab(app, key),
         Tab::Sync => handle_sync_tab(app, key),
         Tab::Pomodoro => handle_pomodoro_tab(app, key),
+        Tab::Today => handle_today_tab(app, key),
     }
 }
 
@@ -485,3 +490,62 @@ fn handle_pomodoro_tab(app: &mut App, key: KeyEvent) {
         _ => {}
     }
 }
+
+fn handle_today_tab(app: &mut App, key: KeyEvent) {
+    let today_count = app.today_tasks().len();
+    match key.code {
+        KeyCode::Up | KeyCode::Char('k') => {
+            if app.selected_today_index > 0 {
+                app.selected_today_index -= 1;
+            } else if today_count > 0 {
+                app.selected_today_index = today_count - 1;
+            }
+        }
+        KeyCode::Down | KeyCode::Char('j') => {
+            if app.selected_today_index + 1 < today_count {
+                app.selected_today_index += 1;
+            } else {
+                app.selected_today_index = 0;
+            }
+        }
+        KeyCode::Char(' ') => {
+            let today_tasks = app.today_tasks();
+            if let Some(task) = today_tasks.get(app.selected_today_index) {
+                let tid = task.id.clone();
+                app.toggle_task_by_id(&tid);
+            }
+        }
+        KeyCode::Char('F') => {
+            let today_tasks = app.today_tasks();
+            if let Some(task) = today_tasks.get(app.selected_today_index) {
+                let tid = task.id.clone();
+                let title = task.title.clone();
+                app.pomodoro.link_task(tid, title.clone());
+                app.pomodoro.is_running = true;
+                app.pomodoro.last_tick = Some(std::time::Instant::now());
+                app.active_tab = Tab::Pomodoro;
+                app.sync_status_message = Some(format!("Started focus session on '{}'", title));
+            }
+        }
+        KeyCode::Char('m') => {
+            let today_tasks = app.today_tasks();
+            if let Some(task) = today_tasks.get(app.selected_today_index) {
+                if let Some(pos) = app.tasks.iter().position(|t| t.id == task.id) {
+                    app.selected_task_index = pos;
+                    app.status_modal_open = true;
+                    if let Some(t) = app.tasks.get(pos) {
+                        app.status_modal_selected = match t.status.as_str() {
+                            "To Do" => 0,
+                            "In Progress" => 1,
+                            "Need to Test" => 2,
+                            "Done" => 3,
+                            _ => 0,
+                        };
+                    }
+                }
+            }
+        }
+        _ => {}
+    }
+}
+

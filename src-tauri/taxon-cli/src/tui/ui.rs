@@ -43,12 +43,13 @@ fn render_header(f: &mut Frame, app: &App, area: Rect) {
         .constraints([Constraint::Min(45), Constraint::Length(22), Constraint::Length(28)])
         .split(area);
 
-    let tab_titles = vec!["[1] Tasks", "[2] Vault", "[3] Sync", "[4] Pomodoro"];
+    let tab_titles = vec!["[1] Tasks", "[2] Vault", "[3] Sync", "[4] Pomodoro", "[5] Today"];
     let tab_index = match app.active_tab {
         Tab::Tasks => 0,
         Tab::Vault => 1,
         Tab::Sync => 2,
         Tab::Pomodoro => 3,
+        Tab::Today => 4,
     };
 
     let tabs = Tabs::new(tab_titles)
@@ -131,6 +132,10 @@ fn render_body(f: &mut Frame, app: &App, area: Rect) {
         Tab::Pomodoro => {
             render_pomodoro_left(f, app, columns[0]);
             render_pomodoro_right(f, app, columns[1]);
+        }
+        Tab::Today => {
+            render_today_left(f, app, columns[0]);
+            render_today_right(f, app, columns[1]);
         }
     }
 }
@@ -1429,16 +1434,17 @@ fn render_pomodoro_right(f: &mut Frame, app: &App, area: Rect) {
 
 fn render_footer(f: &mut Frame, app: &App, area: Rect) {
     let keybindings = match app.active_tab {
-        Tab::Tasks => "[Tab] Pane  [1-4]/[[/]] Tabs  [s/S] Sprint  [f] Status  [Space] Done  [F] Focus Task  [m] Status  [P] Projects  [?] Help  [q] Quit",
+        Tab::Tasks => "[Tab] Pane  [1-5]/[[/]] Tabs  [s/S] Sprint  [f] Status  [Space] Done  [F] Focus Task  [m] Status  [P] Projects  [?] Help  [q] Quit",
         Tab::Vault => if app.vault_search_active {
             "Searching Vault...  [↑/↓] Navigate  [Enter] Confirm & Preview  [Esc] Clear & Exit"
         } else if !app.vault_search_query.is_empty() {
             "[Tab] Pane  [j/k] Navigate  [Type] Filter  [Enter] Preview  [e] Edit  [Esc] Clear Filter  [q] Quit"
         } else {
-            "[Tab] Pane  [1-4]/[[/]] Tabs  [Type / /] Live Search  [j/k] Navigate  [Enter] Preview  [e] Edit  [P] Projects  [?] Help  [q] Quit"
+            "[Tab] Pane  [1-5]/[[/]] Tabs  [Type / /] Live Search  [j/k] Navigate  [Enter] Preview  [e] Edit  [P] Projects  [?] Help  [q] Quit"
         },
-        Tab::Sync => "[Tab] Pane  [1-4]/[[/]] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
-        Tab::Pomodoro => "[Tab] Pane  [1-4]/[[/]] Tabs  [Space] Start/Pause  [r] Reset  [s] Skip  [w/b/l] Phase  [u] Unlink  [L] Link  [c] Done  [m] Status  [+/-] Min  [q] Quit",
+        Tab::Sync => "[Tab] Pane  [1-5]/[[/]] Tabs  [y] Apply Sync  [e] Export  [i] Import  [s] Refresh  [P] Projects  [?] Help  [q] Quit",
+        Tab::Pomodoro => "[Tab] Pane  [1-5]/[[/]] Tabs  [Space] Start/Pause  [r] Reset  [s] Skip  [w/b/l] Phase  [u] Unlink  [L] Link  [c] Done  [m] Status  [+/-] Min  [q] Quit",
+        Tab::Today => "[Tab] Pane  [1-5]/[[/]] Tabs  [Space] Toggle Done  [F] Focus Pomodoro  [m] Change Status  [?] Help  [q] Quit",
     };
 
     let msg = app
@@ -1715,3 +1721,240 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         ])
         .split(popup_layout[1])[1]
 }
+
+// -------------------------------------------------------------
+// Tab 5: Today Focus View
+// -------------------------------------------------------------
+
+fn render_today_left(f: &mut Frame, app: &App, area: Rect) {
+    let chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Length(4), Constraint::Min(5)])
+        .split(area);
+
+    let today_tasks = app.today_tasks();
+    let total_today = today_tasks.len();
+    let completed_today = today_tasks.iter().filter(|t| t.completed || t.status == "Done").count();
+    let overdue_count = today_tasks
+        .iter()
+        .filter(|t| !t.completed && t.status != "Done")
+        .filter(|t| {
+            if let Some(ref d) = t.due_date {
+                d.trim() < app.today_str().as_str()
+            } else {
+                false
+            }
+        })
+        .count();
+
+    // Today Banner
+    let banner_block = Block::default()
+        .borders(Borders::ALL)
+        .title(" 🎯 Today's Agenda ")
+        .border_style(Style::default().fg(Color::Yellow));
+
+    let banner_text = vec![
+        Line::from(vec![
+            Span::styled(format!("📅 Date: {}  ", app.today_str()), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+            Span::styled(format!("Total: {}  ", total_today), Style::default().fg(Color::Cyan)),
+            Span::styled(format!("Done: {}/{}  ", completed_today, total_today), Style::default().fg(Color::Green)),
+            if overdue_count > 0 {
+                Span::styled(format!("⚠️ Overdue: {} ", overdue_count), Style::default().fg(Color::LightRed).add_modifier(Modifier::BOLD))
+            } else {
+                Span::styled("✨ No Overdue", Style::default().fg(Color::DarkGray))
+            },
+        ]),
+    ];
+    let banner = Paragraph::new(banner_text).block(banner_block);
+    f.render_widget(banner, chunks[0]);
+
+    // Today Task List
+    let is_focused = app.focused_pane == Pane::Left;
+    let list_border_style = if is_focused {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+
+    if today_tasks.is_empty() {
+        let empty_msg = Paragraph::new("🎉 No tasks scheduled for today!\n\nUse [1] Tasks to set due dates or assign tasks to Today.")
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Tasks Due Today ")
+                    .border_style(list_border_style),
+            );
+        f.render_widget(empty_msg, chunks[1]);
+        return;
+    }
+
+    let items: Vec<ListItem> = today_tasks
+        .iter()
+        .enumerate()
+        .map(|(idx, task)| {
+            let is_selected = idx == app.selected_today_index;
+            let is_done = task.completed || task.status == "Done";
+
+            let check_mark = if is_done { "[✓] " } else { "[ ] " };
+            let check_style = if is_done {
+                Style::default().fg(Color::Green)
+            } else {
+                Style::default().fg(Color::DarkGray)
+            };
+
+            let title_style = if is_done {
+                Style::default().fg(Color::DarkGray).add_modifier(Modifier::CROSSED_OUT)
+            } else if is_selected {
+                Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+            } else {
+                Style::default().fg(Color::White)
+            };
+
+            let is_overdue = if let Some(ref d) = task.due_date {
+                !is_done && d.trim() < app.today_str().as_str()
+            } else {
+                false
+            };
+
+            let due_badge = if is_overdue {
+                Span::styled(" [OVERDUE]", Style::default().fg(Color::LightRed).add_modifier(Modifier::BOLD))
+            } else {
+                Span::styled(" [TODAY]", Style::default().fg(Color::LightYellow))
+            };
+
+            let (prio_label, prio_color) = match task.priority.as_str() {
+                "Critical" => ("🔴 Crit", Color::Red),
+                "High" => ("🟠 High", Color::LightRed),
+                "Medium" => ("🟡 Med ", Color::Yellow),
+                _ => ("⚪ Low ", Color::DarkGray),
+            };
+
+            let prefix = if is_selected { "▶ " } else { "  " };
+
+            let spans = vec![
+                Span::styled(prefix, Style::default().fg(Color::Yellow)),
+                Span::styled(check_mark, check_style),
+                Span::styled(format!("{} ", prio_label), Style::default().fg(prio_color)),
+                Span::styled(task.title.clone(), title_style),
+                due_badge,
+            ];
+
+            let style = if is_selected {
+                Style::default().bg(Color::Rgb(30, 30, 45))
+            } else {
+                Style::default()
+            };
+
+            ListItem::new(Line::from(spans)).style(style)
+        })
+        .collect();
+
+    let list = List::new(items).block(
+        Block::default()
+            .borders(Borders::ALL)
+            .title(format!(" Tasks Due Today ({}) ", total_today))
+            .border_style(list_border_style),
+    );
+
+    f.render_widget(list, chunks[1]);
+}
+
+fn render_today_right(f: &mut Frame, app: &App, area: Rect) {
+    let is_focused = app.focused_pane == Pane::Right;
+    let border_style = if is_focused {
+        Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::DarkGray)
+    };
+
+    let today_tasks = app.today_tasks();
+    let selected_task = today_tasks.get(app.selected_today_index);
+
+    if let Some(task) = selected_task {
+        let is_done = task.completed || task.status == "Done";
+
+        let mut lines = Vec::new();
+        lines.push(Line::from(vec![
+            Span::styled("📌 Title: ", Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD)),
+            Span::styled(task.title.clone(), Style::default().fg(Color::White).add_modifier(Modifier::BOLD)),
+        ]));
+
+        lines.push(Line::from(vec![
+            Span::styled("⚡ Status: ", Style::default().fg(Color::Cyan)),
+            Span::styled(task.status.clone(), Style::default().fg(Color::White)),
+            Span::styled("  |  Priority: ", Style::default().fg(Color::Cyan)),
+            Span::styled(task.priority.clone(), Style::default().fg(Color::White)),
+        ]));
+
+        if let Some(ref due) = task.due_date {
+            let is_overdue = !is_done && due.trim() < app.today_str().as_str();
+            lines.push(Line::from(vec![
+                Span::styled("📅 Due Date: ", Style::default().fg(Color::Cyan)),
+                Span::styled(
+                    due.clone(),
+                    if is_overdue {
+                        Style::default().fg(Color::LightRed).add_modifier(Modifier::BOLD)
+                    } else {
+                        Style::default().fg(Color::Yellow)
+                    },
+                ),
+            ]));
+        }
+
+        if let Some(ref desc) = task.description {
+            lines.push(Line::from(""));
+            lines.push(Line::from(Span::styled("📝 Description:", Style::default().fg(Color::DarkGray))));
+            for l in desc.lines() {
+                lines.push(Line::from(Span::styled(format!("  {}", l), Style::default().fg(Color::Gray))));
+            }
+        }
+
+        if let Some(ref subtasks) = task.subtasks {
+            if !subtasks.is_empty() {
+                lines.push(Line::from(""));
+                lines.push(Line::from(Span::styled("📋 Subtasks:", Style::default().fg(Color::DarkGray))));
+                for st in subtasks {
+                    let mark = if st.completed { "[✓]" } else { "[ ]" };
+                    let st_color = if st.completed { Color::Green } else { Color::White };
+                    lines.push(Line::from(vec![
+                        Span::styled(format!("  {} ", mark), Style::default().fg(st_color)),
+                        Span::styled(st.title.clone(), Style::default().fg(st_color)),
+                    ]));
+                }
+            }
+        }
+
+        lines.push(Line::from(""));
+        lines.push(Line::from(vec![
+            Span::styled("Quick Actions: ", Style::default().fg(Color::DarkGray)),
+            Span::styled("[Space] Toggle Complete  ", Style::default().fg(Color::Cyan)),
+            Span::styled("[F] Focus Pomodoro  ", Style::default().fg(Color::Yellow)),
+            Span::styled("[m] Change Status", Style::default().fg(Color::Green)),
+        ]));
+
+        let details = Paragraph::new(lines)
+            .wrap(Wrap { trim: true })
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Task Details ")
+                    .border_style(border_style),
+            );
+
+        f.render_widget(details, area);
+    } else {
+        let empty = Paragraph::new("No task selected.\n\nSelect a task from the list on the left to view details.")
+            .style(Style::default().fg(Color::DarkGray))
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title(" Task Details ")
+                    .border_style(border_style),
+            );
+        f.render_widget(empty, area);
+    }
+}
+
