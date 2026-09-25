@@ -1,0 +1,421 @@
+---
+---
+
+<section class="tui-section" id="tui">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="tag-badge tag-badge-cyan">
+        <span>KEYBOARD-DRIVEN WORKFLOW</span>
+      </div>
+      <h2 class="section-title">Zero-Latency Terminal TUI &amp; Pomodoro.</h2>
+      <p class="section-lede">
+        Engineered for terminal purists. Manage task DAGs, track focused deep-work blocks, and inspect agent queues without leaving your shell.
+      </p>
+    </div>
+
+    <!-- Interactive TUI Terminal Window -->
+    <div class="tui-display-frame glass-card reveal">
+      <div class="tui-topbar">
+        <div class="tui-title-group">
+          <span class="tui-badge">TAXON TUI v1.0</span>
+          <span class="tui-session-info">[ACTIVE SPRINT: SPRINT 8]</span>
+        </div>
+
+        <div class="tui-view-tabs">
+          <button type="button" class="tui-tab is-active" data-tui-tab="board">
+            [F1] TASK_DAG
+          </button>
+          <button type="button" class="tui-tab" data-tui-tab="pomo">
+            [F2] POMODORO_TIMER
+          </button>
+          <button type="button" class="tui-tab" data-tui-tab="velocity">
+            [F3] VELOCITY_ANALYTICS
+          </button>
+        </div>
+      </div>
+
+      <!-- TUI View 1: Task Board -->
+      <div class="tui-screen" id="tui-view-board">
+        <div class="tui-columns-grid">
+          <!-- Col 1: Ready / In Progress -->
+          <div class="tui-col">
+            <div class="tui-col-head">[01] IN PROGRESS (2 SLOTS)</div>
+            <div class="tui-card is-focused">
+              <div class="card-head">
+                <span class="tui-id">TASK-grf002</span>
+                <span class="tui-chip active">● RUNNING</span>
+              </div>
+              <div class="card-title">AgentSync Parser &amp; Hooks</div>
+              <div class="card-meta">In: types/task.ts · Agent: Claude</div>
+            </div>
+
+            <div class="tui-card">
+              <div class="card-head">
+                <span class="tui-id">TASK-grf001</span>
+                <span class="tui-chip done">✓ DONE</span>
+              </div>
+              <div class="card-title">Task Contract SQLite Schema</div>
+              <div class="card-meta">Deliverables: 2 files recorded</div>
+            </div>
+          </div>
+
+          <!-- Col 2: DAG Dependency Tree -->
+          <div class="tui-col">
+            <div class="tui-col-head">[02] TOPOLOGICAL DEPENDENCIES</div>
+            <div class="tui-tree-box">
+              <div>grf001: Schema [DONE]</div>
+              <div> └──▶ grf002: AgentSync [IN PROGRESS]</div>
+              <div>       ├──▶ grf003: Node Sidebar [QUEUED]</div>
+              <div>       └──▶ grf004: Dataflow [QUEUED]</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUI View 2: Pomodoro Timer -->
+      <div class="tui-screen" id="tui-view-pomo" hidden>
+        <div class="pomo-box">
+          <div class="pomo-clock">
+            <span class="clock-digits">24:18</span>
+            <span class="clock-label">FOCUS SESSION #4 · TASK: grf002</span>
+          </div>
+          <div class="pomo-progress-bar">
+            <div class="pomo-fill" style="width: 78%;"></div>
+          </div>
+          <div class="pomo-controls-hint">
+            <span>[SPACE] Pause/Resume</span>
+            <span>[r] Reset Block</span>
+            <span>[s] Skip Break</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUI View 3: Velocity Analytics -->
+      <div class="tui-screen" id="tui-view-velocity" hidden>
+        <div class="analytics-box">
+          <div class="chart-header">SPRINT VELOCITY TELEMETRY (COMPLETED TASKS / DAY)</div>
+          <div class="ascii-chart">
+            <div>MON [██████████████████████] 12 Tasks</div>
+            <div>TUE [██████████████████] 9 Tasks</div>
+            <div>WED [████████████████████████████] 15 Tasks</div>
+            <div>THU [████████████████] 8 Tasks</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUI Status Footer -->
+      <div class="tui-footer">
+        <div class="footer-keys">
+          <span><kbd>j</kbd><kbd>k</kbd> Select</span>
+          <span><kbd>Tab</kbd> Switch View</span>
+          <span><kbd>Space</kbd> Action</span>
+          <span><kbd>q</kbd> Quit</span>
+        </div>
+        <span class="tui-stat">FPS: 60 · MEM: 8.2 MB · ZERO LATENCY</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .tui-section {
+    padding-top: var(--section-y);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: var(--measure);
+    margin-bottom: 3.5rem;
+  }
+
+  .section-title {
+    font-size: var(--step-section);
+  }
+
+  .section-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+  }
+
+  /* TUI Display Frame */
+  .tui-display-frame {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    font-family: var(--font-mono);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+  }
+
+  .tui-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background-color: var(--bg-card-header);
+    border-bottom: 1px solid var(--border-subtle);
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .tui-title-group {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 0.75rem;
+  }
+
+  .tui-badge {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .tui-session-info {
+    color: var(--text-muted);
+  }
+
+  .tui-view-tabs {
+    display: flex;
+    gap: 0.35rem;
+  }
+
+  .tui-tab {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    padding: 0.25rem 0.65rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    transition: all var(--t-fast);
+  }
+
+  .tui-tab:hover {
+    color: var(--text-primary);
+    border-color: var(--border-medium);
+  }
+
+  .tui-tab.is-active {
+    background-color: var(--accent-cyan-dim);
+    border-color: var(--border-cyan);
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .tui-screen {
+    padding: 1.5rem;
+    min-height: 320px;
+    background-color: rgba(7, 9, 13, 0.95);
+  }
+
+  .tui-columns-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .tui-col-head {
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+    border-bottom: 1px dashed var(--border-subtle);
+    padding-bottom: 0.35rem;
+  }
+
+  .tui-card {
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-bottom: 0.65rem;
+  }
+
+  .tui-card.is-focused {
+    border-color: var(--accent-cyan);
+    border-left: 3px solid var(--accent-cyan);
+    box-shadow: 0 0 16px var(--accent-cyan-dim);
+  }
+
+  .card-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.6875rem;
+  }
+
+  .tui-id { color: var(--text-muted); }
+
+  .tui-chip {
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+  }
+  .tui-chip.active { background: var(--accent-cyan-dim); color: var(--accent-cyan); }
+  .tui-chip.done { background: var(--accent-emerald-dim); color: var(--accent-emerald); }
+
+  .card-title {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .card-meta {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .tui-tree-box {
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    font-size: 0.8125rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+  }
+
+  /* Pomodoro Clock */
+  .pomo-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 2rem 0;
+  }
+
+  .pomo-clock {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .clock-digits {
+    font-size: 4rem;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    letter-spacing: -0.04em;
+    text-shadow: 0 0 30px var(--accent-cyan-glow);
+  }
+
+  .clock-label {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+  }
+
+  .pomo-progress-bar {
+    width: 100%;
+    max-width: 480px;
+    height: 8px;
+    background-color: var(--bg-surface-elevated);
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border-subtle);
+  }
+
+  .pomo-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-emerald), var(--accent-cyan));
+  }
+
+  .pomo-controls-hint {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  /* Velocity Analytics */
+  .analytics-box {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .chart-header {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: var(--tracking-label);
+  }
+
+  .ascii-chart {
+    font-size: 0.875rem;
+    color: var(--accent-emerald);
+    line-height: 2;
+  }
+
+  /* TUI Footer */
+  .tui-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1.25rem;
+    background-color: var(--bg-card-header);
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .footer-keys {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .footer-keys kbd {
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    color: var(--text-primary);
+  }
+
+  @media (max-width: 768px) {
+    .tui-columns-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  function setupTuiTabs() {
+    const tabs = document.querySelectorAll('.tui-tab');
+    const boardView = document.getElementById('tui-view-board');
+    const pomoView = document.getElementById('tui-view-pomo');
+    const velView = document.getElementById('tui-view-velocity');
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+
+        const tabType = tab.getAttribute('data-tui-tab');
+        boardView?.setAttribute('hidden', '');
+        pomoView?.setAttribute('hidden', '');
+        velView?.setAttribute('hidden', '');
+
+        if (tabType === 'board') {
+          boardView?.removeAttribute('hidden');
+        } else if (tabType === 'pomo') {
+          pomoView?.removeAttribute('hidden');
+        } else if (tabType === 'velocity') {
+          velView?.removeAttribute('hidden');
+        }
+      });
+    });
+  }
+
+  setupTuiTabs();
+  document.addEventListener('astro:page-load', setupTuiTabs);
+</script>

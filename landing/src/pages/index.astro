@@ -1,0 +1,33 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Nav from '../components/Nav.astro';
+import CommandPalette from '../components/CommandPalette.astro';
+import Hero from '../components/Hero.astro';
+import Comparison from '../components/Comparison.astro';
+import BentoGrid from '../components/BentoGrid.astro';
+import WorkflowDiagram from '../components/WorkflowDiagram.astro';
+import TuiShowcase from '../components/TuiShowcase.astro';
+import LocalFirstPrivacy from '../components/LocalFirstPrivacy.astro';
+import DownloadSection from '../components/DownloadSection.astro';
+import Footer from '../components/Footer.astro';
+---
+
+<Layout
+  title="Taxon — The Local-First Task Graph for Developers & AI Agents"
+  description="Deterministic workflow engine and local-first task management system with DAG graph execution, artifact chaining, and bi-directional Obsidian sync."
+>
+  <Nav />
+  <CommandPalette />
+  
+  <main id="main-content">
+    <Hero />
+    <Comparison />
+    <BentoGrid />
+    <WorkflowDiagram />
+    <TuiShowcase />
+    <LocalFirstPrivacy />
+    <DownloadSection />
+  </main>
+
+  <Footer />
+</Layout>

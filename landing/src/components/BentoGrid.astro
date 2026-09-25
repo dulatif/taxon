@@ -1,0 +1,396 @@
+---
+---
+
+<section class="bento-section" id="features">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="tag-badge">
+        <span>CORE SUBSYSTEMS</span>
+      </div>
+      <h2 class="section-title">Engineered for Mathematical Discipline.</h2>
+      <p class="section-lede">
+        Explore the four foundational pillars powering Taxon's deterministic multi-agent execution.
+      </p>
+    </div>
+
+    <div class="bento-layout">
+      <!-- Bento 1: Topological DAG Solver (Span 2) -->
+      <div class="bento-card bento-wide glass-card reveal">
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">SUBSYSTEM 01</span>
+            <span class="card-type">DAG_TOPOLOGY_ENGINE</span>
+          </div>
+
+          <h3 class="card-title">Topological Task Graph Solver</h3>
+          <p class="card-desc">
+            Construct Directed Acyclic Graphs (DAGs) with strict mathematical cycle prevention. Taxon calculates topological execution order across all sprint tasks in real time, guaranteeing that prerequisites are completed and verified before child tasks unlock.
+          </p>
+
+          <div class="visual-engine-box">
+            <div class="engine-top">
+              <span>DAG RESOLVER · TOPO_SORT(SPRINT_8)</span>
+              <span class="engine-status">0 CYCLES · TOPOLOGICAL DEPTH: 3</span>
+            </div>
+            <div class="engine-flow">
+              <div class="flow-step">
+                <span class="step-badge">ROOT</span>
+                <span class="step-name">grf001: Schema</span>
+                <span class="step-state resolved">RESOLVED ✓</span>
+              </div>
+              <span class="flow-arrow">──▶</span>
+              <div class="flow-step">
+                <span class="step-badge">NODE</span>
+                <span class="step-name">grf002: Parser</span>
+                <span class="step-state active">ACTIVE [64%]</span>
+              </div>
+              <span class="flow-arrow">──▶</span>
+              <div class="flow-step">
+                <span class="step-badge">LEAF</span>
+                <span class="step-name">grf003: Sidebar</span>
+                <span class="step-state locked">LOCKED (0/1)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bento 2: Artifact Chaining Protocol -->
+      <div class="bento-card glass-card reveal">
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">SUBSYSTEM 02</span>
+            <span class="card-type">DATAFLOW</span>
+          </div>
+
+          <h3 class="card-title">Artifact Chaining</h3>
+          <p class="card-desc">
+            Pass exact file deliverables between parent and child nodes. Declare explicit `inputs` and `outputs` contracts so executing agents never guess missing boundaries.
+          </p>
+
+          <div class="code-preview-box">
+            <div class="code-box-header">TASK-grf003.md [YAML FRONTMATTER]</div>
+            <pre class="code-snippet"><code><span class="k">inputs:</span>
+  - <span class="s">"src/types/task.ts"</span>
+  - <span class="s">".taxon/tasks/TASK-grf001.md"</span>
+<span class="k">outputs:</span>
+  - <span class="s">"src/components/DAG.tsx"</span>
+<span class="k">dependsOn:</span> [<span class="v">grf001</span>]</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bento 3: Obsidian Bi-directional Local Sync -->
+      <div class="bento-card glass-card reveal" id="obsidian">
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">SUBSYSTEM 03</span>
+            <span class="card-type">STORAGE</span>
+          </div>
+
+          <h3 class="card-title">Bi-Directional Obsidian Sync</h3>
+          <p class="card-desc">
+            Your tasks live as plain `.md` files in `.taxon/tasks/`. Edit them from Obsidian, Neovim, or VS Code. Changes reflect instantaneously with zero database drift.
+          </p>
+
+          <div class="tree-preview-box">
+            <div class="tree-line"><span class="tree-folder">📁</span> .taxon/</div>
+            <div class="tree-line indent-1"><span class="tree-file">📄</span> project.md <span class="tree-comment">(Index)</span></div>
+            <div class="tree-line indent-1"><span class="tree-folder">📁</span> tasks/</div>
+            <div class="tree-line indent-2"><span class="tree-file active-file">📄</span> TASK-grf002.md</div>
+            <div class="tree-line indent-1"><span class="tree-folder">📁</span> sprints/</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bento 4: Multi-Agent Parallel Isolation Protocol (Span 2) -->
+      <div class="bento-card bento-wide glass-card reveal">
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="card-tag">SUBSYSTEM 04</span>
+            <span class="card-type">PARALLEL_EXECUTION</span>
+          </div>
+
+          <h3 class="card-title">Multi-Agent Parallel Isolation Protocol</h3>
+          <p class="card-desc">
+            Dispatch concurrent AI agents (Claude Code, Antigravity, Cursor) across independent branches of the DAG without merge conflicts. Taxon guarantees disjoint file boundaries and locks active tasks.
+          </p>
+
+          <div class="fleet-timeline-box">
+            <div class="fleet-row">
+              <div class="agent-tag">CLAUDE CODE (SUBAGENT 1)</div>
+              <div class="agent-branch">Branch: `Frontend UI` ──▶ Touching: `src/components/*`</div>
+              <div class="agent-status-tag running">● RUNNING</div>
+            </div>
+
+            <div class="isolation-divider">
+              <span>⇅ DISJOINT FILE BOUNDARY CHECK PASSED (0 CONFLICTS) ⇅</span>
+            </div>
+
+            <div class="fleet-row">
+              <div class="agent-tag">ANTIGRAVITY (SUBAGENT 2)</div>
+              <div class="agent-branch">Branch: `Database Schema` ──▶ Touching: `src/db/*`</div>
+              <div class="agent-status-tag running">● RUNNING</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .bento-section {
+    padding-top: var(--section-y);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: var(--measure);
+    margin-bottom: 3.5rem;
+  }
+
+  .section-title {
+    font-size: var(--step-section);
+  }
+
+  .section-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+  }
+
+  .bento-layout {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .bento-card {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .bento-wide {
+    grid-column: span 2;
+  }
+
+  .card-content {
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    height: 100%;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+  }
+
+  .card-tag { color: var(--text-muted); }
+  .card-type {
+    color: var(--accent-emerald);
+    background: var(--accent-emerald-dim);
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+  }
+
+  .card-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .card-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Visual Engine Box */
+  .visual-engine-box {
+    margin-top: auto;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+  }
+
+  .engine-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0.85rem;
+    background-color: var(--bg-card-header);
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-muted);
+    font-size: 0.6875rem;
+  }
+
+  .engine-status { color: var(--accent-emerald); }
+
+  .engine-flow {
+    padding: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    overflow-x: auto;
+  }
+
+  .flow-step {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.65rem 0.85rem;
+    background-color: var(--bg-canvas);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-sm);
+    min-width: 140px;
+  }
+
+  .step-badge {
+    font-size: 0.5625rem;
+    color: var(--text-dim);
+  }
+
+  .step-name {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .step-state {
+    font-size: 0.625rem;
+    font-weight: 600;
+  }
+
+  .step-state.resolved { color: var(--accent-emerald); }
+  .step-state.active { color: var(--accent-cyan); }
+  .step-state.locked { color: var(--text-dim); }
+
+  .flow-arrow {
+    color: var(--text-dim);
+    font-size: 0.875rem;
+  }
+
+  /* Code Preview Box */
+  .code-preview-box {
+    margin-top: auto;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+
+  .code-box-header {
+    padding: 0.45rem 0.75rem;
+    background-color: var(--bg-card-header);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .code-snippet {
+    padding: 0.85rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .k { color: var(--accent-cyan); }
+  .s { color: #a5d6ff; }
+  .v { color: var(--accent-emerald); }
+
+  /* Tree Preview Box */
+  .tree-preview-box {
+    margin-top: auto;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .indent-1 { padding-left: 1rem; }
+  .indent-2 { padding-left: 2rem; }
+  .active-file { color: var(--accent-emerald); font-weight: 600; }
+  .tree-comment { color: var(--text-dim); }
+
+  /* Fleet Timeline */
+  .fleet-timeline-box {
+    margin-top: auto;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 1rem;
+    font-family: var(--font-mono);
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .fleet-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    font-size: 0.75rem;
+    background-color: var(--bg-canvas);
+    padding: 0.6rem 0.85rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .agent-tag {
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .agent-branch {
+    color: var(--text-secondary);
+  }
+
+  .agent-status-tag {
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .agent-status-tag.running {
+    background-color: var(--accent-emerald-dim);
+    color: var(--accent-emerald);
+  }
+
+  .isolation-divider {
+    text-align: center;
+    font-size: 0.625rem;
+    color: var(--text-dim);
+    letter-spacing: var(--tracking-label);
+  }
+
+  @media (max-width: 960px) {
+    .bento-layout {
+      grid-template-columns: 1fr;
+    }
+    .bento-wide {
+      grid-column: span 1;
+    }
+  }
+</style>

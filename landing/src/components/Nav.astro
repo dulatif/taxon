@@ -1,0 +1,192 @@
+---
+---
+
+<header class="site-header">
+  <div class="container nav-wrapper">
+    <div class="nav-brand">
+      <a href="/" class="brand-link" aria-label="Taxon Home">
+        <span class="brand-logo">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="6" cy="12" r="3" fill="var(--accent-cyan)"></circle>
+            <circle cx="18" cy="6" r="3" fill="var(--accent-blue)"></circle>
+            <circle cx="18" cy="18" r="3" stroke="var(--accent-cyan)"></circle>
+            <line x1="9" y1="12" x2="15" y2="6" stroke="var(--text-muted)" stroke-dasharray="2 2"></line>
+            <line x1="9" y1="12" x2="15" y2="18" stroke="var(--accent-cyan)"></line>
+          </svg>
+        </span>
+        <span class="brand-text">TAXON</span>
+      </a>
+      <span class="version-badge">v1.0</span>
+    </div>
+
+    <nav class="nav-menu" aria-label="Primary Navigation">
+      <a href="#features" class="nav-item">Features</a>
+      <a href="#workbench" class="nav-item">DAG Graph</a>
+      <a href="#pipeline" class="nav-item">Multi-Agent</a>
+      <a href="#tui" class="nav-item">TUI &amp; Pomodoro</a>
+      <a href="#docs" class="nav-item">Docs</a>
+    </nav>
+
+    <div class="nav-actions">
+      <button type="button" class="cmd-pill" data-open-cmd aria-label="Open Command Palette">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+        <span class="cmd-pill-label">Search</span>
+        <kbd class="cmd-kbd">⌘K</kbd>
+      </button>
+
+      <a href="https://github.com/nutlope/taxon" target="_blank" rel="noopener noreferrer" class="gh-link" aria-label="GitHub Repository">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+          <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"/>
+        </svg>
+      </a>
+
+      <a href="#download" class="btn btn-primary nav-btn">Download</a>
+    </div>
+  </div>
+</header>
+
+<style>
+  .site-header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background-color: var(--surface-glass);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border-primary);
+    height: 4rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .nav-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1.5rem;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .brand-link {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.02em;
+  }
+
+  .brand-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .brand-text {
+    color: var(--text-primary);
+    font-weight: 700;
+  }
+
+  .version-badge {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: var(--radius-sm);
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-primary);
+    color: var(--text-muted);
+  }
+
+  .nav-menu {
+    display: flex;
+    align-items: center;
+    gap: 1.75rem;
+  }
+
+  .nav-item {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-muted);
+    transition: color var(--t-fast);
+  }
+
+  .nav-item:hover {
+    color: var(--text-primary);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+  }
+
+  .cmd-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    font-size: 0.8125rem;
+    transition: all var(--t-fast);
+  }
+
+  .cmd-pill:hover {
+    border-color: var(--border-hover);
+    color: var(--text-primary);
+    background-color: var(--surface-hover);
+  }
+
+  .cmd-kbd {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    padding: 0.1rem 0.3rem;
+    background-color: var(--surface-app);
+    border: 1px solid var(--border-primary);
+    border-radius: 3px;
+    color: var(--text-muted);
+  }
+
+  .gh-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.45rem;
+    border-radius: var(--radius-md);
+    color: var(--text-muted);
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-primary);
+    transition: all var(--t-fast);
+  }
+
+  .gh-link:hover {
+    color: var(--text-primary);
+    border-color: var(--border-hover);
+    background-color: var(--surface-hover);
+  }
+
+  .nav-btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 860px) {
+    .nav-menu {
+      display: none;
+    }
+    .cmd-pill-label {
+      display: none;
+    }
+  }
+</style>

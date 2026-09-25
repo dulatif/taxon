@@ -1,0 +1,227 @@
+---
+---
+
+<section class="comp-section">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="tag-badge">
+        <span>ARCHITECTURAL SHIFT</span>
+      </div>
+      <h2 class="section-title">Why Traditional Kanban Fails Autonomous AI Coding Fleets.</h2>
+      <p class="section-lede">
+        When coding agents (Claude Code, Antigravity, Cursor) execute against amorphous tickets, context degrades over multi-turn interactions. Taxon solves this with mathematical DAG determinism.
+      </p>
+    </div>
+
+    <div class="split-comp-grid reveal">
+      <!-- Left: Traditional Kanban -->
+      <div class="comp-pane comp-legacy glass-card">
+        <div class="comp-pane-header">
+          <span class="pane-flag legacy-flag">TRADITIONAL FLAT KANBAN</span>
+          <span class="pane-status">HIGH HALLUCINATION RISK</span>
+        </div>
+
+        <div class="comp-list">
+          <div class="comp-item">
+            <div class="item-icon red-x">✕</div>
+            <div class="item-text">
+              <h4>Amorphous Text Blobs</h4>
+              <p>Tickets lack formal input/output contracts. Agents guess file boundaries and invent missing APIs.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="item-icon red-x">✕</div>
+            <div class="item-text">
+              <h4>Context Degradation</h4>
+              <p>Conversation transcripts grow unbounded. Upstream schemas and architectural decisions get lost in context windows.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="item-icon red-x">✕</div>
+            <div class="item-text">
+              <h4>Cloud Vendor Lock-in</h4>
+              <p>Data stored in proprietary cloud databases with recurring per-seat fees and telemetry tracking.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="item-icon red-x">✕</div>
+            <div class="item-text">
+              <h4>Merge Collisions</h4>
+              <p>Multiple concurrent agents work blindly on overlapping files, causing painful branch conflicts.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right: Taxon Task Graph -->
+      <div class="comp-pane comp-taxon glass-card">
+        <div class="comp-pane-header">
+          <span class="pane-flag taxon-flag">TAXON TASK GRAPH ENGINE</span>
+          <span class="pane-status green-status">DETERMINISTIC &amp; PROVABLE</span>
+        </div>
+
+        <div class="comp-list">
+          <div class="comp-item">
+            <div class="item-icon green-check">✓</div>
+            <div class="item-text">
+              <h4>Formal Task Contracts</h4>
+              <p>Every node specifies exact `inputs`, expected `outputs`, `linkedFiles`, and verifiable `Acceptance Criteria`.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="item-icon green-check">✓</div>
+            <div class="item-text">
+              <h4>Artifact Chaining</h4>
+              <p>Parent deliverables automatically feed into downstream child tasks. Zero context degradation across runs.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="item-icon green-check">✓</div>
+            <div class="item-text">
+              <h4>100% Local-First (`.taxon/`)</h4>
+              <p>Pure Markdown and YAML files stored in your git repo. Instant bi-directional sync with Obsidian and Neovim.</p>
+            </div>
+          </div>
+
+          <div class="comp-item">
+            <div class="item-icon green-check">✓</div>
+            <div class="item-text">
+              <h4>Disjoint Boundary Protocol</h4>
+              <p>Topological graph execution guarantees parallel agents operate strictly on disjoint file branches.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .comp-section {
+    padding-top: var(--section-y);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: var(--measure);
+    margin-bottom: 3.5rem;
+  }
+
+  .section-title {
+    font-size: var(--step-section);
+  }
+
+  .section-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+  }
+
+  .split-comp-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.75rem;
+  }
+
+  .comp-pane {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .comp-legacy {
+    border-color: rgba(239, 68, 68, 0.2);
+  }
+
+  .comp-taxon {
+    border-color: rgba(56, 189, 248, 0.35);
+    background: radial-gradient(circle at top right, rgba(56, 189, 248, 0.05), transparent 60%), var(--bg-surface-glass);
+    box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.6), 0 0 30px -10px var(--accent-cyan-dim);
+  }
+
+  .comp-pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+  }
+
+  .pane-flag {
+    font-weight: 600;
+    letter-spacing: var(--tracking-label);
+  }
+
+  .legacy-flag { color: #f87171; }
+  .taxon-flag { color: var(--accent-cyan); }
+
+  .pane-status { color: var(--text-dim); }
+  .green-status { color: var(--accent-cyan); }
+
+  .comp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .comp-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .item-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .red-x {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+  }
+
+  .green-check {
+    background-color: var(--accent-cyan-dim);
+    color: var(--accent-cyan);
+    border: 1px solid rgba(56, 189, 248, 0.35);
+  }
+
+  .item-text h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+  }
+
+  .item-text p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  @media (max-width: 860px) {
+    .split-comp-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,0 +1,683 @@
+---
+---
+
+<section class="hero-section" id="workbench">
+  <div class="container hero-container">
+    <!-- Header Copy Block -->
+    <div class="hero-intro reveal">
+      <div class="tag-badge">
+        <span class="badge-dot"></span>
+        <span>Deterministic Task Graph Architecture</span>
+      </div>
+
+      <h1 class="hero-title">
+        The Local-First Task Graph for Developers &amp; AI Agents.
+      </h1>
+
+      <p class="hero-lede">
+        Replace flat task lists with deterministic Directed Acyclic Graphs (DAGs). Execute multi-agent coding sessions with strict task contracts, artifact chaining, and bi-directional Obsidian sync.
+      </p>
+
+      <div class="hero-cta-group">
+        <a href="#download" class="btn btn-primary hero-btn-main">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span>Download Taxon v1.0</span>
+        </a>
+
+        <div class="hero-cmd-box">
+          <span class="cmd-sym">$</span>
+          <code class="cmd-code">curl -sSL https://taxon.run/install.sh | bash</code>
+          <button type="button" class="btn-copy-mini" id="hero-copy-cmd" aria-label="Copy Install Command">
+            <span id="hero-copy-label">Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="hero-metrics-bar">
+        <div class="metric-pill">
+          <span class="metric-check">✓</span>
+          <span>100% Local Markdown (`.taxon/`)</span>
+        </div>
+        <div class="metric-pill">
+          <span class="metric-check">✓</span>
+          <span>Topological Cycle Prevention</span>
+        </div>
+        <div class="metric-pill">
+          <span class="metric-check">✓</span>
+          <span>Claude &amp; Antigravity Agent Protocol</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centerpiece: Interactive DAG Workbench Canvas -->
+    <div class="workbench-frame glass-card reveal">
+      <div class="workbench-bar">
+        <div class="bar-left">
+          <span class="window-dot red"></span>
+          <span class="window-dot amber"></span>
+          <span class="window-dot green"></span>
+          <span class="bar-title">WORKFLOW_DAG_CANVAS · SPRINT 8 (GRAPH ENGINEERING)</span>
+        </div>
+
+        <div class="bar-right">
+          <span class="live-indicator">
+            <span class="indicator-glow"></span>
+            <span>AUTONOMOUS AGENT ACTIVE</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="workbench-body">
+        <!-- Left: Interactive DAG Graph Canvas -->
+        <div class="dag-canvas-pane">
+          <div class="canvas-header">
+            <span class="pane-label">INTERACTIVE TOPOLOGICAL GRAPH (CLICK NODE TO INSPECT)</span>
+            <span class="cycle-pill">0 CYCLES DETECTED</span>
+          </div>
+
+          <div class="graph-nodes-viewport">
+            <!-- Node 1 -->
+            <button type="button" class="dag-node-card is-done" data-node="grf001">
+              <div class="node-badge-row">
+                <span class="node-state-tag done-tag">✓ DONE</span>
+                <span class="node-id">TASK-grf001</span>
+              </div>
+              <div class="node-name">Task Contract Schema</div>
+              <div class="node-foot">Out: `src/types/task.ts`</div>
+            </button>
+
+            <div class="graph-branch-connector">
+              <span class="connector-line">│</span>
+              <span class="connector-fork">├──▶ [Prerequisite Satisfied]</span>
+            </div>
+
+            <!-- Node 2 (Active Target) -->
+            <button type="button" class="dag-node-card is-active-node" data-node="grf002">
+              <div class="node-badge-row">
+                <span class="node-state-tag active-tag">● RUNNING</span>
+                <span class="node-id">TASK-grf002</span>
+              </div>
+              <div class="node-name">AgentSync Parser &amp; Hooks</div>
+              <div class="node-foot">In: `TASK-grf001` · Agent: Claude Code</div>
+            </button>
+
+            <div class="graph-branch-connector">
+              <span class="connector-line">│</span>
+              <span class="connector-fork">└──▶ [Queued Execution Branch]</span>
+            </div>
+
+            <div class="parallel-node-row">
+              <!-- Node 3 -->
+              <button type="button" class="dag-node-card is-blocked" data-node="grf003">
+                <div class="node-badge-row">
+                  <span class="node-state-tag blocked-tag">⏳ BLOCKED</span>
+                  <span class="node-id">TASK-grf003</span>
+                </div>
+                <div class="node-name">Node Detail Sidebar</div>
+                <div class="node-foot">Depends: `grf002`</div>
+              </button>
+
+              <!-- Node 4 -->
+              <button type="button" class="dag-node-card is-blocked" data-node="grf004">
+                <div class="node-badge-row">
+                  <span class="node-state-tag blocked-tag">⏳ BLOCKED</span>
+                  <span class="node-id">TASK-grf004</span>
+                </div>
+                <div class="node-name">Contract Indicators</div>
+                <div class="node-foot">Depends: `grf003`</div>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Real-time Task Contract & Deliverable Inspector -->
+        <div class="contract-inspector-pane">
+          <div class="inspector-top">
+            <span class="inspect-heading">TASK CONTRACT INSPECTOR</span>
+            <span class="inspect-filename" id="inspect-filename">.taxon/tasks/TASK-grf002.md</span>
+          </div>
+
+          <div class="inspector-content" id="inspector-content">
+            <!-- Dynamic JSON/YAML Contract View -->
+            <div class="contract-meta-grid">
+              <div class="meta-row">
+                <span class="meta-label">Task ID:</span>
+                <span class="meta-val" id="meta-id">TASK-grf002</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Module Group:</span>
+                <span class="meta-val" id="meta-group">Graph Engineering</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Status:</span>
+                <span class="meta-val status-val" id="meta-status">In Progress (Agent Active)</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Prerequisites:</span>
+                <span class="meta-val" id="meta-deps">[grf001] (Resolved ✓)</span>
+              </div>
+            </div>
+
+            <div class="contract-box">
+              <div class="box-title">ARTIFACT CHAINING (`inputs` ──▶ `outputs`)</div>
+              <div class="code-stream" id="meta-chain">
+                <div><span class="c-k">inputs:</span></div>
+                <div>  - <span class="c-s">"src/types/task.ts"</span> (From grf001)</div>
+                <div>  - <span class="c-s">".taxon/tasks/TASK-grf001.md"</span></div>
+                <div><span class="c-k">outputs:</span></div>
+                <div>  - <span class="c-s">"src/services/agentSync.ts"</span></div>
+                <div>  - <span class="c-s">".taxon/hooks/post-commit"</span></div>
+              </div>
+            </div>
+
+            <div class="acceptance-box">
+              <div class="box-title">ACCEPTANCE CRITERIA &amp; DELIVERABLES</div>
+              <div class="criteria-list" id="meta-criteria">
+                <div class="crit-item">[x] Parse `moduleGroup`, `inputs`, and `outputs` frontmatter</div>
+                <div class="crit-item">[x] Extract deliverables from completed parent nodes</div>
+                <div class="crit-item">[ ] Hook into post-commit to auto-mark `Need to Test`</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="inspector-foot">
+            <span class="foot-badge">100% Deterministic Contract Boundary</span>
+            <span class="foot-sync">Sync: Local FS</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .hero-section {
+    padding-top: clamp(3rem, 6vw, 5.5rem);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .hero-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3.5rem;
+  }
+
+  .hero-intro {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1.5rem;
+    max-width: 860px;
+  }
+
+  .badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent-emerald);
+    box-shadow: 0 0 8px var(--accent-emerald);
+  }
+
+  .hero-title {
+    font-size: var(--step-hero);
+    line-height: 1.08;
+    color: var(--text-primary);
+  }
+
+  .hero-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+    line-height: 1.6;
+    max-width: var(--measure);
+  }
+
+  .hero-cta-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .hero-btn-main {
+    padding: 0.75rem 1.4rem;
+    font-size: 0.9375rem;
+  }
+
+  .hero-cmd-box {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    padding: 0.45rem 0.85rem;
+    font-family: var(--font-mono);
+  }
+
+  .cmd-sym {
+    color: var(--accent-emerald);
+    font-weight: 600;
+  }
+
+  .cmd-code {
+    font-size: 0.8125rem;
+    color: var(--text-primary);
+  }
+
+  .btn-copy-mini {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--accent-emerald);
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+    background-color: var(--accent-emerald-dim);
+    border: 1px solid var(--border-active);
+    transition: all var(--t-fast);
+  }
+
+  .btn-copy-mini:hover {
+    background-color: var(--accent-emerald);
+    color: #050d07;
+  }
+
+  .hero-metrics-bar {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .metric-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .metric-check {
+    color: var(--accent-emerald);
+    font-weight: bold;
+  }
+
+  /* Centerpiece Workbench Frame */
+  .workbench-frame {
+    width: 100%;
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7), 0 0 40px -10px var(--accent-emerald-dim);
+  }
+
+  .workbench-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.25rem;
+    background-color: var(--bg-card-header);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .bar-left {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .window-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+  }
+  .window-dot.red { background-color: #ef4444; }
+  .window-dot.amber { background-color: #f59e0b; }
+  .window-dot.green { background-color: #10b981; }
+
+  .bar-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: var(--tracking-label);
+  }
+
+  .live-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--accent-emerald);
+    letter-spacing: var(--tracking-label);
+  }
+
+  .indicator-glow {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent-emerald);
+    box-shadow: 0 0 10px var(--accent-emerald);
+  }
+
+  .workbench-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+    min-height: 480px;
+  }
+
+  /* Left Pane: Graph Viewport */
+  .dag-canvas-pane {
+    padding: 1.5rem;
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    background: radial-gradient(circle at 10% 20%, rgba(56, 189, 248, 0.05), transparent 50%);
+  }
+
+  .canvas-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+  }
+
+  .pane-label { color: var(--text-muted); }
+  .cycle-pill {
+    color: var(--accent-cyan);
+    background-color: var(--accent-cyan-dim);
+    padding: 0.15rem 0.45rem;
+    border-radius: 3px;
+  }
+
+  .graph-nodes-viewport {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .dag-node-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    padding: 0.85rem 1rem;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-md);
+    text-align: left;
+    transition: all var(--t-fast);
+  }
+
+  .dag-node-card:hover {
+    border-color: var(--accent-cyan);
+    transform: translateY(-1px);
+  }
+
+  .dag-node-card.is-active-node {
+    border-color: var(--accent-cyan);
+    background-color: rgba(56, 189, 248, 0.08);
+    box-shadow: 0 0 20px var(--accent-cyan-dim);
+  }
+
+  .node-badge-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .node-state-tag {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    font-weight: 600;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+  }
+
+  .done-tag { background: rgba(59, 130, 246, 0.15); color: var(--accent-blue); }
+  .active-tag { background: rgba(56, 189, 248, 0.2); color: var(--accent-cyan); }
+  .blocked-tag { background: rgba(255, 255, 255, 0.08); color: var(--text-muted); }
+
+  .node-id {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .node-name {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .node-foot {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .graph-branch-connector {
+    display: flex;
+    flex-direction: column;
+    padding-left: 1.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    line-height: 1.2;
+  }
+
+  .parallel-node-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+  }
+
+  /* Right Pane: Contract Inspector */
+  .contract-inspector-pane {
+    background-color: rgba(9, 12, 18, 0.95);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-family: var(--font-mono);
+  }
+
+  .inspector-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.65rem;
+  }
+
+  .inspect-heading {
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    color: var(--accent-emerald);
+    font-weight: 600;
+  }
+
+  .inspect-filename {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .inspector-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .contract-meta-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    background-color: var(--bg-surface-elevated);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-subtle);
+  }
+
+  .meta-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+  }
+
+  .meta-label { color: var(--text-muted); }
+  .meta-val { color: var(--text-primary); }
+  .status-val { color: var(--accent-cyan); font-weight: 600; }
+
+  .contract-box, .acceptance-box {
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .box-title {
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border-subtle);
+    padding-bottom: 0.25rem;
+  }
+
+  .code-stream {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .c-k { color: var(--accent-cyan); }
+  .c-s { color: #a5d6ff; }
+
+  .criteria-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  .inspector-foot {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid var(--border-subtle);
+    padding-top: 0.65rem;
+    font-size: 0.6875rem;
+    color: var(--text-dim);
+  }
+
+  .foot-badge { color: var(--accent-emerald); }
+
+  @media (max-width: 980px) {
+    .workbench-body {
+      grid-template-columns: 1fr;
+    }
+    .dag-canvas-pane {
+      border-right: none;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+  }
+</style>
+
+<script>
+  function setupWorkbench() {
+    const nodes = document.querySelectorAll('.dag-node-card');
+    const filenameEl = document.getElementById('inspect-filename');
+    const idEl = document.getElementById('meta-id');
+    const groupEl = document.getElementById('meta-group');
+    const statusEl = document.getElementById('meta-status');
+    const depsEl = document.getElementById('meta-deps');
+    const chainEl = document.getElementById('meta-chain');
+    const criteriaEl = document.getElementById('meta-criteria');
+    const copyBtn = document.getElementById('hero-copy-cmd');
+    const copyLabel = document.getElementById('hero-copy-label');
+
+    const nodeData: Record<string, any> = {
+      'grf001': {
+        filename: '.taxon/tasks/TASK-grf001.md',
+        id: 'TASK-grf001',
+        group: 'Database & Schema',
+        status: 'Done (Verified Deliverable)',
+        deps: 'None (Root Node)',
+        chain: `<div><span class="c-k">inputs:</span> []</div><div><span class="c-k">outputs:</span></div><div>  - <span class="c-s">"src/types/task.ts"</span></div><div>  - <span class="c-s">"src/db/schema.sql"</span></div>`,
+        criteria: `<div class="crit-item">[x] SQLite schema updated with inputs/outputs</div><div class="crit-item">[x] Task interface export defined</div>`
+      },
+      'grf002': {
+        filename: '.taxon/tasks/TASK-grf002.md',
+        id: 'TASK-grf002',
+        group: 'Graph Engineering',
+        status: 'In Progress (Agent Active)',
+        deps: '[grf001] (Resolved ✓)',
+        chain: `<div><span class="c-k">inputs:</span></div><div>  - <span class="c-s">"src/types/task.ts"</span> (From grf001)</div><div>  - <span class="c-s">".taxon/tasks/TASK-grf001.md"</span></div><div><span class="c-k">outputs:</span></div><div>  - <span class="c-s">"src/services/agentSync.ts"</span></div><div>  - <span class="c-s">".taxon/hooks/post-commit"</span></div>`,
+        criteria: `<div class="crit-item">[x] Parse moduleGroup, inputs, and outputs</div><div class="crit-item">[x] Extract deliverables from parent nodes</div><div class="crit-item">[ ] Hook into post-commit for Need to Test</div>`
+      },
+      'grf003': {
+        filename: '.taxon/tasks/TASK-grf003.md',
+        id: 'TASK-grf003',
+        group: 'Frontend UI',
+        status: 'Queued (Waiting on grf002)',
+        deps: '[grf002] (Unresolved)',
+        chain: `<div><span class="c-k">inputs:</span></div><div>  - <span class="c-s">"src/services/agentSync.ts"</span> (From grf002)</div><div><span class="c-k">outputs:</span></div><div>  - <span class="c-s">"src/components/workflow/NodeDetailSidebar.tsx"</span></div>`,
+        criteria: `<div class="crit-item">[ ] Render input/output contracts in sidebar</div><div class="crit-item">[ ] Bind reactive node selection events</div>`
+      },
+      'grf004': {
+        filename: '.taxon/tasks/TASK-grf004.md',
+        id: 'TASK-grf004',
+        group: 'Frontend UI',
+        status: 'Queued (Waiting on grf003)',
+        deps: '[grf003] (Unresolved)',
+        chain: `<div><span class="c-k">inputs:</span></div><div>  - <span class="c-s">"src/components/workflow/NodeDetailSidebar.tsx"</span></div><div><span class="c-k">outputs:</span></div><div>  - <span class="c-s">"src/components/workflow/ContractBadges.tsx"</span></div>`,
+        criteria: `<div class="crit-item">[ ] Visual dataflow indicators on edges</div><div class="crit-item">[ ] Deliverable status badges</div>`
+      }
+    };
+
+    nodes.forEach((node) => {
+      node.addEventListener('click', () => {
+        nodes.forEach((n) => n.classList.remove('is-active-node'));
+        node.classList.add('is-active-node');
+
+        const nodeId = node.getAttribute('data-node') || 'grf002';
+        const data = nodeData[nodeId];
+        if (data) {
+          if (filenameEl) filenameEl.textContent = data.filename;
+          if (idEl) idEl.textContent = data.id;
+          if (groupEl) groupEl.textContent = data.group;
+          if (statusEl) statusEl.textContent = data.status;
+          if (depsEl) depsEl.textContent = data.deps;
+          if (chainEl) chainEl.innerHTML = data.chain;
+          if (criteriaEl) criteriaEl.innerHTML = data.criteria;
+        }
+      });
+    });
+
+    copyBtn?.addEventListener('click', () => {
+      navigator.clipboard.writeText('curl -sSL https://taxon.run/install.sh | bash');
+      if (copyLabel) {
+        copyLabel.textContent = 'Copied!';
+        setTimeout(() => { copyLabel.textContent = 'Copy'; }, 2000);
+      }
+    });
+  }
+
+  setupWorkbench();
+  document.addEventListener('astro:page-load', setupWorkbench);
+</script>
