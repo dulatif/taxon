@@ -18,11 +18,12 @@ import { GitFork, Plus } from 'lucide-react';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useAgentHeartbeat } from '../../hooks/useAgentHeartbeat';
 import type { Project, Sprint, Task } from '../../types';
+import { BusEdge } from './BusEdge';
 import { ModuleGroupNode } from './ModuleGroupNode';
 import { TaskNode } from './TaskNode';
 import { WorkflowSidebar } from './WorkflowSidebar';
 import { WorkflowToolbar } from './WorkflowToolbar';
-import { buildTaskIdLookup, getSmartEdgeHandles, getWorkflowElements } from './workflowLayout';
+import { assignHandlesToEdges, buildTaskIdLookup, getWorkflowElements } from './workflowLayout';
 
 const nodeTypes = {
   taskNode: TaskNode,
@@ -31,6 +32,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   bezier: BezierEdge,
+  bus: BusEdge,
 };
 
 const defaultEdgeOptions = {
@@ -66,6 +68,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
     const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
     const [internalSprintId, setInternalSprintId] = useState<string | 'all' | 'backlog'>('all');
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+    const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
 
     const currentSprintId = externalSprintId !== undefined ? externalSprintId : internalSprintId;
     const handleSelectSprint = useCallback(
@@ -255,22 +258,21 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
     // Dynamically assign smart connection handles based on current node positions
     const smartEdges = useMemo(() => {
       if (nodes.length === 0 || edges.length === 0) return edges;
-      const posMap = new Map(nodes.map((n) => [n.id, n.position]));
-      return edges.map((edge) => {
-        const sPos = posMap.get(edge.source);
-        const tPos = posMap.get(edge.target);
-        if (!sPos || !tPos) return { ...edge, type: 'bezier' };
-        const { sourceHandle, targetHandle } = getSmartEdgeHandles(sPos, tPos);
-        if (
-          edge.sourceHandle === sourceHandle &&
-          edge.targetHandle === targetHandle &&
-          edge.type === 'bezier'
-        ) {
-          return edge;
-        }
-        return { ...edge, sourceHandle, targetHandle, type: 'bezier' };
-      });
-    }, [nodes, edges]);
+      const posMap = new Map(
+        nodes
+          .filter((n) => n.type === 'taskNode')
+          .map((n) => [
+            n.id,
+            {
+              x: n.position.x,
+              y: n.position.y,
+              width: n.width ?? 260,
+              height: n.height ?? 100,
+            },
+          ]),
+      );
+      return assignHandlesToEdges(edges, posMap, tasks, hoveredTaskId || selectedTaskId);
+    }, [nodes, edges, tasks, hoveredTaskId, selectedTaskId]);
 
     // Smooth viewport fit on initial load or when sprint selection changes
     const initialFitDone = React.useRef(false);
@@ -377,6 +379,20 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
             if (node.type === 'taskNode' && node.data?.task) {
               setSelectedTaskId((node.data.task as Task).id);
             }
+          }}
+          onNodeMouseEnter={(_event, node) => {
+            if (node.type === 'taskNode' && node.data?.task) {
+              setHoveredTaskId((node.data.task as Task).id);
+            }
+          }}
+          onNodeMouseLeave={() => {
+            setHoveredTaskId(null);
+          }}
+          onEdgeMouseEnter={(_event, edge) => {
+            setHoveredTaskId(edge.source);
+          }}
+          onEdgeMouseLeave={() => {
+            setHoveredTaskId(null);
           }}
           defaultViewport={{ x: 50, y: 50, zoom: 0.9 }}
           minZoom={0.2}
