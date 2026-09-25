@@ -68,8 +68,10 @@ export default function ProjectsView({
   }, [availableCategories, selectedCategory]);
 
   const filteredProjects = useMemo(() => {
-    let list = projects;
-    if (selectedCategory !== 'All') {
+    let list: Project[];
+    if (selectedCategory === 'All') {
+      list = projects.filter((p) => p.category !== 'Completed');
+    } else {
       list = projects.filter((p) => p.category === selectedCategory);
     }
     // Sort projects based on assigned project category tag, then project name
@@ -150,7 +152,7 @@ export default function ProjectsView({
         {availableCategories.map((cat) => {
           const isSelected = selectedCategory === cat;
           const count =
-            cat === 'All' ? projects.length : projects.filter((p) => p.category === cat).length;
+            cat === 'All' ? activeProjectsCount : projects.filter((p) => p.category === cat).length;
           const style = cat === 'All' ? null : getCategoryStyle(cat);
 
           return (
@@ -207,12 +209,12 @@ export default function ProjectsView({
                 key={project.id}
                 id={`project-card-${project.id}`}
                 onClick={() => handleProjectCardClick(project.id)}
-                className={`p-6 flex flex-col justify-between group hover:bg-surface-hover border border-border-primary hover:border-white/20 transition-all duration-300 min-h-[220px] rounded-xl cursor-pointer ${
+                className={`p-4 flex flex-col justify-between group hover:bg-surface-hover border border-border-primary hover:border-white/20 transition-all duration-300 min-h-[160px] rounded-xl cursor-pointer ${
                   isCompleted ? 'bg-surface-secondary/40 opacity-70' : 'bg-surface-secondary'
                 }`}
               >
                 <div>
-                  <div className="flex justify-between items-start mb-4">
+                  <div className="flex justify-between items-start mb-3">
                     <span
                       className={`inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider leading-tight font-mono border ${catStyle.border} ${catStyle.bg} ${catStyle.text}`}
                     >
@@ -233,7 +235,7 @@ export default function ProjectsView({
                   >
                     {project.name}
                   </h2>
-                  <p className="text-xs text-text-muted leading-relaxed mb-6 block truncate">
+                  <p className="text-xs text-text-muted leading-relaxed mb-3 block truncate">
                     {project.description}
                   </p>
                 </div>

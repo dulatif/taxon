@@ -7,15 +7,18 @@
 ## ✨ Features
 
 - **Task & Sprint Management**: Organize your workflow with projects, sprints, and daily tasks.
+- **Interactive Terminal UI (TUI)**: Fast, keyboard-driven full-screen terminal companion (`taxon-cli`).
 - **Pomodoro Tracking**: Built-in Pomodoro timer to help you stay focused and manage work sessions.
 - **Vault Integration**: Seamlessly connect and manage local file vaults (e.g., Obsidian vaults) within your projects.
+- **Bidirectional File Sync**: Automatic two-way synchronization between SQLite database and `.taxon/` markdown files.
 - **Local-First & Privacy-Focused**: Your data stays on your machine. No cloud sync required, ensuring complete privacy.
 
 ## 🛠 Tech Stack
 
-- **Frontend**: [React](https://reactjs.org/) & [Vite](https://vitejs.dev/)
-- **Desktop Framework**: [Tauri](https://tauri.app/) (Rust)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **Frontend Desktop**: [React 18](https://reactjs.org/), [Vite](https://vitejs.dev/), [Tailwind CSS](https://tailwindcss.com/)
+- **Desktop Framework**: [Tauri 2](https://tauri.app/) (Rust)
+- **Terminal UI**: [Ratatui](https://ratatui.rs/) (Rust)
+- **Database & Sync**: SQLite ([rusqlite](https://github.com/rusqlite/rusqlite)), YAML Frontmatter
 - **Package Manager**: [pnpm](https://pnpm.io/)
 
 ## 🚀 Getting Started
@@ -24,7 +27,7 @@
 
 - [Node.js](https://nodejs.org/)
 - [pnpm](https://pnpm.io/installation)
-- [Rust & Cargo](https://rustup.rs/) (Required for Tauri desktop builds)
+- [Rust & Cargo](https://rustup.rs/) (Required for Tauri desktop & CLI builds)
 - System dependencies for Tauri (see [Tauri Prerequisites](https://v2.tauri.app/start/prerequisites/))
 
 ### Installation
@@ -38,6 +41,17 @@
    ```bash
    pnpm install
    ```
+3. Install the CLI & TUI Companion:
+   ```bash
+   pnpm run cli:install
+   ```
+
+### Running the Terminal UI (TUI)
+
+Launch the interactive Terminal User Interface:
+```bash
+taxon-cli
+```
 
 ### Local Development
 
@@ -53,11 +67,14 @@ pnpm tauri dev
 
 ### Building for Production
 
-To build the Tauri desktop application (for example, creating an RPM bundle):
+To build the Tauri desktop application:
 ```bash
-pnpm tauri build --bundles rpm
+pnpm tauri build
 ```
-*Note: Depending on your OS, you can specify different bundles (e.g., `deb`, `appimage`, `msi`, `app`).*
+
+## 📖 Technical Documentation
+
+For in-depth architecture specifications, database schemas, two-way sync algorithms, and complete keyboard navigation guides, see [docs/TECHNICAL_DOCUMENTATION.md](docs/TECHNICAL_DOCUMENTATION.md).
 
 ## 🔒 Data Privacy
 

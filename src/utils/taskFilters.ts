@@ -96,14 +96,14 @@ export function hasActiveFilters(filters: TaskFilters): boolean {
 // Filter function
 // ---------------------------------------------------------------------------
 
-export function filterTasks(tasks: Task[], filters: TaskFilters): Task[] {
+export function filterTasks(tasks: Task[], filters: TaskFilters, includeArchived = false): Task[] {
   const today = getTodayStr();
   const weekEnd = getWeekEndStr();
   const monthEnd = getMonthEndStr();
 
   return tasks.filter((task) => {
-    // Exclude archived tasks from standard filtered views
-    if (task.archived) return false;
+    // Exclude archived tasks from standard filtered views, unless explicitly included
+    if (!includeArchived && task.archived) return false;
 
     // Priority filter
     if (filters.priority.length > 0 && !filters.priority.includes(task.priority)) return false;

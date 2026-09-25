@@ -8,12 +8,27 @@ interface DatePickerProps {
   value?: string;
   onChange: (date: string) => void;
   onClose: () => void;
+  title?: string;
+  unscheduledValue?: string;
+  positionClass?: string;
 }
 
-export default function DatePicker({ value, onChange, onClose }: DatePickerProps) {
+export default function DatePicker({
+  value,
+  onChange,
+  onClose,
+  title = 'Quick Schedule',
+  unscheduledValue = '',
+  positionClass = 'left-0 top-full',
+}: DatePickerProps) {
   const [pickerMonth, setPickerMonth] = useState<Date>(
-    value ? new Date(value + 'T00:00:00') : new Date(),
+    value && value !== 'unscheduled' ? new Date(value + 'T00:00:00') : new Date(),
   );
+
+  const presets = [
+    { label: 'Unscheduled', date: unscheduledValue, sub: 'No date assigned' },
+    ...getPresetDates(),
+  ];
 
   return (
     <>
@@ -28,15 +43,16 @@ export default function DatePicker({ value, onChange, onClose }: DatePickerProps
             onClose();
           }
         }}
-        className="absolute left-0 top-full mt-1.5 w-[340px] min-w-[340px] bg-surface-primary border border-border-primary rounded-xl p-3.5 z-[9999] shadow-2xl space-y-3 font-sans max-h-[80vh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in-95 duration-150"
+        className={`absolute mt-1.5 w-[340px] min-w-[340px] bg-surface-primary border border-border-primary rounded-xl p-3.5 z-[9999] shadow-2xl space-y-3 font-sans max-h-[80vh] overflow-y-auto overflow-x-hidden animate-in fade-in zoom-in-95 duration-150 ${positionClass}`}
       >
         {/* Quick Presets */}
         <div className="space-y-1">
           <div className="text-[10px] text-text-muted uppercase font-mono font-bold tracking-wider mb-1.5">
-            Quick Schedule
+            {title}
           </div>
-          {getPresetDates().map((preset) => {
-            const isSelected = value === preset.date;
+          {presets.map((preset) => {
+            const isSelected =
+              value === preset.date || (value === undefined && preset.date === 'unscheduled');
             return (
               <button
                 key={preset.label}

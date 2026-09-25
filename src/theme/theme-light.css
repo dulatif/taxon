@@ -11,8 +11,8 @@
   --_surface-secondary: #fafafa;
   --_surface-tertiary: #f0f0f0;
   --_surface-elevated: #ffffff;
-  --_surface-hover: #e4e4e7;
-  --_surface-active: #d4d4d8;
+  --_surface-hover: #f4f4f5;
+  --_surface-active: #e4e4e7;
 
   --_border-primary: #e4e4e7;
   --_border-secondary: rgba(228, 228, 231, 0.5);
@@ -27,4 +27,14 @@
   --_interactive-primary: #18181b;
   --_interactive-primary-text: #ffffff;
   --_interactive-hover: #27272a;
+
+  --_workflow-edge-stroke: #64748b;
+  --_workflow-node-bg: #ffffff;
+  --_workflow-node-border: #e4e4e7;
+  --_workflow-node-done-bg: #ecfdf5;
+  --_workflow-node-done-border: rgba(16, 185, 129, 0.4);
+  --_workflow-node-test-bg: #faf5ff;
+  --_workflow-node-test-border: rgba(168, 85, 247, 0.4);
+  --_workflow-group-border: rgba(100, 116, 139, 0.4);
+  --_workflow-group-bg: rgba(0, 0, 0, 0.02);
 }

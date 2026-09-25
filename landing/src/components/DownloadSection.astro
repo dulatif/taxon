@@ -1,0 +1,345 @@
+---
+---
+
+<section class="download-section" id="download">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="tag-badge">
+        <span>GET STARTED TODAY</span>
+      </div>
+      <h2 class="section-title">Install Taxon on Your System.</h2>
+      <p class="section-lede">
+        Download the high-performance desktop client or run the zero-dependency CLI installer.
+      </p>
+    </div>
+
+    <!-- Package Manager Selector Box -->
+    <div class="cli-quick-install glass-card reveal">
+      <div class="cli-tab-bar">
+        <button type="button" class="cli-tab is-active" data-cli="curl">curl (universal)</button>
+        <button type="button" class="cli-tab" data-cli="brew">brew</button>
+        <button type="button" class="cli-tab" data-cli="cargo">cargo</button>
+        <button type="button" class="cli-tab" data-cli="aur">arch (yay)</button>
+      </div>
+
+      <div class="cli-cmd-body">
+        <div class="cli-cmd-row" id="cli-row-curl">
+          <span class="cmd-dollar">$</span>
+          <code class="cmd-text">curl -sSL https://taxon.run/install.sh | bash</code>
+          <button type="button" class="btn-copy-action" data-copy-str="curl -sSL https://taxon.run/install.sh | bash">
+            <span>Copy Command</span>
+          </button>
+        </div>
+
+        <div class="cli-cmd-row" id="cli-row-brew" hidden>
+          <span class="cmd-dollar">$</span>
+          <code class="cmd-text">brew install nutlope/tap/taxon</code>
+          <button type="button" class="btn-copy-action" data-copy-str="brew install nutlope/tap/taxon">
+            <span>Copy Command</span>
+          </button>
+        </div>
+
+        <div class="cli-cmd-row" id="cli-row-cargo" hidden>
+          <span class="cmd-dollar">$</span>
+          <code class="cmd-text">cargo install taxon-cli</code>
+          <button type="button" class="btn-copy-action" data-copy-str="cargo install taxon-cli">
+            <span>Copy Command</span>
+          </button>
+        </div>
+
+        <div class="cli-cmd-row" id="cli-row-aur" hidden>
+          <span class="cmd-dollar">$</span>
+          <code class="cmd-text">yay -S taxon-bin</code>
+          <button type="button" class="btn-copy-action" data-copy-str="yay -S taxon-bin">
+            <span>Copy Command</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Desktop Binaries Cards -->
+    <div class="os-cards-grid reveal">
+      <!-- Linux -->
+      <div class="os-card glass-card is-recommended">
+        <div class="os-top">
+          <div class="os-icon-wrap">🐧</div>
+          <div class="os-info">
+            <h3 class="os-name">Linux</h3>
+            <span class="os-ver">x86_64 / aarch64</span>
+          </div>
+          <span class="rec-badge">RECOMMENDED</span>
+        </div>
+        <p class="os-text">Universal AppImage bundle, Debian package, or standalone TUI binary.</p>
+        <div class="os-btn-stack">
+          <a href="https://github.com/nutlope/taxon/releases" class="btn btn-primary btn-full">
+            Download .AppImage (v1.0)
+          </a>
+          <a href="https://github.com/nutlope/taxon/releases" class="btn btn-secondary btn-full">
+            Download .deb
+          </a>
+        </div>
+      </div>
+
+      <!-- macOS -->
+      <div class="os-card glass-card">
+        <div class="os-top">
+          <div class="os-icon-wrap">🍏</div>
+          <div class="os-info">
+            <h3 class="os-name">macOS</h3>
+            <span class="os-ver">Universal Binary</span>
+          </div>
+        </div>
+        <p class="os-text">Native macOS DMG with system menu bar integration and spotlight support.</p>
+        <div class="os-btn-stack">
+          <a href="https://github.com/nutlope/taxon/releases" class="btn btn-secondary btn-full">
+            Download .dmg (Apple Silicon)
+          </a>
+          <a href="https://github.com/nutlope/taxon/releases" class="btn btn-secondary btn-full">
+            Download .dmg (Intel x64)
+          </a>
+        </div>
+      </div>
+
+      <!-- Windows -->
+      <div class="os-card glass-card">
+        <div class="os-top">
+          <div class="os-icon-wrap">🪟</div>
+          <div class="os-info">
+            <h3 class="os-name">Windows</h3>
+            <span class="os-ver">x64 Installer</span>
+          </div>
+        </div>
+        <p class="os-text">Standard MSI installer or portable ZIP for isolated developer setups.</p>
+        <div class="os-btn-stack">
+          <a href="https://github.com/nutlope/taxon/releases" class="btn btn-secondary btn-full">
+            Download .msi Installer
+          </a>
+          <a href="https://github.com/nutlope/taxon/releases" class="btn btn-secondary btn-full">
+            Download Portable .zip
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .download-section {
+    padding-top: var(--section-y);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: var(--measure);
+    margin-bottom: 3rem;
+  }
+
+  .section-title {
+    font-size: var(--step-section);
+  }
+
+  .section-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+  }
+
+  /* CLI Quick Install */
+  .cli-quick-install {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    margin-bottom: 3rem;
+    font-family: var(--font-mono);
+  }
+
+  .cli-tab-bar {
+    display: flex;
+    background-color: var(--bg-card-header);
+    border-bottom: 1px solid var(--border-subtle);
+    overflow-x: auto;
+  }
+
+  .cli-tab {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    border-right: 1px solid var(--border-subtle);
+    transition: all var(--t-fast);
+  }
+
+  .cli-tab:hover {
+    color: var(--text-primary);
+  }
+
+  .cli-tab.is-active {
+    color: var(--accent-emerald);
+    background-color: var(--bg-surface);
+    border-bottom: 2px solid var(--accent-emerald);
+    font-weight: 600;
+  }
+
+  .cli-cmd-body {
+    padding: 1.5rem;
+  }
+
+  .cli-cmd-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    background-color: var(--bg-canvas);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 0.75rem 1.25rem;
+  }
+
+  .cmd-dollar {
+    color: var(--accent-emerald);
+    font-weight: 700;
+  }
+
+  .cmd-text {
+    flex: 1;
+    font-size: 0.9375rem;
+    color: var(--text-primary);
+  }
+
+  .btn-copy-action {
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--accent-emerald);
+    background-color: var(--accent-emerald-dim);
+    border: 1px solid var(--border-active);
+    padding: 0.35rem 0.75rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--t-fast);
+  }
+
+  .btn-copy-action:hover {
+    background-color: var(--accent-emerald);
+    color: #050d07;
+  }
+
+  /* OS Cards */
+  .os-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+
+  .os-card {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .os-card.is-recommended {
+    border-color: var(--border-active);
+    box-shadow: 0 0 30px -10px var(--accent-emerald-dim);
+  }
+
+  .os-top {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .os-icon-wrap {
+    font-size: 1.5rem;
+  }
+
+  .os-info {
+    flex: 1;
+  }
+
+  .os-name {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .os-ver {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .rec-badge {
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: var(--tracking-label);
+    color: var(--accent-emerald);
+    background-color: var(--accent-emerald-dim);
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  .os-text {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  .os-btn-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-top: auto;
+  }
+
+  .btn-full {
+    width: 100%;
+    font-size: 0.8125rem;
+  }
+
+  @media (max-width: 900px) {
+    .os-cards-grid {
+      grid-template-columns: 1fr;
+    }
+    .cli-cmd-row {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+  }
+</style>
+
+<script>
+  function setupCliTabs() {
+    const tabs = document.querySelectorAll('.cli-tab');
+    const copyBtns = document.querySelectorAll('.btn-copy-action');
+
+    tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        tabs.forEach((t) => t.classList.remove('is-active'));
+        tab.classList.add('is-active');
+
+        const cli = tab.getAttribute('data-cli');
+        document.querySelectorAll('.cli-cmd-row').forEach((r) => r.setAttribute('hidden', ''));
+        document.getElementById(`cli-row-${cli}`)?.removeAttribute('hidden');
+      });
+    });
+
+    copyBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const text = btn.getAttribute('data-copy-str') || '';
+        navigator.clipboard.writeText(text);
+        const span = btn.querySelector('span');
+        if (span) {
+          span.textContent = 'Copied!';
+          setTimeout(() => { span.textContent = 'Copy Command'; }, 2000);
+        }
+      });
+    });
+  }
+
+  setupCliTabs();
+  document.addEventListener('astro:page-load', setupCliTabs);
+</script>

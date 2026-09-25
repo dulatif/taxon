@@ -1,20 +1,30 @@
 import {
   Calendar as CalendarIcon,
-  Check,
   CheckCircle2,
   Clock,
+  FileCode2,
+  FileDown,
+  FileUp,
   Flag,
+  Folder,
   FolderOpen,
+  GitFork,
+  Layers,
   Repeat,
   Rocket,
   Tag,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DatePicker from '../../components/DatePicker/DatePicker';
 import RecurrencePicker from '../../components/RecurrencePicker/RecurrencePicker';
 import PropertyCard from '../../elements/PropertyCard';
 import type { Project, Sprint, Task } from '../../types';
-import { formatDateStr, formatDisplayDate, formatMinutes } from '../../utils/format-date';
+import {
+  formatDateStr,
+  formatDisplayDate,
+  formatMinutes,
+  getTodayStr,
+} from '../../utils/format-date';
 import { getRecurrenceLabel } from '../../utils/recurrence';
 
 const getPriorityColor = (priority: Task['priority']) => {
@@ -36,6 +46,7 @@ interface TaskPropertyGridProps {
   task: Task;
   projects: Project[];
   sprints: Sprint[];
+  allTasks?: Task[];
   onChange: <K extends keyof Task>(field: K, value: Task[K]) => void;
 }
 
@@ -43,11 +54,20 @@ export default function TaskPropertyGrid({
   task,
   projects,
   sprints,
+  allTasks = [],
   onChange,
 }: TaskPropertyGridProps) {
   const [activePropertyEdit, setActivePropertyEdit] = useState<string | null>(null);
   const [isAddingLabel, setIsAddingLabel] = useState(false);
   const [newLabelText, setNewLabelText] = useState('');
+  const [isAddingFile, setIsAddingFile] = useState(false);
+  const [newFileText, setNewFileText] = useState('');
+  const [isAddingInput, setIsAddingInput] = useState(false);
+  const [newInputText, setNewInputText] = useState('');
+  const [isAddingOutput, setIsAddingOutput] = useState(false);
+  const [newOutputText, setNewOutputText] = useState('');
+  const [moduleGroupInput, setModuleGroupInput] = useState(task.moduleGroup || '');
+  const [customDepInput, setCustomDepInput] = useState('');
 
   const currentProject = projects.find((p) => p.id === task.projectId);
   const projectSprints = sprints.filter(
@@ -71,6 +91,106 @@ export default function TaskPropertyGrid({
     onChange('labels', updatedLabels);
   };
 
+  const handleAddFile = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFileText.trim()) return;
+    const currentFiles = task.linkedFiles || [];
+    if (!currentFiles.includes(newFileText.trim())) {
+      onChange('linkedFiles', [...currentFiles, newFileText.trim()]);
+    }
+    setNewFileText('');
+  };
+
+  const handleAddInput = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newInputText.trim()) return;
+    const currentInputs = task.inputs || [];
+    if (!currentInputs.includes(newInputText.trim())) {
+      onChange('inputs', [...currentInputs, newInputText.trim()]);
+    }
+    setNewInputText('');
+  };
+
+  const handleRemoveInput = (idx: number) => {
+    const updated = (task.inputs || []).filter((_, i) => i !== idx);
+    onChange('inputs', updated.length > 0 ? updated : undefined);
+  };
+
+  const handleAddOutput = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newOutputText.trim()) return;
+    const currentOutputs = task.outputs || [];
+    if (!currentOutputs.includes(newOutputText.trim())) {
+      onChange('outputs', [...currentOutputs, newOutputText.trim()]);
+    }
+    setNewOutputText('');
+  };
+
+  const handleRemoveOutput = (idx: number) => {
+    const updated = (task.outputs || []).filter((_, i) => i !== idx);
+    onChange('outputs', updated.length > 0 ? updated : undefined);
+  };
+
+  const existingModuleGroups = useMemo(() => {
+    const groups = new Set<string>();
+    for (const t of allTasks) {
+      if (t.moduleGroup?.trim()) {
+        groups.add(t.moduleGroup.trim());
+      }
+    }
+    return Array.from(groups).sort();
+  }, [allTasks]);
+
+  const candidateDependencies = useMemo(() => {
+    return allTasks.filter(
+      (t) => !t.archived && t.id !== task.id && (!task.projectId || t.projectId === task.projectId),
+    );
+  }, [allTasks, task.id, task.projectId]);
+
+  const getDependencyLabel = (depId: string) => {
+    const found = allTasks.find(
+      (t) =>
+        t.id === depId ||
+        t.id.slice(-6) === depId ||
+        `TASK-${t.id.slice(-6)}` === depId ||
+        `TASK-${t.id}` === depId,
+    );
+    return found ? `${found.title} (${found.id.slice(-6)})` : depId;
+  };
+
+  const handleToggleDependency = (depIdOrTask: Task) => {
+    const current = task.dependsOn || [];
+    const formattedId = `TASK-${depIdOrTask.id.slice(-6)}`;
+    const isPresent = current.some(
+      (d) => d === formattedId || d === depIdOrTask.id || d === depIdOrTask.id.slice(-6),
+    );
+
+    if (isPresent) {
+      const updated = current.filter(
+        (d) => d !== formattedId && d !== depIdOrTask.id && d !== depIdOrTask.id.slice(-6),
+      );
+      onChange('dependsOn', updated);
+    } else {
+      onChange('dependsOn', [...current, formattedId]);
+    }
+  };
+
+  const handleRemoveDependency = (depToRemove: string) => {
+    const updated = (task.dependsOn || []).filter((d) => d !== depToRemove);
+    onChange('dependsOn', updated);
+  };
+
+  const handleAddCustomDependency = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customDepInput.trim()) return;
+    const current = task.dependsOn || [];
+    const val = customDepInput.trim();
+    if (!current.includes(val)) {
+      onChange('dependsOn', [...current, val]);
+    }
+    setCustomDepInput('');
+  };
+
   return (
     <div className="space-y-3">
       <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono">
@@ -92,12 +212,16 @@ export default function TaskPropertyGrid({
           isActive={activePropertyEdit === 'status'}
           onClick={() => setActivePropertyEdit(activePropertyEdit === 'status' ? null : 'status')}
         >
-          {(['To Do', 'In Progress', 'Done'] as Task['status'][]).map((s) => (
+          {(['To Do', 'In Progress', 'Need to Test', 'Done'] as Task['status'][]).map((s) => (
             <button
               key={s}
               onClick={() => {
+                const isDone = s === 'Done';
                 onChange('status', s);
-                onChange('completed', s === 'Done');
+                onChange('completed', isDone);
+                if (isDone && !task.dueDate) {
+                  onChange('dueDate', getTodayStr());
+                }
                 setActivePropertyEdit(null);
               }}
               className={`dropdown-item ${
@@ -105,7 +229,6 @@ export default function TaskPropertyGrid({
               }`}
             >
               <span>{s}</span>
-              {s === 'Done' && <Check className="w-3.5 h-3.5 text-green-400" />}
             </button>
           ))}
         </PropertyCard>
@@ -147,6 +270,188 @@ export default function TaskPropertyGrid({
                 </button>
               ))}
           </div>
+        </PropertyCard>
+
+        {/* Module Group (Workflow) */}
+        <PropertyCard
+          icon={<Layers className="w-5 h-5" />}
+          label="Module Group"
+          value={task.moduleGroup || 'Ungrouped'}
+          isActive={activePropertyEdit === 'moduleGroup'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'moduleGroup' ? null : 'moduleGroup')
+          }
+        >
+          {activePropertyEdit === 'moduleGroup' && (
+            <div onClick={(e) => e.stopPropagation()} className="p-2 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={moduleGroupInput}
+                  onChange={(e) => setModuleGroupInput(e.target.value)}
+                  placeholder="e.g. Auth, Frontend, CLI..."
+                  className="w-full bg-surface-secondary border border-border-primary text-xs text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange('moduleGroup', moduleGroupInput.trim() || undefined);
+                    setActivePropertyEdit(null);
+                  }}
+                  className="bg-white text-black font-bold text-xs px-2.5 py-1.5 rounded cursor-pointer"
+                >
+                  Save
+                </button>
+                {task.moduleGroup && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange('moduleGroup', undefined);
+                      setModuleGroupInput('');
+                      setActivePropertyEdit(null);
+                    }}
+                    className="bg-red-500/10 text-red-400 border border-red-500/30 text-xs px-2 py-1.5 rounded hover:bg-red-500/20"
+                    title="Clear Module"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+
+              {existingModuleGroups.length > 0 && (
+                <div className="pt-1 border-t border-border-primary/60">
+                  <div className="text-[10px] text-text-muted font-mono uppercase mb-1">
+                    Existing Modules:
+                  </div>
+                  <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto">
+                    {existingModuleGroups.map((group) => (
+                      <button
+                        key={group}
+                        type="button"
+                        onClick={() => {
+                          onChange('moduleGroup', group);
+                          setModuleGroupInput(group);
+                          setActivePropertyEdit(null);
+                        }}
+                        className={`text-[10px] px-2 py-0.5 rounded border transition-colors cursor-pointer ${
+                          task.moduleGroup === group
+                            ? 'bg-primary text-primary-foreground border-primary font-semibold'
+                            : 'bg-surface-secondary text-text-muted border-border-primary hover:text-text-primary'
+                        }`}
+                      >
+                        {group}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </PropertyCard>
+
+        {/* Depends On (Workflow DAG) */}
+        <PropertyCard
+          icon={<GitFork className="w-5 h-5" />}
+          label="Depends On"
+          value={
+            task.dependsOn && task.dependsOn.length > 0
+              ? `${task.dependsOn.length} dependency`
+              : 'None (Root Task)'
+          }
+          isActive={activePropertyEdit === 'dependsOn'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'dependsOn' ? null : 'dependsOn')
+          }
+        >
+          {activePropertyEdit === 'dependsOn' && (
+            <div
+              onClick={(e) => e.stopPropagation()}
+              className="p-2 space-y-2 max-h-60 overflow-y-auto"
+            >
+              {/* Active dependencies chips */}
+              {task.dependsOn && task.dependsOn.length > 0 && (
+                <div className="space-y-1">
+                  <div className="text-[10px] text-text-muted font-mono uppercase">
+                    Active Dependencies:
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    {task.dependsOn.map((dep) => (
+                      <div
+                        key={dep}
+                        className="flex items-center justify-between gap-1 text-[11px] bg-surface-secondary px-2 py-1 rounded border border-border-primary text-text-secondary"
+                      >
+                        <span className="truncate">{getDependencyLabel(dep)}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveDependency(dep)}
+                          className="text-text-muted hover:text-red-400 p-0.5 text-xs"
+                          title="Remove dependency"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Candidate tasks in project */}
+              <div className="pt-1 border-t border-border-primary/60">
+                <div className="text-[10px] text-text-muted font-mono uppercase mb-1">
+                  Add Dependency:
+                </div>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {candidateDependencies.map((cand) => {
+                    const formattedId = `TASK-${cand.id.slice(-6)}`;
+                    const isSelected = (task.dependsOn || []).some(
+                      (d) => d === formattedId || d === cand.id || d === cand.id.slice(-6),
+                    );
+                    return (
+                      <button
+                        key={cand.id}
+                        type="button"
+                        onClick={() => handleToggleDependency(cand)}
+                        className={`w-full text-left flex items-center justify-between p-1.5 rounded text-xs transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary/20 text-primary-foreground border border-primary/40'
+                            : 'hover:bg-surface-hover text-text-muted hover:text-text-primary'
+                        }`}
+                      >
+                        <span className="truncate flex-1">{cand.title}</span>
+                        <span className="text-[10px] font-mono opacity-60 shrink-0 ml-1">
+                          {cand.id.slice(-6)}
+                        </span>
+                      </button>
+                    );
+                  })}
+                  {candidateDependencies.length === 0 && (
+                    <div className="text-[10px] text-text-muted italic text-center p-2">
+                      No other tasks in this project.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Custom ID manual input */}
+              <form onSubmit={handleAddCustomDependency} className="flex items-center gap-1.5 pt-1">
+                <input
+                  type="text"
+                  value={customDepInput}
+                  onChange={(e) => setCustomDepInput(e.target.value)}
+                  placeholder="Or enter TASK-xxxxxx..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1 focus:outline-none focus:border-white font-mono"
+                />
+                <button
+                  type="submit"
+                  disabled={!customDepInput.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-2.5 py-1 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
         </PropertyCard>
 
         {/* Date */}
@@ -279,6 +584,205 @@ export default function TaskPropertyGrid({
               </button>
             ))}
           </div>
+        </PropertyCard>
+
+        {/* Workspace Path */}
+        <PropertyCard
+          icon={<Folder className="w-5 h-5" />}
+          label="Workspace"
+          value={task.workspacePath ? task.workspacePath.split('/').pop() : 'None Linked'}
+          isActive={activePropertyEdit === 'workspace'}
+          onClick={() =>
+            setActivePropertyEdit(activePropertyEdit === 'workspace' ? null : 'workspace')
+          }
+        >
+          <div className="max-h-48 overflow-y-auto">
+            <button
+              onClick={() => {
+                onChange('workspacePath', undefined);
+                setActivePropertyEdit(null);
+              }}
+              className={`dropdown-item ${!task.workspacePath ? 'bg-surface-hover text-text-primary font-semibold' : ''}`}
+            >
+              None Linked
+            </button>
+            {currentProject?.workspacePaths?.map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  onChange('workspacePath', p);
+                  setActivePropertyEdit(null);
+                }}
+                className={`dropdown-item truncate ${
+                  task.workspacePath === p ? 'bg-surface-hover text-text-primary font-semibold' : ''
+                }`}
+                title={p}
+              >
+                {p.split('/').pop() || p}
+              </button>
+            ))}
+            {(!currentProject?.workspacePaths || currentProject.workspacePaths.length === 0) && (
+              <div className="p-2 text-xs text-text-muted italic text-center">
+                Project has no workspaces. Add them in Project details.
+              </div>
+            )}
+          </div>
+        </PropertyCard>
+
+        {/* Linked Files */}
+        <PropertyCard
+          icon={<FileCode2 className="w-5 h-5" />}
+          label="Linked Files"
+          value={
+            task.linkedFiles && task.linkedFiles.length > 0
+              ? `${task.linkedFiles.length} file(s)`
+              : 'None Linked'
+          }
+          isActive={isAddingFile}
+          onClick={() => setIsAddingFile(!isAddingFile)}
+        >
+          {isAddingFile && (
+            <div onClick={(e) => e.stopPropagation()} className="p-1 space-y-2">
+              {task.linkedFiles?.map((file, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span
+                    className="flex-1 text-[10px] bg-surface-primary px-1.5 py-1 rounded border border-border-primary text-text-secondary font-mono truncate"
+                    title={file}
+                  >
+                    {file}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const updated = (task.linkedFiles || []).filter((_, i) => i !== idx);
+                      onChange('linkedFiles', updated);
+                    }}
+                    className="text-text-muted hover:text-red-400 p-1"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <form onSubmit={handleAddFile} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newFileText}
+                  onChange={(e) => setNewFileText(e.target.value)}
+                  placeholder="src/components/..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!newFileText.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
+        </PropertyCard>
+
+        {/* Inputs (Contracts) */}
+        <PropertyCard
+          icon={<FileDown className="w-5 h-5" />}
+          label="Inputs"
+          value={
+            task.inputs && task.inputs.length > 0 ? `${task.inputs.length} input(s)` : 'None (Root)'
+          }
+          isActive={isAddingInput}
+          onClick={() => setIsAddingInput(!isAddingInput)}
+        >
+          {isAddingInput && (
+            <div onClick={(e) => e.stopPropagation()} className="p-1 space-y-2">
+              {task.inputs?.map((input, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span
+                    className="flex-1 text-[10px] bg-surface-primary px-1.5 py-1 rounded border border-border-primary text-text-secondary font-mono truncate"
+                    title={input}
+                  >
+                    {input}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveInput(idx)}
+                    className="text-text-muted hover:text-red-400 p-1"
+                    title="Remove input"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <form onSubmit={handleAddInput} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newInputText}
+                  onChange={(e) => setNewInputText(e.target.value)}
+                  placeholder="docs/contract.md or file.ts..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!newInputText.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
+        </PropertyCard>
+
+        {/* Outputs (Targets) */}
+        <PropertyCard
+          icon={<FileUp className="w-5 h-5" />}
+          label="Outputs"
+          value={
+            task.outputs && task.outputs.length > 0
+              ? `${task.outputs.length} output(s)`
+              : 'None Target'
+          }
+          isActive={isAddingOutput}
+          onClick={() => setIsAddingOutput(!isAddingOutput)}
+        >
+          {isAddingOutput && (
+            <div onClick={(e) => e.stopPropagation()} className="p-1 space-y-2">
+              {task.outputs?.map((output, idx) => (
+                <div key={idx} className="flex items-center gap-1">
+                  <span
+                    className="flex-1 text-[10px] bg-surface-primary px-1.5 py-1 rounded border border-border-primary text-text-secondary font-mono truncate"
+                    title={output}
+                  >
+                    {output}
+                  </span>
+                  <button
+                    onClick={() => handleRemoveOutput(idx)}
+                    className="text-text-muted hover:text-red-400 p-1"
+                    title="Remove output"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <form onSubmit={handleAddOutput} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newOutputText}
+                  onChange={(e) => setNewOutputText(e.target.value)}
+                  placeholder="src/components/Output.tsx..."
+                  className="w-full bg-surface-secondary border border-border-primary text-[10px] text-text-primary rounded px-2 py-1.5 focus:outline-none focus:border-white font-mono"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  disabled={!newOutputText.trim()}
+                  className="bg-white text-black font-bold text-[10px] px-3 py-1.5 rounded disabled:opacity-50"
+                >
+                  Add
+                </button>
+              </form>
+            </div>
+          )}
         </PropertyCard>
 
         {/* Labels */}

@@ -11,6 +11,8 @@ interface TaskListGroupProps {
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
+  isReadOnly?: boolean;
+  showProjectName?: boolean;
 }
 
 export default function TaskListGroup({
@@ -21,6 +23,8 @@ export default function TaskListGroup({
   onToggleTask,
   onDeleteTask,
   onSelectTask,
+  isReadOnly,
+  showProjectName,
 }: TaskListGroupProps) {
   const done = tasks.filter((t) => t.completed).length;
 
@@ -63,6 +67,9 @@ export default function TaskListGroup({
                     onToggleTask={onToggleTask}
                     onDeleteTask={onDeleteTask}
                     onSelectTask={onSelectTask}
+                    isReadOnly={isReadOnly}
+                    showProjectName={showProjectName}
+                    projectName={groupName}
                   />
                 ))}
               </AnimatePresence>

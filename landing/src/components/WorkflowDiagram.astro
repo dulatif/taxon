@@ -1,0 +1,367 @@
+---
+---
+
+<section class="pipeline-section" id="pipeline">
+  <div class="container">
+    <div class="section-head reveal">
+      <div class="tag-badge">
+        <span>DETERMINISTIC LIFECYCLE</span>
+      </div>
+      <h2 class="section-title">The 4-Stage Multi-Agent Execution Pipeline.</h2>
+      <p class="section-lede">
+        How human developers and autonomous coding fleets coordinate through Taxon's Task Graph without hallucinations or state drift.
+      </p>
+    </div>
+
+    <div class="pipeline-workbench glass-card reveal">
+      <div class="pipeline-nav-bar" role="tablist" aria-label="Execution Pipeline Stages">
+        <button type="button" class="pipe-nav-btn is-active" role="tab" aria-selected="true" aria-controls="phase-pane-1" data-phase="1">
+          <span class="p-num">01</span>
+          <span class="p-name">Contract Spec</span>
+        </button>
+        <button type="button" class="pipe-nav-btn" role="tab" aria-selected="false" aria-controls="phase-pane-2" data-phase="2">
+          <span class="p-num">02</span>
+          <span class="p-name">Topological Sort</span>
+        </button>
+        <button type="button" class="pipe-nav-btn" role="tab" aria-selected="false" aria-controls="phase-pane-3" data-phase="3">
+          <span class="p-num">03</span>
+          <span class="p-name">Agent Dispatch</span>
+        </button>
+        <button type="button" class="pipe-nav-btn" role="tab" aria-selected="false" aria-controls="phase-pane-4" data-phase="4">
+          <span class="p-num">04</span>
+          <span class="p-name">Deliverable Gate</span>
+        </button>
+      </div>
+
+      <div class="pipeline-display-area">
+        <!-- Phase 1 -->
+        <div class="phase-pane" id="phase-pane-1" role="tabpanel" aria-label="Phase 01: Contract Definition">
+          <div class="pane-info-col">
+            <span class="phase-tag">PHASE 01: CONTRACT DEFINITION</span>
+            <h3 class="phase-heading">Declare Concrete Inputs &amp; Outputs</h3>
+            <p class="phase-body">
+              Human plans sprint tasks in Obsidian or Taxon UI. Every task specifies architectural <code>moduleGroup</code>, prerequisite <code>inputs</code>, target <code>outputs</code>, and explicit acceptance criteria.
+            </p>
+            <div class="rule-box">
+              <span class="rule-icon">🔒</span>
+              <span>Rule: AI agents are barred from guessing file paths outside declared contracts.</span>
+            </div>
+          </div>
+          <div class="pane-code-col">
+            <div class="code-terminal-view">
+              <div class="code-term-head">.taxon/tasks/TASK-grf003.md</div>
+              <pre><code><span class="k">id:</span> <span class="v">grf003</span>
+<span class="k">title:</span> <span class="s">"Implement NodeDetailSidebar in Workflow DAG"</span>
+<span class="k">moduleGroup:</span> <span class="s">"Workflow DAG"</span>
+<span class="k">dependsOn:</span> [<span class="v">grf001</span>]
+<span class="k">inputs:</span>
+  - <span class="s">"src/types/task.ts"</span>
+  - <span class="s">".taxon/tasks/TASK-grf001.md"</span>
+<span class="k">outputs:</span>
+  - <span class="s">"src/components/workflow/NodeDetailSidebar.tsx"</span></code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 2 -->
+        <div class="phase-pane" id="phase-pane-2" role="tabpanel" aria-label="Phase 02: Topological Resolution" hidden>
+          <div class="pane-info-col">
+            <span class="phase-tag">PHASE 02: TOPOLOGICAL RESOLUTION</span>
+            <h3 class="phase-heading">Cycle-Free Dependency Graph Engine</h3>
+            <p class="phase-body">
+              Taxon evaluates the entire sprint graph, detects cyclic traps, and resolves blocked vs unblocked nodes. Unblocked tasks with all prerequisite deliverables satisfied enter the ready queue.
+            </p>
+            <div class="rule-box">
+              <span class="rule-icon">⚡</span>
+              <span>Topological Invariant: Zero tasks unlock until parent deliverables exist on disk.</span>
+            </div>
+          </div>
+          <div class="pane-code-col">
+            <div class="code-terminal-view">
+              <div class="code-term-head">taxon-dag-solver.log</div>
+              <pre><code>[RESOLVER] Evaluating Sprint 8 DAG (5 nodes, 4 edges)
+[CYCLE_CHECK] DFS cycle detection: 0 cycles found. (PASS)
+[DEPENDENCY_STATE]
+  ✓ TASK-grf001: Deliverables recorded on disk.
+  ▶ TASK-grf002: Parent [grf001] satisfied ──▶ UNLOCKED
+  ⏳ TASK-grf003: Waiting for [grf002] deliverables ──▶ BLOCKED</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 3 -->
+        <div class="phase-pane" id="phase-pane-3" role="tabpanel" aria-label="Phase 03: Autonomous Agent Dispatch" hidden>
+          <div class="pane-info-col">
+            <span class="phase-tag">PHASE 03: AUTONOMOUS AGENT DISPATCH</span>
+            <h3 class="phase-heading">Context Injection &amp; Mutual Exclusion Lock</h3>
+            <p class="phase-body">
+              AI agent (Claude Code, Antigravity, Cursor) acquires the task lock, automatically loads upstream parent deliverables into context, and generates the target code deliverables.
+            </p>
+            <div class="rule-box">
+              <span class="rule-icon">🛡️</span>
+              <span>Concurrency Lock: Concurrent agents operate exclusively on disjoint file paths.</span>
+            </div>
+          </div>
+          <div class="pane-code-col">
+            <div class="code-terminal-view">
+              <div class="code-term-head">agent-session.log</div>
+              <pre><code>[DISPATCH] Agent "Claude-Code" starting TASK-grf002
+[LOCK] Acquired .taxon/.lock.grf002 (status: In Progress)
+[CONTEXT_INJECT]
+  + Loaded types/task.ts
+  + Loaded deliverables from TASK-grf001.md
+[CODEGEN] Synthesizing src/services/agentSync.ts... (PASS)</code></pre>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phase 4 -->
+        <div class="phase-pane" id="phase-pane-4" role="tabpanel" aria-label="Phase 04: Deliverable Verification" hidden>
+          <div class="pane-info-col">
+            <span class="phase-tag">PHASE 04: DELIVERABLE VERIFICATION</span>
+            <h3 class="phase-heading">Post-Commit State Transition</h3>
+            <p class="phase-body">
+              On git commit, Taxon's post-commit hook parses task references <code>(TASK-xxxxxx)</code>, transitions the status to <code>Need to Test</code>, records deliverables, and unblocks child tasks.
+            </p>
+            <div class="rule-box">
+              <span class="rule-icon">✅</span>
+              <span>Human-in-the-loop: Agents can never set tasks to 'Done' directly.</span>
+            </div>
+          </div>
+          <div class="pane-code-col">
+            <div class="code-terminal-view">
+              <div class="code-term-head">.taxon/hooks/post-commit</div>
+              <pre><code>[GIT_HOOK] Intercepted commit: feat(agent): sync parser (TASK-grf002)
+[TRANSITION] TASK-grf002: "In Progress" ──▶ "Need to Test"
+[DELIVERABLES] Recorded link: [agentSync.ts]
+[PROPAGATION] Unblocked child task: TASK-grf003 (Ready to Execute)</code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .pipeline-section {
+    padding-top: var(--section-y);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .section-head {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: var(--measure);
+    margin-bottom: 3.5rem;
+  }
+
+  .section-title {
+    font-size: var(--step-section);
+  }
+
+  .section-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+  }
+
+  /* Pipeline Workbench */
+  .pipeline-workbench {
+    background-color: var(--surface-primary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+  }
+
+  .pipeline-nav-bar {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    background-color: var(--surface-secondary);
+    border-bottom: 1px solid var(--border-primary);
+  }
+
+  .pipe-nav-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    padding: 1rem;
+    font-family: var(--font-mono);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    border-right: 1px solid var(--border-primary);
+    border-bottom: 2px solid transparent;
+    transition: all var(--t-fast);
+  }
+
+  .pipe-nav-btn:last-child {
+    border-right: none;
+  }
+
+  .pipe-nav-btn:hover {
+    color: var(--text-primary);
+    background-color: var(--surface-hover);
+  }
+
+  .pipe-nav-btn.is-active {
+    background-color: var(--surface-primary);
+    color: var(--accent-cyan);
+    border-bottom-color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .p-num {
+    font-size: 0.6875rem;
+    opacity: 0.6;
+  }
+
+  .pipeline-display-area {
+    padding: 2.5rem;
+  }
+
+  .phase-pane {
+    display: grid;
+    grid-template-columns: 1.1fr 1fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  .phase-pane[hidden] {
+    display: none !important;
+  }
+
+  .pane-info-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .phase-tag {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    letter-spacing: var(--tracking-label);
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+
+  .phase-heading {
+    font-size: 1.5rem;
+    color: var(--text-primary);
+  }
+
+  .phase-body {
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .rule-box {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    background-color: var(--surface-secondary);
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-sm);
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+
+  .pane-code-col {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .code-terminal-view {
+    background-color: #05070a;
+    border: 1px solid var(--border-primary);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+
+  .code-term-head {
+    padding: 0.5rem 0.85rem;
+    background-color: var(--surface-secondary);
+    border-bottom: 1px solid var(--border-primary);
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+  }
+
+  .code-terminal-view pre {
+    padding: 1.15rem;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+  }
+
+  .k { color: var(--accent-cyan); }
+  .v { color: var(--accent-blue); }
+  .s { color: #a5d6ff; }
+
+  @media (max-width: 900px) {
+    .pipeline-nav-bar {
+      grid-template-columns: 1fr 1fr;
+    }
+    .phase-pane {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  function setupPipeline() {
+    const btns = document.querySelectorAll<HTMLButtonElement>('.pipe-nav-btn');
+    const panes = document.querySelectorAll<HTMLElement>('.phase-pane');
+
+    function setActivePhase(phaseId: string) {
+      btns.forEach((btn) => {
+        const isTarget = btn.getAttribute('data-phase') === phaseId;
+        btn.classList.toggle('is-active', isTarget);
+        btn.setAttribute('aria-selected', isTarget ? 'true' : 'false');
+      });
+
+      panes.forEach((pane) => {
+        const isTarget = pane.id === `phase-pane-${phaseId}`;
+        if (isTarget) {
+          pane.removeAttribute('hidden');
+        } else {
+          pane.setAttribute('hidden', '');
+        }
+      });
+    }
+
+    btns.forEach((btn, index) => {
+      btn.addEventListener('click', () => {
+        const phase = btn.getAttribute('data-phase');
+        if (phase) {
+          setActivePhase(phase);
+        }
+      });
+
+      btn.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight') {
+          e.preventDefault();
+          const nextIndex = (index + 1) % btns.length;
+          btns[nextIndex]?.focus();
+          const phase = btns[nextIndex]?.getAttribute('data-phase');
+          if (phase) setActivePhase(phase);
+        } else if (e.key === 'ArrowLeft') {
+          e.preventDefault();
+          const prevIndex = (index - 1 + btns.length) % btns.length;
+          btns[prevIndex]?.focus();
+          const phase = btns[prevIndex]?.getAttribute('data-phase');
+          if (phase) setActivePhase(phase);
+        }
+      });
+    });
+  }
+
+  // Run on first load
+  setupPipeline();
+  // Run on Astro page navigation if transitions are used
+  document.addEventListener('astro:page-load', setupPipeline);
+</script>

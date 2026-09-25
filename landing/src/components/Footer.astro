@@ -1,0 +1,203 @@
+---
+---
+
+<footer class="site-footer" id="docs">
+  <div class="container footer-wrapper">
+    <div class="footer-grid">
+      <div class="footer-brand-pane">
+        <div class="footer-brand">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="6" cy="12" r="3" fill="var(--accent-emerald)"></circle>
+            <circle cx="18" cy="6" r="3" fill="var(--accent-cyan)"></circle>
+            <circle cx="18" cy="18" r="3" stroke="var(--accent-emerald)"></circle>
+            <line x1="9" y1="12" x2="15" y2="6" stroke="var(--text-muted)" stroke-dasharray="2 2"></line>
+            <line x1="9" y1="12" x2="15" y2="18" stroke="var(--accent-emerald)"></line>
+          </svg>
+          <span class="brand-text">TAXON</span>
+        </div>
+        <p class="footer-desc">
+          The deterministic task graph and workflow planner for human developers and autonomous AI agent fleets.
+        </p>
+        <div class="system-status-indicator">
+          <span class="status-pulse-dot"></span>
+          <span>SYSTEM OPERATIONAL · ZERO CLOUD EGRESS</span>
+        </div>
+      </div>
+
+      <div class="footer-columns">
+        <div class="footer-col">
+          <h4 class="col-title">Architecture</h4>
+          <ul class="col-links">
+            <li><a href="#workbench">DAG Graph Engine</a></li>
+            <li><a href="#workbench">Task Contracts</a></li>
+            <li><a href="#features">Artifact Chaining</a></li>
+            <li><a href="#pipeline">Topological Sort</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="col-title">Ecosystem</h4>
+          <ul class="col-links">
+            <li><a href="#obsidian">Obsidian Sync</a></li>
+            <li><a href="#pipeline">Claude Code Protocol</a></li>
+            <li><a href="#pipeline">Antigravity &amp; Cursor</a></li>
+            <li><a href="#tui">Terminal TUI &amp; Pomodoro</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4 class="col-title">Open Source</h4>
+          <ul class="col-links">
+            <li><a href="https://github.com/nutlope/taxon" target="_blank" rel="noopener noreferrer">GitHub Repository</a></li>
+            <li><a href="https://github.com/nutlope/taxon/releases" target="_blank" rel="noopener noreferrer">Releases &amp; Binaries</a></li>
+            <li><a href="https://github.com/nutlope/taxon/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">MIT License</a></li>
+            <li><a href="https://github.com/nutlope/taxon/blob/main/AGENTS.md" target="_blank" rel="noopener noreferrer">AGENTS.md Spec</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-bottom-bar">
+      <span class="copyright-text">&copy; {new Date().getFullYear()} Taxon Project. Open source under MIT License.</span>
+      <span class="shortcut-tip">Press <kbd>⌘K</kbd> to search anytime</span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    background-color: var(--bg-surface);
+    padding-top: 5rem;
+    padding-bottom: 3.5rem;
+    border-top: 1px solid var(--border-subtle);
+  }
+
+  .footer-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 3.5rem;
+  }
+
+  .footer-grid {
+    display: grid;
+    grid-template-columns: 1.25fr 2fr;
+    gap: 3.5rem;
+  }
+
+  .footer-brand-pane {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    max-width: 360px;
+  }
+
+  .footer-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .footer-desc {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .system-status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    color: var(--accent-emerald);
+    padding: 0.35rem 0.65rem;
+    background-color: var(--accent-emerald-dim);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-sm);
+    width: fit-content;
+  }
+
+  .status-pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent-emerald);
+    box-shadow: 0 0 8px var(--accent-emerald);
+  }
+
+  .footer-columns {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+  }
+
+  .footer-col {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .col-title {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    letter-spacing: var(--tracking-label);
+    text-transform: uppercase;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .col-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+
+  .col-links a {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    transition: color var(--t-fast);
+  }
+
+  .col-links a:hover {
+    color: var(--accent-emerald);
+  }
+
+  .footer-bottom-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.8125rem;
+    color: var(--text-dim);
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .shortcut-tip kbd {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    padding: 0.1rem 0.35rem;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: 3px;
+    color: var(--text-secondary);
+  }
+
+  @media (max-width: 860px) {
+    .footer-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 580px) {
+    .footer-columns {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

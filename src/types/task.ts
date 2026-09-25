@@ -20,7 +20,7 @@ export interface Task {
   completed: boolean;
   duration: string;
   priority: 'Critical' | 'High' | 'Medium' | 'Low';
-  status: 'To Do' | 'In Progress' | 'Done';
+  status: 'To Do' | 'In Progress' | 'Need to Test' | 'Done';
   dueDate?: string;
   description?: string;
   labels?: string[];
@@ -33,4 +33,10 @@ export interface Task {
   recurrence?: RecurrenceRule;
   archived?: boolean;
   archivedAt?: string;
+  workspacePath?: string;
+  linkedFiles?: string[];
+  dependsOn?: string[];
+  moduleGroup?: string;
+  inputs?: string[];
+  outputs?: string[];
 }

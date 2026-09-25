@@ -28,7 +28,8 @@ export const initDb = (): Promise<Database> => {
             dueDays INTEGER,
             dueDate TEXT,
             sortOrder INTEGER,
-            vaultPath TEXT
+            vaultPath TEXT,
+            workspacePaths TEXT
         );
       `)
         .catch(() => {});
@@ -64,7 +65,8 @@ export const initDb = (): Promise<Database> => {
       await database
         .execute(`
         CREATE TABLE IF NOT EXISTS activity (
-            day TEXT PRIMARY KEY,
+            date TEXT PRIMARY KEY,
+            day TEXT,
             hours REAL,
             completions INTEGER,
             isToday BOOLEAN
@@ -139,7 +141,14 @@ export const initDb = (): Promise<Database> => {
         'deadline',
         'subtasks',
         'recurrence',
+        'workspacePath',
+        'linkedFiles',
+        'dependsOn',
+        'moduleGroup',
+        'inputs',
+        'outputs',
       ];
+
       for (const col of cols) {
         try {
           await database.execute(`ALTER TABLE tasks ADD COLUMN ${col} TEXT`);
@@ -171,6 +180,21 @@ export const initDb = (): Promise<Database> => {
         // Column already exists
       }
       try {
+        await database.execute('ALTER TABLE projects ADD COLUMN workspacePaths TEXT');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN pinned BOOLEAN');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN pinnedSortOrder INTEGER');
+      } catch {
+        // Column already exists
+      }
+      try {
         await database.execute('ALTER TABLE tasks ADD COLUMN archived BOOLEAN');
       } catch {
         // Column already exists
@@ -180,24 +204,75 @@ export const initDb = (): Promise<Database> => {
       } catch {
         // Column already exists
       }
+      try {
+        const tableInfo = await database.select<{ name: string; pk: number }[]>(
+          'PRAGMA table_info(activity)',
+        );
+        const dateCol = tableInfo.find((c) => c.name === 'date');
+        if (!dateCol || dateCol.pk !== 1) {
+          await database.execute(`
+            CREATE TABLE IF NOT EXISTS activity_new (
+                date TEXT PRIMARY KEY,
+                day TEXT,
+                hours REAL,
+                completions INTEGER,
+                isToday BOOLEAN
+            );
+          `);
+          if (dateCol) {
+            await database.execute(`
+              INSERT OR REPLACE INTO activity_new (date, day, hours, completions, isToday)
+              SELECT COALESCE(date, day), day, hours, completions, isToday FROM activity;
+            `);
+          } else {
+            await database.execute(`
+              INSERT OR REPLACE INTO activity_new (date, day, hours, completions, isToday)
+              SELECT day, day, hours, completions, isToday FROM activity;
+            `);
+          }
+          await database.execute('DROP TABLE activity;');
+          await database.execute('ALTER TABLE activity_new RENAME TO activity;');
+        }
+      } catch {
+        // Migration handled or table doesn't exist yet
+      }
       return database;
     })();
   }
   return dbPromise;
 };
 
-// --- Projects ---
 export const getProjects = async (): Promise<Project[]> => {
   const d = await initDb();
-  return d.select<Project[]>(
+  const rawProjects = await d.select<Record<string, unknown>[]>(
     'SELECT * FROM projects ORDER BY COALESCE(sortOrder, 999999) ASC, id ASC',
   );
+
+  const parseJSON = (val: unknown) => {
+    if (typeof val === 'string' && val.trim().startsWith('[')) {
+      try {
+        return JSON.parse(val);
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  };
+
+  return rawProjects.map((p) => ({
+    ...p,
+    pinned: !!p.pinned,
+    pinnedSortOrder: typeof p.pinnedSortOrder === 'number' ? p.pinnedSortOrder : undefined,
+    workspacePaths: parseJSON(p.workspacePaths),
+  })) as unknown as Project[];
 };
 
 export const saveProject = async (p: Project) => {
   const d = await initDb();
+  const workspacePathsStr = p.workspacePaths ? JSON.stringify(p.workspacePaths) : null;
+
   await d.execute(
-    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)',
+    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate, workspacePaths, pinned, pinnedSortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
     [
       p.id ?? null,
       p.name ?? null,
@@ -208,6 +283,9 @@ export const saveProject = async (p: Project) => {
       p.sortOrder ?? null,
       p.vaultPath ?? null,
       p.dueDate ?? null,
+      workspacePathsStr,
+      p.pinned ? 1 : 0,
+      p.pinnedSortOrder ?? null,
     ],
   );
 };
@@ -262,6 +340,12 @@ export const getTasks = async (): Promise<Task[]> => {
       reminders: parseJSON(t.reminders),
       subtasks: parseJSON(t.subtasks),
       recurrence: parseJSON(t.recurrence),
+      linkedFiles: parseJSON(t.linkedFiles),
+      dependsOn: parseJSON(t.dependsOn),
+      inputs: parseJSON(t.inputs),
+      outputs: parseJSON(t.outputs),
+      workspacePath: (t.workspacePath as string) || undefined,
+      moduleGroup: (t.moduleGroup as string) || undefined,
       timeEffort: timeEffortNum,
       timeSpent: timeSpentNum,
       archived: !!t.archived,
@@ -276,9 +360,13 @@ export const saveTask = async (t: Task) => {
   const remindersStr = t.reminders ? JSON.stringify(t.reminders) : null;
   const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
   const recurrenceStr = t.recurrence ? JSON.stringify(t.recurrence) : null;
+  const linkedFilesStr = t.linkedFiles ? JSON.stringify(t.linkedFiles) : null;
+  const dependsOnStr = t.dependsOn ? JSON.stringify(t.dependsOn) : null;
+  const inputsStr = t.inputs ? JSON.stringify(t.inputs) : null;
+  const outputsStr = t.outputs ? JSON.stringify(t.outputs) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
     [
       t.id ?? null,
       t.projectId ?? null,
@@ -300,8 +388,29 @@ export const saveTask = async (t: Task) => {
       recurrenceStr,
       t.archived ? 1 : 0,
       t.archivedAt ?? null,
+      t.workspacePath ?? null,
+      linkedFilesStr,
+      dependsOnStr,
+      t.moduleGroup ?? null,
+      inputsStr,
+      outputsStr,
     ],
   );
+
+  if (t.projectId) {
+    try {
+      const projs = await d.select<{ vaultPath: string }[]>(
+        'SELECT vaultPath FROM projects WHERE id = $1',
+        [t.projectId],
+      );
+      if (projs.length > 0 && projs[0]?.vaultPath) {
+        const { exportSingleTaskToAgent } = await import('./agentSync');
+        await exportSingleTaskToAgent(t, projs[0].vaultPath);
+      }
+    } catch (e) {
+      console.error('Failed to trigger surgical task export:', e);
+    }
+  }
 };
 
 export const deleteTask = async (id: string) => {
@@ -344,6 +453,24 @@ export const saveSprint = async (s: Sprint) => {
       s.completedAt ?? null,
     ],
   );
+
+  if (s.projectId) {
+    try {
+      const projs = await d.select<{ vaultPath: string }[]>(
+        'SELECT vaultPath FROM projects WHERE id = $1',
+        [s.projectId],
+      );
+      if (projs.length > 0 && projs[0]?.vaultPath) {
+        const { exportSingleSprintToAgent } = await import('./agentSync');
+        // getTasks handles the JSON parsing mapping safely
+        const allTasks = await getTasks();
+        const sprintTasks = allTasks.filter((t) => t.sprintId === s.id);
+        await exportSingleSprintToAgent(s, sprintTasks, projs[0].vaultPath);
+      }
+    } catch (e) {
+      console.error('Failed to trigger surgical sprint export:', e);
+    }
+  }
 };
 
 export const deleteSprint = async (id: string) => {
@@ -385,16 +512,20 @@ export const getActivity = async (): Promise<DailyActivity[]> => {
   const d = await initDb();
   const raw = await d.select<Record<string, unknown>[]>('SELECT * FROM activity');
   return raw.map((a) => ({
-    ...a,
+    date: (a.date as string) || (a.day as string) || '',
+    day: (a.day as string) || '',
+    hours: typeof a.hours === 'number' ? a.hours : Number(a.hours) || 0,
+    completions: typeof a.completions === 'number' ? a.completions : Number(a.completions) || 0,
     isToday: !!a.isToday,
-  })) as unknown as DailyActivity[];
+  })) as DailyActivity[];
 };
 
 export const saveActivity = async (a: DailyActivity) => {
   const d = await initDb();
+  const dateKey = a.date || a.day;
   await d.execute(
-    'INSERT OR REPLACE INTO activity (day, hours, completions, isToday) VALUES ($1, $2, $3, $4)',
-    [a.day ?? null, a.hours ?? 0, a.completions ?? 0, a.isToday ? 1 : 0],
+    'INSERT OR REPLACE INTO activity (date, day, hours, completions, isToday) VALUES ($1, $2, $3, $4, $5)',
+    [dateKey ?? null, a.day ?? null, a.hours ?? 0, a.completions ?? 0, a.isToday ? 1 : 0],
   );
 };
 

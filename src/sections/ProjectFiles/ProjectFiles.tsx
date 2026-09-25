@@ -1,5 +1,6 @@
 import { open as shellOpen } from '@tauri-apps/plugin-shell';
 import { ExternalLink, FileCode, FileImage, FileText, FolderOpen, Trash2 } from 'lucide-react';
+import Button from '../../components/Button';
 import VaultFileTree from '../../components/VaultFileTree';
 import type { DocumentFile, Project, VaultEntry } from '../../types';
 
@@ -77,14 +78,10 @@ export default function ProjectFiles({
               editing.
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onSetVaultDirectory}
-            className="bg-interactive-primary text-interactive-primary-text hover:bg-interactive-primary/90 font-bold text-xs px-4 py-2 rounded-lg transition-colors inline-flex items-center gap-1.5 cursor-pointer shadow"
-          >
+          <Button type="button" variant="primary" size="sm" onClick={onSetVaultDirectory}>
             <FolderOpen className="w-3.5 h-3.5" />
             <span>Set Vault Directory</span>
-          </button>
+          </Button>
         </div>
       )}
 
@@ -96,12 +93,14 @@ export default function ProjectFiles({
               Manual Attachments
             </span>
           </div>
-          <button
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onAddNativeFile}
-            className="text-[10px] text-text-primary hover:underline uppercase tracking-wider font-mono cursor-pointer"
+            className="text-[10px] text-text-primary hover:underline uppercase tracking-wider font-mono p-0 h-auto inline"
           >
             + Attach file
-          </button>
+          </Button>
         </div>
 
         {projectFiles.length === 0 ? (

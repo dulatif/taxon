@@ -9,6 +9,7 @@ interface TaskListHeaderProps {
   totalTasksCount: number;
   toggleAllGroups: () => void;
   setGroupByProject: React.Dispatch<React.SetStateAction<boolean>>;
+  isReadOnly?: boolean;
 }
 
 export default function TaskListHeader({
@@ -20,13 +21,16 @@ export default function TaskListHeader({
   totalTasksCount,
   toggleAllGroups,
   setGroupByProject,
+  isReadOnly,
 }: TaskListHeaderProps) {
   return (
     <div className="flex items-center justify-between px-5 py-3.5 border-b border-border-primary bg-surface-secondary">
-      <h2 className="text-sm font-bold uppercase tracking-wider text-text-primary font-mono leading-none">
-        {title}
-      </h2>
-      <div className="flex items-center gap-2">
+      {title && (
+        <h2 className="text-sm font-bold uppercase tracking-wider text-text-primary font-mono leading-none">
+          {title}
+        </h2>
+      )}
+      <div className={`flex items-center gap-2 ${!title ? 'w-full justify-start' : ''}`}>
         {/* Expand / Collapse all — only shown when grouped */}
         {!isSimpleView && groupByProject && (
           <button
@@ -58,7 +62,9 @@ export default function TaskListHeader({
           </button>
         )}
         <span className="text-[10px] font-mono font-bold bg-surface-primary border border-border-primary text-text-muted px-2 py-0.5 rounded">
-          {filteredTasksCount} / {totalTasksCount} Tasks
+          {isReadOnly
+            ? `${filteredTasksCount} tasks completed`
+            : `${filteredTasksCount} / ${totalTasksCount} Tasks`}
         </span>
       </div>
     </div>

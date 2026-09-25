@@ -72,10 +72,10 @@ Hello World`);
 
     it('should generate task and sprint filenames', () => {
       const task = { id: 'abc12def789', title: 'My Task' } as Task;
-      expect(taskFilename(task)).toBe('TASK-abc12d-my-task.md');
+      expect(taskFilename(task)).toBe('TASK-def789-my-task.md');
 
       const sprint = { id: 'jkl78mno', name: 'v1 MVP' } as Sprint;
-      expect(sprintFilename(sprint)).toBe('SPRINT-jkl78m-v1-mvp.md');
+      expect(sprintFilename(sprint)).toBe('SPRINT-l78mno-v1-mvp.md');
     });
   });
 
@@ -95,6 +95,10 @@ Hello World`);
         sortOrder: 1,
         archived: false,
         duration: '',
+        workspacePath: '/mnt/Linux/Projects/taxon',
+        linkedFiles: ['src/App.tsx'],
+        dependsOn: ['TASK-111111', 'TASK-222222'],
+        moduleGroup: 'Authentication',
         subtasks: [
           { id: 'sub-1', title: 'Subtask 1', completed: true },
           { id: 'sub-2', title: 'Subtask 2', completed: false },
@@ -102,6 +106,9 @@ Hello World`);
       };
 
       const markdown = taskToMarkdown(task);
+      expect(markdown).toContain('dependsOn: [TASK-111111, TASK-222222]');
+      expect(markdown).toContain('moduleGroup: Authentication');
+
       const parsedTask = markdownToTask(markdown, 'proj-1');
 
       expect(parsedTask.title).toBe(task.title);
@@ -109,6 +116,8 @@ Hello World`);
       expect(parsedTask.priority).toBe(task.priority);
       expect(parsedTask.status).toBe(task.status);
       expect(parsedTask.labels).toEqual(task.labels);
+      expect(parsedTask.dependsOn).toEqual(['TASK-111111', 'TASK-222222']);
+      expect(parsedTask.moduleGroup).toBe('Authentication');
       expect(parsedTask.timeEffort).toBe(task.timeEffort);
       expect(parsedTask.timeSpent).toBe(task.timeSpent);
       expect(parsedTask.subtasks!.length).toBe(2);
@@ -116,6 +125,101 @@ Hello World`);
       expect(parsedTask.subtasks![0]!.completed).toBe(true);
       expect(parsedTask.subtasks![1]!.title).toBe('Subtask 2');
       expect(parsedTask.subtasks![1]!.completed).toBe(false);
+    });
+
+    it('should parse markdown task without dependsOn or moduleGroup gracefully', () => {
+      const markdown = `---
+id: task-abc
+title: Simple Task
+priority: Medium
+status: To Do
+completed: false
+---
+## Description
+No workflow metadata
+`;
+      const parsed = markdownToTask(markdown, 'proj-1');
+      expect(parsed.dependsOn).toEqual([]);
+      expect(parsed.moduleGroup).toBeUndefined();
+      expect(parsed.inputs).toEqual([]);
+      expect(parsed.outputs).toEqual([]);
+    });
+
+    it('should roundtrip task contract with inputs, outputs, deliverables, and acceptance criteria', () => {
+      const markdown = `---
+id: grf002
+title: Update agentSync parser
+priority: High
+status: Need to Test
+completed: false
+sprintId: sprint_123
+moduleGroup: Data Model & Database
+dependsOn:
+  - grf001
+inputs:
+  - src/types/task.ts
+  - src/services/database.ts
+outputs:
+  - src/services/agentSync.ts
+linkedFiles:
+  - src/services/agentSync.ts
+labels:
+  - sync
+  - markdown
+---
+
+## Description
+
+Update agentSync.ts markdown parser and serializer to support task contracts.
+
+## Deliverables
+
+- [agentSync.ts](file:///mnt/Linux/Projects/taxon/src/services/agentSync.ts): Updated parser and serializer.
+
+## Acceptance Criteria
+
+- [x] Parses inputs and outputs arrays from YAML frontmatter in task files.
+- [ ] Preserves Deliverables and Acceptance Criteria body sections.
+
+## Subtasks
+
+- [x] Add inputs and outputs to frontmatter
+- [ ] Add section extractor
+`;
+
+      const parsedTask = markdownToTask(markdown, 'proj-1');
+
+      expect(parsedTask.id).toBe('grf002');
+      expect(parsedTask.title).toBe('Update agentSync parser');
+      expect(parsedTask.status).toBe('Need to Test');
+      expect(parsedTask.moduleGroup).toBe('Data Model & Database');
+      expect(parsedTask.dependsOn).toEqual(['grf001']);
+      expect(parsedTask.inputs).toEqual(['src/types/task.ts', 'src/services/database.ts']);
+      expect(parsedTask.outputs).toEqual(['src/services/agentSync.ts']);
+      expect(parsedTask.linkedFiles).toEqual(['src/services/agentSync.ts']);
+      expect(parsedTask.labels).toEqual(['sync', 'markdown']);
+
+      // Acceptance criteria checkmarks shouldn't pollute subtasks
+      expect(parsedTask.subtasks!.length).toBe(2);
+      expect(parsedTask.subtasks![0]!.title).toBe('Add inputs and outputs to frontmatter');
+      expect(parsedTask.subtasks![0]!.completed).toBe(true);
+      expect(parsedTask.subtasks![1]!.title).toBe('Add section extractor');
+      expect(parsedTask.subtasks![1]!.completed).toBe(false);
+
+      // Serializing back to markdown preserves all sections
+      const serialized = taskToMarkdown(parsedTask);
+      expect(serialized).toContain('inputs: [src/types/task.ts, src/services/database.ts]');
+      expect(serialized).toContain('outputs: [src/services/agentSync.ts]');
+      expect(serialized).toContain('## Deliverables');
+      expect(serialized).toContain(
+        '- [agentSync.ts](file:///mnt/Linux/Projects/taxon/src/services/agentSync.ts): Updated parser and serializer.',
+      );
+      expect(serialized).toContain('## Acceptance Criteria');
+      expect(serialized).toContain(
+        '- [x] Parses inputs and outputs arrays from YAML frontmatter in task files.',
+      );
+      expect(serialized).toContain('## Subtasks');
+      expect(serialized).toContain('- [x] Add inputs and outputs to frontmatter');
     });
   });
 
@@ -132,12 +236,26 @@ Hello World`);
       };
 
       const tasks: Task[] = [
-        { id: 'task-1', title: 'Task 1', sprintId: 'sprint-1' } as Task,
-        { id: 'task-2', title: 'Task 2', sprintId: 'sprint-2' } as Task,
+        {
+          id: 'task-1',
+          title: 'Task 1',
+          sprintId: 'sprint-1',
+          priority: 'High',
+          status: 'To Do',
+          completed: false,
+        } as Task,
+        {
+          id: 'task-2',
+          title: 'Task 2',
+          sprintId: 'sprint-2',
+          priority: 'Medium',
+          status: 'To Do',
+          completed: false,
+        } as Task,
       ];
 
       const markdown = sprintToMarkdown(sprint, tasks);
-      expect(markdown).toContain('TASK-task-1-task-1.md');
+      expect(markdown).toContain('[High] TASK-task-1-task-1.md');
       expect(markdown).not.toContain('TASK-task-2-task-2.md');
 
       const parsedSprint = markdownToSprint(markdown, 'proj-1');
@@ -318,6 +436,51 @@ Hello World`);
       const snapshot = generateContextSnapshot(project, [], []);
       expect(snapshot).toContain('*No active tasks*');
     });
+
+    it('should filter context snapshot by selectedSprintId', () => {
+      const sprints: Sprint[] = [
+        {
+          id: 'sprint-1',
+          name: 'Sprint 1',
+          projectId: 'proj-1',
+          status: 'Active',
+          startDate: '',
+          endDate: '',
+          goal: '',
+        },
+      ];
+
+      const tasks: Task[] = [
+        {
+          id: 't1',
+          projectId: 'proj-1',
+          title: 'Sprint Task',
+          status: 'In Progress',
+          priority: 'High',
+          sprintId: 'sprint-1',
+          archived: false,
+        } as Task,
+        {
+          id: 't2',
+          projectId: 'proj-1',
+          title: 'Backlog Task',
+          status: 'To Do',
+          priority: 'Critical',
+          sprintId: undefined,
+          archived: false,
+        } as Task,
+      ];
+
+      const sprintOnlySnapshot = generateContextSnapshot(project, tasks, sprints, 'sprint-1');
+      expect(sprintOnlySnapshot).toContain('Sprint 1');
+      expect(sprintOnlySnapshot).toContain('Sprint Task');
+      expect(sprintOnlySnapshot).not.toContain('Backlog Task');
+
+      const backlogOnlySnapshot = generateContextSnapshot(project, tasks, sprints, 'backlog');
+      expect(backlogOnlySnapshot).toContain('Backlog');
+      expect(backlogOnlySnapshot).toContain('Backlog Task');
+      expect(backlogOnlySnapshot).not.toContain('Sprint Task');
+    });
   });
 
   describe('Git Hooks (Feature 3)', () => {
@@ -327,7 +490,7 @@ Hello World`);
       expect(hookScript).toContain('# Taxon Auto-Sync Git Hook');
       expect(hookScript).toContain("grep -oE 'TASK-[a-zA-Z0-9]{6}'");
       expect(hookScript).toContain(
-        'sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 1, status = \'Done\' WHERE id LIKE \'%$SHORT_ID%\';"',
+        "sqlite3 \"$DB_PATH\" \"UPDATE tasks SET completed = 0, status = 'Need to Test', dueDate = CASE WHEN dueDate IS NULL OR dueDate = '' THEN date('now') ELSE dueDate END WHERE id LIKE '%$SHORT_ID%';\"",
       );
     });
   });

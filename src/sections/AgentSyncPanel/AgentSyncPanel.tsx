@@ -1,4 +1,5 @@
 import {
+  AlertTriangle,
   Bot,
   Check,
   ChevronDown,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   Trash2,
   UploadCloud,
+  X,
 } from 'lucide-react';
 import { useState } from 'react';
 import VaultFileTree from '../../components/VaultFileTree';
@@ -29,13 +31,19 @@ interface AgentSyncPanelProps {
   onExport: () => void;
   onImport: () => void;
   onCleanUpArchived?: () => Promise<{ movedCount: number; errors: string[] }>;
-  onCopyContextSnapshot?: () => Promise<{ success: boolean; activeCount: number }>;
+  onCopyContextSnapshot?: (
+    selectedSprintId?: string,
+  ) => Promise<{ success: boolean; activeCount: number }>;
+  selectedSprintId?: string;
   onOpenAuditLog?: () => void;
   onInstallGitHook?: () => Promise<{ success: boolean; message: string }>;
   onSetVaultDirectory: () => void;
   onSelectFile: (entry: VaultEntry) => void;
   onRefreshEntries: () => void;
   error?: string | null;
+  onDismissError?: () => void;
+  isLiveSyncEnabled: boolean;
+  onToggleLiveSync: (enabled: boolean) => void;
 }
 
 export default function AgentSyncPanel({
@@ -50,12 +58,16 @@ export default function AgentSyncPanel({
   onImport,
   onCleanUpArchived,
   onCopyContextSnapshot,
+  selectedSprintId,
   onOpenAuditLog,
   onInstallGitHook,
   onSetVaultDirectory,
   onSelectFile,
   onRefreshEntries,
   error,
+  onDismissError,
+  isLiveSyncEnabled,
+  onToggleLiveSync,
 }: AgentSyncPanelProps) {
   const [isTreeExpanded, setIsTreeExpanded] = useState(true);
   const [isCleaningUp, setIsCleaningUp] = useState(false);
@@ -63,6 +75,7 @@ export default function AgentSyncPanel({
   const [isInstallingHook, setIsInstallingHook] = useState(false);
   const [hookMessage, setHookMessage] = useState<string | null>(null);
   const [cleanupMessage, setCleanupMessage] = useState<string | null>(null);
+  const [isErrorExpanded, setIsErrorExpanded] = useState(false);
 
   // Time formatting helper
   const getRelativeTime = (isoString: string | null) => {
@@ -99,7 +112,7 @@ export default function AgentSyncPanel({
 
   const handleCopySnapshot = async () => {
     if (!onCopyContextSnapshot) return;
-    const res = await onCopyContextSnapshot();
+    const res = await onCopyContextSnapshot(selectedSprintId);
     if (res.success) {
       setIsCopied(true);
       setTimeout(() => setIsCopied(false), 2000);
@@ -122,17 +135,86 @@ export default function AgentSyncPanel({
   };
 
   return (
-    <div className="bg-surface-secondary border border-border-primary rounded-xl p-6 mt-6">
+    <div className="bg-surface-secondary border border-border-primary rounded-xl p-6">
       <div className="flex justify-between items-center mb-4 pb-2 border-b border-border-primary/50">
         <h3 className="text-sm font-semibold text-text-primary uppercase tracking-wider font-mono flex items-center gap-2">
           <Bot className="w-4 h-4 text-emerald-400" />
           AI Agent Sync
         </h3>
+
+        {hasVaultPath && (
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">
+              Live Sync
+            </span>
+            <button
+              type="button"
+              onClick={() => onToggleLiveSync(!isLiveSyncEnabled)}
+              className={`relative inline-flex h-4 w-7 items-center rounded-full transition-colors cursor-pointer ${
+                isLiveSyncEnabled
+                  ? 'bg-emerald-500'
+                  : 'bg-surface-elevated border border-border-primary'
+              }`}
+            >
+              <span
+                className={`inline-block h-3 w-3 transform rounded-full bg-white transition-transform ${
+                  isLiveSyncEnabled ? 'translate-x-3.5' : 'translate-x-0.5'
+                }`}
+              />
+            </button>
+          </div>
+        )}
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3 rounded-lg mb-4 text-xs font-mono">
-          {error}
+        <div className="bg-red-500/10 border border-red-500/30 text-red-400 rounded-lg mb-4 text-xs font-mono overflow-hidden">
+          <div className="flex items-start justify-between p-3 gap-2">
+            <div className="flex items-start gap-2 min-w-0 flex-1">
+              <AlertTriangle className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
+              <div className="min-w-0 flex-1">
+                <span className="font-bold block text-red-300">Sync Error</span>
+                <span className="text-red-400/90 break-words leading-relaxed">
+                  {error.length > 90 && !isErrorExpanded ? `${error.slice(0, 90)}...` : error}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {error.length > 90 && (
+                <button
+                  type="button"
+                  onClick={() => setIsErrorExpanded(!isErrorExpanded)}
+                  className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-300 transition-colors cursor-pointer"
+                  title={isErrorExpanded ? 'Hide details' : 'Show details'}
+                  aria-label={isErrorExpanded ? 'Hide details' : 'Show details'}
+                >
+                  {isErrorExpanded ? (
+                    <ChevronDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsErrorExpanded(false);
+                  onDismissError?.();
+                }}
+                className="p-1 hover:bg-red-500/20 rounded text-red-400 hover:text-red-200 transition-colors cursor-pointer"
+                title="Dismiss error"
+                aria-label="Dismiss error"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+          {isErrorExpanded && error.length > 90 && (
+            <div className="px-3 pb-3 pt-1 border-t border-red-500/20 bg-black/20">
+              <pre className="text-[11px] font-mono whitespace-pre-wrap break-all max-h-40 overflow-y-auto text-red-300/90">
+                {error}
+              </pre>
+            </div>
+          )}
         </div>
       )}
 

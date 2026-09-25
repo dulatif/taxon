@@ -1,7 +1,12 @@
 import { Calendar, CheckCircle2, Clock, Flame, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { aggregateActivityData } from '../services/activityLogger';
+import {
+  aggregateActivityData,
+  getCurrentWeekActivity,
+  getLast30DaysActivity,
+} from '../services/activityLogger';
 import type { ActivityLogEntry, DailyActivity, Task } from '../types';
+import { formatDateStr } from '../utils/format-date';
 
 interface AnalyticsViewProps {
   tasks: Task[];
@@ -41,13 +46,15 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
 
     const logMap = new Map<string, number>();
     for (const entry of activityLog) {
-      const dateKey = entry.completedAt.substring(0, 10);
-      logMap.set(dateKey, (logMap.get(dateKey) || 0) + 1);
+      if (entry.completedAt) {
+        const dateKey = formatDateStr(new Date(entry.completedAt));
+        logMap.set(dateKey, (logMap.get(dateKey) || 0) + 1);
+      }
     }
 
     const dailyMap = new Map<string, { completions: number; hours: number }>();
     for (const d of dailyActivity) {
-      dailyMap.set(d.date, { completions: d.completions, hours: d.hours });
+      dailyMap.set(d.date || d.day, { completions: d.completions, hours: d.hours });
     }
 
     // Determine start date: align to Sunday ~365 days ago
@@ -57,32 +64,20 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     startDate.setDate(startDate.getDate() - startDayOfWeek);
 
     const weeksArray: HeatmapDay[][] = [];
-    const monthsArray: HeatmapMonthLabel[] = [];
     let currentWeek: HeatmapDay[] = [];
-    let lastMonthIndex = -1;
 
     let totCompletions = 0;
     let totHours = 0;
 
     const curDate = new Date(startDate);
-    let colIndex = 0;
 
     while (curDate <= today) {
-      const dateStr = curDate.toISOString().substring(0, 10);
-      const monthIndex = curDate.getMonth();
+      const dateStr = formatDateStr(curDate);
       const dayOfWeek = curDate.getDay();
 
       if (dayOfWeek === 0 && currentWeek.length > 0) {
         weeksArray.push(currentWeek);
         currentWeek = [];
-        colIndex++;
-      }
-
-      // Check if month changed at the start of a column or first week
-      if (monthIndex !== lastMonthIndex && (dayOfWeek === 0 || weeksArray.length === 0)) {
-        const monthName = curDate.toLocaleString('default', { month: 'short' });
-        monthsArray.push({ monthName, colIndex });
-        lastMonthIndex = monthIndex;
       }
 
       const isToday = curDate.getTime() === today.getTime();
@@ -134,6 +129,43 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
       weeksArray.push(currentWeek);
     }
 
+    // Accurately determine month labels matching week columns
+    const monthsArray: HeatmapMonthLabel[] = [];
+    let lastMonth = -1;
+    let lastPushedCol = -10;
+
+    for (let colIdx = 0; colIdx < weeksArray.length; colIdx++) {
+      const week = weeksArray[colIdx];
+      if (!week || week.length === 0) continue;
+
+      for (const day of week) {
+        const parts = day.dateStr.split('-').map(Number);
+        const year = parts[0];
+        const month = parts[1];
+        const dDate = parts[2];
+        if (year === undefined || month === undefined || dDate === undefined) continue;
+
+        const m = month - 1;
+
+        if (m !== lastMonth) {
+          const monthName = new Date(year, m, dDate).toLocaleString('en-US', { month: 'short' });
+
+          if (colIdx === 0) {
+            monthsArray.push({ monthName, colIndex: colIdx });
+            lastPushedCol = colIdx;
+          } else if (colIdx - lastPushedCol >= 2) {
+            monthsArray.push({ monthName, colIndex: colIdx });
+            lastPushedCol = colIdx;
+          } else if (monthsArray.length === 1 && monthsArray[0]?.colIndex === 0) {
+            monthsArray[0] = { monthName, colIndex: colIdx };
+            lastPushedCol = colIdx;
+          }
+          lastMonth = m;
+          break;
+        }
+      }
+    }
+
     return {
       weeks: weeksArray,
       monthLabels: monthsArray,
@@ -161,6 +193,41 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
     if (score <= 7) return 'bg-text-primary/75 border-text-primary/60 hover:border-text-primary';
     return 'bg-text-primary border-text-primary shadow-[0_0_8px_rgba(255,255,255,0.4)]';
   };
+
+  const currentWeekActivity = useMemo(() => getCurrentWeekActivity(dailyActivity), [dailyActivity]);
+
+  // 30-Day Line Chart data
+  const last30DaysActivity = useMemo(() => getLast30DaysActivity(dailyActivity), [dailyActivity]);
+  const maxCompletions30d = useMemo(
+    () => Math.max(1, ...last30DaysActivity.map((d) => d.completions)),
+    [last30DaysActivity],
+  );
+
+  const { linePath, areaPath } = useMemo(() => {
+    if (last30DaysActivity.length === 0) return { linePath: '', areaPath: '' };
+
+    const points = last30DaysActivity.map((d, i) => {
+      const x = (i / 29) * 300;
+      const y = 100 - (d.completions / maxCompletions30d) * 80; // 20 to 100
+      return { x, y };
+    });
+
+    let d = `M ${points[0]!.x},${points[0]!.y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i]!;
+      const p1 = points[i + 1]!;
+      const cp1x = (p0.x + p1.x) / 2;
+      const cp1y = p0.y;
+      const cp2x = (p0.x + p1.x) / 2;
+      const cp2y = p1.y;
+      d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${p1.x},${p1.y}`;
+    }
+
+    return {
+      linePath: d,
+      areaPath: `${d} L 300,100 L 0,100 Z`,
+    };
+  }, [last30DaysActivity, maxCompletions30d]);
 
   return (
     <div className="max-w-6xl mx-auto py-8 px-6 space-y-6">
@@ -240,45 +307,130 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           </div>
           <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 group hover:border-border-focus/20 transition-all">
             <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-text-muted">
-              Uninterrupted Streaks
+              This Month Active Days
             </span>
-            <div className="text-3xl font-bold font-mono text-text-primary mt-2 flex items-center gap-2">
-              <Flame className="w-6 h-6 text-text-primary fill-current animate-pulse" />
-              <span>
-                {analyticsData.streak} Day{analyticsData.streak !== 1 ? 's' : ''}
-              </span>
+            <div className="text-3xl font-bold font-mono text-text-primary mt-2">
+              {analyticsData.thisMonthActiveDays} Day
+              {analyticsData.thisMonthActiveDays !== 1 ? 's' : ''}
             </div>
-            <p className="text-[10px] text-text-muted mt-1">
-              Maintained daily completion focus sprint
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className="text-[10px] text-text-muted">
+                {analyticsData.thisMonthActiveDays >= analyticsData.lastMonthActiveDays
+                  ? 'Up from'
+                  : 'Down from'}{' '}
+                {analyticsData.lastMonthActiveDays} last month
+              </p>
+              <p className="text-[10px] text-interactive-primary font-bold font-mono flex items-center gap-1">
+                <Flame className="w-3 h-3 fill-current" /> {analyticsData.streak} day streak
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Weekly Strategic Activity Bar Chart */}
-        <div className="border-t border-border-primary/50 pt-6">
-          <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
-            Current Week Strategic Load
-          </h3>
-          <div className="h-44 flex items-end justify-between gap-4">
-            {dailyActivity.map((d, i) => (
-              <div
-                key={i}
-                className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"
-              >
-                <div className="text-xs text-text-primary bg-surface-secondary border border-border-primary px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
-                  {d.completions}t / {(d.hours * 60).toFixed(0)}m
-                </div>
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 border-t border-border-primary/50 pt-6">
+          {/* Weekly Strategic Activity Bar Chart */}
+          <div>
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
+              Current Week Strategic Load
+            </h3>
+            <div className="h-44 flex items-end justify-between gap-4">
+              {currentWeekActivity.map((d, i) => (
                 <div
-                  style={{ height: `${Math.max(4, (d.hours / 6) * 100)}%` }}
-                  className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-interactive-primary shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-surface-tertiary group-hover:bg-zinc-600'}`}
-                />
-                <span
-                  className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-text-primary' : 'text-text-muted'}`}
+                  key={i}
+                  className="flex-1 flex flex-col items-center justify-end h-full gap-2 group"
                 >
-                  {d.day}
-                </span>
+                  <div className="text-xs text-text-primary bg-surface-secondary border border-border-primary px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity font-mono whitespace-nowrap shadow-md">
+                    {d.completions}t / {(d.hours * 60).toFixed(0)}m
+                  </div>
+                  <div
+                    style={{ height: `${Math.max(4, (d.hours / 6) * 100)}%` }}
+                    className={`w-full rounded-t transition-all duration-300 ${d.isToday ? 'bg-interactive-primary shadow-[0_0_12px_rgba(255,255,255,0.3)]' : 'bg-surface-tertiary group-hover:bg-zinc-600'}`}
+                  />
+                  <span
+                    className={`text-[10px] uppercase font-bold font-mono ${d.isToday ? 'text-text-primary' : 'text-text-muted'}`}
+                  >
+                    {d.day}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* 30-Day Task Accomplishment Line Chart */}
+          <div>
+            <h3 className="text-xs font-bold text-text-muted uppercase tracking-wider font-mono mb-4">
+              30-Day Accomplishment Trend
+            </h3>
+            <div className="h-44 w-full relative flex items-end pb-[22px]">
+              <svg
+                viewBox="0 0 300 100"
+                className="w-full h-full overflow-visible"
+                preserveAspectRatio="none"
+              >
+                <defs>
+                  <linearGradient id="line-gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop
+                      offset="0%"
+                      stopColor="currentColor"
+                      className="text-interactive-primary"
+                      stopOpacity="0.2"
+                    />
+                    <stop
+                      offset="100%"
+                      stopColor="currentColor"
+                      className="text-interactive-primary"
+                      stopOpacity="0"
+                    />
+                  </linearGradient>
+                </defs>
+
+                {/* Fill area */}
+                <path
+                  d={areaPath}
+                  fill="url(#line-gradient)"
+                  className="text-interactive-primary"
+                />
+
+                {/* Line */}
+                <path
+                  d={linePath}
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-interactive-primary drop-shadow-[0_0_6px_rgba(79,70,229,0.4)]"
+                />
+
+                {/* Points */}
+                {last30DaysActivity.map((d, i) => {
+                  const x = (i / 29) * 300;
+                  const y = 100 - (d.completions / maxCompletions30d) * 80;
+
+                  return (
+                    <g key={i} className="group">
+                      <circle
+                        cx={x}
+                        cy={y}
+                        r="3.5"
+                        className="fill-surface-primary stroke-interactive-primary stroke-[2.5px] opacity-0 group-hover:opacity-100 transition-all cursor-pointer"
+                      />
+                      <title>
+                        {d.date}: {d.completions} task{d.completions !== 1 ? 's' : ''}
+                      </title>
+                    </g>
+                  );
+                })}
+              </svg>
+              {/* Y-axis baseline */}
+              <div className="absolute bottom-[22px] left-0 right-0 h-[1px] bg-border-primary/50" />
+              {/* Labels */}
+              <div className="absolute bottom-0 left-0 right-0 flex justify-between text-[10px] uppercase font-bold font-mono text-text-muted">
+                <span>{last30DaysActivity[0]?.date.split('-').slice(1).join('/')}</span>
+                <span>Today</span>
               </div>
-            ))}
+            </div>
           </div>
         </div>
 
@@ -326,16 +478,19 @@ export default function AnalyticsView({ tasks, dailyActivity, activityLog }: Ana
           <div className="bg-surface-secondary border border-border-primary rounded-xl p-5 overflow-x-auto scrollbar-thin">
             <div className="min-w-[720px]">
               {/* Month Header Row */}
-              <div className="flex relative h-5 mb-1 pl-8 text-[10px] font-mono text-text-muted select-none">
-                {monthLabels.map((m, idx) => (
-                  <span
-                    key={idx}
-                    style={{ left: `${32 + m.colIndex * 14}px` }}
-                    className="absolute top-0 font-medium text-text-primary/70 tracking-wider"
-                  >
-                    {m.monthName}
-                  </span>
-                ))}
+              <div className="flex gap-2 mb-1 select-none">
+                <div className="w-6 shrink-0" />
+                <div className="relative h-5 flex-1 text-[10px] font-mono text-text-muted">
+                  {monthLabels.map((m, idx) => (
+                    <span
+                      key={idx}
+                      style={{ left: `${m.colIndex * 15}px` }}
+                      className="absolute top-0 font-medium text-text-primary/70 tracking-wider"
+                    >
+                      {m.monthName}
+                    </span>
+                  ))}
+                </div>
               </div>
 
               {/* Grid Body: Day Labels + Week Columns */}

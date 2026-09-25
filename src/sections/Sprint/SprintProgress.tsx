@@ -1,6 +1,6 @@
-import { Calendar, CheckCircle2, Edit3, Target } from 'lucide-react';
+import { AlertTriangle, Calendar, CheckCircle2, Edit3, Target } from 'lucide-react';
 import type { Sprint } from '../../types';
-import { formatDateRange } from '../../utils/format-date';
+import { formatDateRange, getTodayStr } from '../../utils/format-date';
 
 interface SprintProgressProps {
   sprint: Sprint;
@@ -19,6 +19,27 @@ export default function SprintProgress({
   onEdit,
   onComplete,
 }: SprintProgressProps) {
+  const isOverdue = Boolean(sprint.endDate && sprint.endDate < getTodayStr());
+
+  const getRemainingDaysText = () => {
+    if (!sprint.endDate) return null;
+    const todayStr = getTodayStr();
+    const today = new Date(todayStr + 'T00:00:00');
+    const end = new Date(sprint.endDate + 'T00:00:00');
+    const diffTime = end.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) {
+      return `Overdue by ${Math.abs(diffDays)} ${Math.abs(diffDays) === 1 ? 'day' : 'days'}`;
+    }
+    if (diffDays === 0) {
+      return 'Ends today';
+    }
+    return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} remaining`;
+  };
+
+  const remainingText = getRemainingDaysText();
+
   return (
     <div
       onClick={onSelect}
@@ -34,12 +55,32 @@ export default function SprintProgress({
             <span className="w-1.5 h-1.5 rounded-full bg-interactive-primary animate-pulse" />
             ACTIVE SPRINT
           </span>
+          {isOverdue && (
+            <span
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/40 shadow-sm"
+              title="Sprint has exceeded its end date!"
+            >
+              <AlertTriangle className="w-3 h-3 text-amber-600 dark:text-amber-400 animate-bounce" />
+              EXCEEDED DUE DATE
+            </span>
+          )}
           <h4 className="text-sm font-bold text-text-primary tracking-wide font-mono hover:text-interactive-primary transition-colors flex items-center gap-1.5">
             {sprint.name}
           </h4>
           <span className="text-xs font-mono text-text-muted flex items-center gap-1">
             <Calendar className="w-3.5 h-3.5 text-text-muted" />
             {formatDateRange(sprint.startDate, sprint.endDate)}
+            {remainingText && (
+              <span
+                className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded border ${
+                  isOverdue
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                    : 'bg-interactive-primary/10 text-interactive-primary border-interactive-primary/30'
+                }`}
+              >
+                ({remainingText})
+              </span>
+            )}
           </span>
         </div>
 
@@ -103,7 +144,7 @@ export default function SprintProgress({
         </div>
         <div className="w-full h-2 bg-surface-primary border border-border-primary rounded-full overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-interactive-primary to-cyan-400 transition-all duration-500"
+            className="h-full bg-interactive-primary transition-all duration-500"
             style={{ width: `${stats.percentage}%` }}
           />
         </div>

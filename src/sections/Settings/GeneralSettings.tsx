@@ -5,8 +5,11 @@ interface GeneralSettingsProps {
   pomodoroShortBreak: number;
   pomodoroLongBreak: number;
   pomodoroLongBreakInterval: number;
+  pomodoroAutoStartBreaks: boolean;
+  pomodoroAutoStartPomodoros: boolean;
   backupFrequency: string;
   updateSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
+  toggleSetting: (key: keyof SettingsState) => void;
   onExportData: () => void;
   onImportDataTrigger: () => void;
 }
@@ -16,8 +19,11 @@ export default function GeneralSettings({
   pomodoroShortBreak,
   pomodoroLongBreak,
   pomodoroLongBreakInterval,
+  pomodoroAutoStartBreaks,
+  pomodoroAutoStartPomodoros,
   backupFrequency,
   updateSetting,
+  toggleSetting,
   onExportData,
   onImportDataTrigger,
 }: GeneralSettingsProps) {
@@ -106,6 +112,64 @@ export default function GeneralSettings({
             </select>
           </div>
         </div>
+
+        <div className="pt-2 mt-2 border-t border-border-primary/40 space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">
+                Auto-start Breaks
+              </span>
+              <p className="text-[9px] text-text-muted mt-0.5">
+                Automatically start the break timer when a pomodoro finishes
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSetting('pomodoroAutoStartBreaks')}
+              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
+                pomodoroAutoStartBreaks
+                  ? 'bg-interactive-primary'
+                  : 'bg-surface-primary border border-border-primary'
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                  pomodoroAutoStartBreaks
+                    ? 'bg-interactive-primary-text translate-x-5'
+                    : 'bg-text-muted translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-[11px] text-[#C4C7C8] font-bold font-mono">
+                Auto-start Pomodoros
+              </span>
+              <p className="text-[9px] text-text-muted mt-0.5">
+                Automatically start the next pomodoro when a break finishes
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleSetting('pomodoroAutoStartPomodoros')}
+              className={`w-10 h-5 rounded-full relative p-0.5 cursor-pointer transition-colors duration-200 ${
+                pomodoroAutoStartPomodoros
+                  ? 'bg-interactive-primary'
+                  : 'bg-surface-primary border border-border-primary'
+              }`}
+            >
+              <div
+                className={`w-4 h-4 rounded-full transition-all duration-200 ${
+                  pomodoroAutoStartPomodoros
+                    ? 'bg-interactive-primary-text translate-x-5'
+                    : 'bg-text-muted translate-x-0'
+                }`}
+              />
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Backup Frequency */}
@@ -154,6 +218,21 @@ export default function GeneralSettings({
           >
             Import
           </button>
+        </div>
+      </div>
+
+      {/* Application Info */}
+      <div className="flex items-center justify-between p-3.5 bg-surface-secondary border border-border-primary/80 rounded-lg">
+        <div>
+          <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">
+            Application Info
+          </h4>
+          <p className="text-[10px] text-text-muted mt-0.5">Taxon Desktop Task & Project Manager</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="bg-surface-primary border border-border-primary/80 text-[11px] font-mono font-bold text-text-primary px-2.5 py-1 rounded">
+            v1.0.0
+          </span>
         </div>
       </div>
     </div>

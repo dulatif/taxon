@@ -1,8 +1,9 @@
 import type { DropResult } from '@hello-pangea/dnd';
-import { Pause } from 'lucide-react';
+import { Moon, Pause, Play, Search, Sun } from 'lucide-react';
 import { useMemo } from 'react';
 import logo from '../assets/logo.png';
 import { PROJECT_CATEGORIES } from '../constants/categories';
+import { useSettings } from '../contexts/SettingsContext';
 import NavigationList, { FOOTER_NAV_ITEMS } from '../sections/NavigationList/NavigationList';
 import SidebarProjectList from '../sections/SidebarProjectList/SidebarProjectList';
 import type { Project } from '../types';
@@ -16,11 +17,15 @@ interface SidebarProps {
   onAddProjectClick: () => void;
   onAddProjectToCategory?: (category: string) => void;
   onReorderProjects?: (projects: Project[]) => void;
+  onTogglePinProject?: (projectId: string) => void;
+  onReorderPinnedProjects?: (projects: Project[]) => void;
   timerSeconds?: number;
   timerIsRunning?: boolean;
+  isSessionActive?: boolean;
   activeFocusTaskTitle?: string;
   onLaunchFocusMode?: () => void;
   onToggleTimer?: () => void;
+  onOpenSpotlight?: () => void;
 }
 
 export default function Sidebar({
@@ -32,12 +37,17 @@ export default function Sidebar({
   onAddProjectClick,
   onAddProjectToCategory,
   onReorderProjects,
+  onTogglePinProject,
+  onReorderPinnedProjects,
   timerSeconds,
   timerIsRunning,
+  isSessionActive,
   activeFocusTaskTitle,
   onLaunchFocusMode,
   onToggleTimer,
+  onOpenSpotlight,
 }: SidebarProps) {
+  const { settings, updateSetting } = useSettings();
   const activeProjects = projects.filter((p) => p.category !== 'Completed');
   const categories = useMemo(() => {
     const cats = Array.from(new Set(activeProjects.map((p) => p.category))).filter(Boolean);
@@ -53,11 +63,37 @@ export default function Sidebar({
 
   const onDragEnd = (result: DropResult) => {
     const { source, destination, draggableId } = result;
-    if (!destination || !onReorderProjects) return;
+    if (!destination) return;
 
     if (source.droppableId === destination.droppableId && source.index === destination.index) {
       return;
     }
+
+    if (source.droppableId === 'pinned_zone' && destination.droppableId === 'pinned_zone') {
+      if (!onReorderPinnedProjects) return;
+      const pinnedProjects = activeProjects
+        .filter((p) => p.pinned)
+        .sort((a, b) => (a.pinnedSortOrder ?? 999999) - (b.pinnedSortOrder ?? 999999));
+
+      const rawId = draggableId.startsWith('pinned-')
+        ? draggableId.replace(/^pinned-/, '')
+        : draggableId;
+      const draggedProject = pinnedProjects.find((p) => p.id === rawId);
+      if (!draggedProject) return;
+
+      pinnedProjects.splice(source.index, 1);
+      pinnedProjects.splice(destination.index, 0, draggedProject);
+
+      onReorderPinnedProjects(pinnedProjects);
+      return;
+    }
+
+    // prevent cross-zone drag for pinned
+    if (source.droppableId === 'pinned_zone' || destination.droppableId === 'pinned_zone') {
+      return;
+    }
+
+    if (!onReorderProjects) return;
 
     const sourceCat = source.droppableId.replace(/^cat_/, '');
     const destCat = destination.droppableId.replace(/^cat_/, '');
@@ -67,7 +103,9 @@ export default function Sidebar({
 
     const projectsByCategory: Record<string, Project[]> = {};
     categories.forEach((c) => {
-      projectsByCategory[c] = activeProjects.filter((p) => p.category === c);
+      projectsByCategory[c] = activeProjects
+        .filter((p) => p.category === c)
+        .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
     });
 
     if (projectsByCategory[sourceCat]) {
@@ -99,22 +137,49 @@ export default function Sidebar({
   return (
     <aside className="h-full w-64 flex flex-col bg-surface-primary border-r border-border-primary shrink-0 overflow-hidden select-none">
       {/* Main Scrollable Content Area */}
-      <div className="flex-1 overflow-y-auto scrollbar-thin py-6 px-4 min-h-0 flex flex-col">
+      <div className="flex-1 overflow-y-auto scrollbar-thin pt-3 pb-6 px-4 min-h-0 flex flex-col">
         {/* Brand Header */}
-        <div
-          className="mb-8 px-2 cursor-pointer shrink-0 flex items-center gap-3"
-          onClick={() => onViewChange('dashboard')}
-        >
-          <img src={logo} alt="Taxon Logo" className="w-10 h-10 object-contain rounded-[10px]" />
-          <div>
-            <h1 className="text-xl font-black text-text-primary tracking-tighter leading-tight">
-              Taxon
-            </h1>
-            <p className="text-[10px] tracking-tight text-text-muted font-medium uppercase mt-0.5">
-              Precision Tasking
-            </p>
+        <div className="flex items-center justify-between px-2 mb-4 shrink-0">
+          <div
+            className="flex items-center gap-3 cursor-pointer"
+            onClick={() => onViewChange('dashboard')}
+          >
+            <img
+              src={logo}
+              alt="Taxon Logo"
+              className="w-12 h-12 p-1 rounded-lg shrink-0 object-cover"
+            />
+            <span className="font-bold text-text-primary text-[15px] tracking-tight">Taxon</span>
           </div>
+          <button
+            onClick={() => updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark')}
+            title="Toggle Theme"
+            className="p-1.5 hover:bg-surface-secondary text-text-muted hover:text-text-primary rounded-md transition-colors cursor-pointer"
+          >
+            {settings.theme === 'light' ? (
+              <Sun className="w-4 h-4" />
+            ) : (
+              <Moon className="w-4 h-4" />
+            )}
+          </button>
         </div>
+
+        {/* Global Search / Command Palette */}
+        {onOpenSpotlight && (
+          <div className="px-2 mb-4 shrink-0">
+            <button
+              id="global-search-input-sidebar"
+              onClick={onOpenSpotlight}
+              className="w-full relative group bg-surface-secondary border border-border-primary hover:border-border-hover rounded-md pl-8 pr-2 py-1.5 text-xs text-text-muted hover:text-text-primary flex items-center justify-between transition-all cursor-pointer select-none"
+            >
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-text-muted group-hover:text-text-primary w-3.5 h-3.5 transition-colors" />
+              <span className="truncate mr-2">Search...</span>
+              <span className="px-1.5 py-0.5 rounded bg-surface-tertiary border border-border-primary text-[10px] font-mono text-text-muted group-hover:text-text-primary transition-colors shrink-0">
+                ⌘K
+              </span>
+            </button>
+          </div>
+        )}
 
         <NavigationList
           currentView={currentView}
@@ -130,22 +195,25 @@ export default function Sidebar({
           onAddProjectClick={onAddProjectClick}
           onAddProjectToCategory={onAddProjectToCategory}
           onDragEnd={onDragEnd}
+          onTogglePinProject={onTogglePinProject}
         />
       </div>
 
       {/* Fixed Footer Area (Pomodoro Widget & Footer Nav) */}
       <div className="shrink-0 p-4 border-t border-border-primary/50 bg-surface-primary flex flex-col gap-3">
         {/* Active Focus Timer Widget */}
-        {timerIsRunning && currentView !== 'dashboard' && timerSeconds !== undefined && (
+        {isSessionActive && currentView !== 'dashboard' && timerSeconds !== undefined && (
           <div
             onClick={onLaunchFocusMode}
-            className="bg-surface-secondary hover:bg-surface-hover border border-border-primary/50 hover:border-border-primary/80 rounded-lg p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
+            className="bg-surface-secondary hover:bg-surface-hover border border-border-primary/50 hover:border-border-primary/80 rounded-md p-3 cursor-pointer transition-all group relative overflow-hidden animate-fade-in"
             title="Click to open full screen Focus Mode"
           >
             <div className="flex items-center justify-between mb-1">
               <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-text-muted group-hover:text-text-primary transition-colors flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-                Focus Active
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${timerIsRunning ? 'bg-green-400 animate-pulse' : 'bg-yellow-500'}`}
+                ></span>
+                {timerIsRunning ? 'Focus Active' : 'Focus Paused'}
               </span>
               <button
                 onClick={(e) => {
@@ -155,7 +223,11 @@ export default function Sidebar({
                 className="text-text-muted hover:text-text-primary p-1 hover:bg-surface-hover rounded transition-colors"
                 title="Pause/Resume Timer"
               >
-                <Pause className="w-3.5 h-3.5 fill-current" />
+                {timerIsRunning ? (
+                  <Pause className="w-3.5 h-3.5 fill-current" />
+                ) : (
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                )}
               </button>
             </div>
             <div className="text-xl font-bold font-mono text-text-primary tracking-tight leading-none my-1.5">
@@ -177,14 +249,16 @@ export default function Sidebar({
               key={item.id}
               onClick={() => onViewChange(item.id)}
               id={`nav-${item.id}`}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg font-sans tracking-tight text-sm transition-all duration-200 ${
+              className={`group flex items-center justify-between px-3 py-2 rounded-md text-[13px] transition-colors w-full cursor-pointer ${
                 currentView === item.id
-                  ? 'text-text-primary font-bold bg-surface-hover'
-                  : 'text-text-secondary hover:text-text-primary hover:bg-surface-secondary'
+                  ? 'bg-surface-active text-text-primary font-bold'
+                  : 'text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 font-medium'
               }`}
             >
-              <item.icon className="w-4 h-4" />
-              <span>{item.label}</span>
+              <div className="flex items-center gap-3">
+                <item.icon className="w-4 h-4 shrink-0" />
+                <span>{item.label}</span>
+              </div>
             </button>
           ))}
         </div>

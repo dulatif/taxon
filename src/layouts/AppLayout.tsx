@@ -37,7 +37,10 @@ export default function AppLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           {header}
 
-          <main className="flex-1 overflow-y-auto bg-surface-app bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-surface-primary via-surface-app to-surface-app focus:outline-none scrollbar-thin">
+          <main
+            id="main-scroll-container"
+            className="flex-1 overflow-y-auto bg-surface-app bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-surface-primary via-surface-app to-surface-app focus:outline-none scrollbar-thin"
+          >
             {children}
           </main>
         </div>

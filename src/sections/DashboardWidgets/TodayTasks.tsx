@@ -48,7 +48,7 @@ export default function TodayTasks({
   getTaskTimeBadge,
 }: TodayTasksProps) {
   const [isCompletedExpanded, setIsCompletedExpanded] = useState(false);
-  const [isOverdueExpanded, setIsOverdueExpanded] = useState(true);
+  const [isOverdueExpanded, setIsOverdueExpanded] = useState(false);
 
   return (
     <section className="bg-surface-primary border border-border-primary rounded-xl">

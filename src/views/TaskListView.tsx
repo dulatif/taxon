@@ -42,6 +42,8 @@ interface TaskListViewProps {
   onToggleTask: (id: string) => void;
   onDeleteTask: (id: string) => void;
   onSelectTask: (task: Task) => void;
+  isReadOnly?: boolean;
+  showProjectName?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -137,6 +139,8 @@ export default function TaskListView({
   onToggleTask,
   onDeleteTask,
   onSelectTask,
+  isReadOnly,
+  showProjectName,
 }: TaskListViewProps) {
   const isSimpleView = isInboxView || isRecurringView;
   const [filters, setFilters] = useState<TaskFilters>(DEFAULT_FILTERS);
@@ -152,7 +156,7 @@ export default function TaskListView({
   };
 
   // Apply filter → sort
-  const filteredTasks = sortTasks(filterTasks(tasks, filters), sortBy);
+  const filteredTasks = sortTasks(filterTasks(tasks, filters, isReadOnly), sortBy);
 
   // Build groups (or flat list)
   const groups = groupByProject ? groupTasksByProject(filteredTasks, projects) : null;
@@ -202,7 +206,7 @@ export default function TaskListView({
   };
 
   const PRIORITIES: Task['priority'][] = ['Critical', 'High', 'Medium', 'Low'];
-  const STATUSES: Task['status'][] = ['To Do', 'In Progress', 'Done'];
+  const STATUSES: Task['status'][] = ['To Do', 'In Progress', 'Need to Test', 'Done'];
   const DUE_DATE_OPTIONS: { key: DueDateRangeKey; label: string }[] = [
     { key: 'overdue', label: 'Overdue' },
     { key: 'today', label: 'Today' },
@@ -284,7 +288,9 @@ export default function TaskListView({
 
   return (
     <div className={isEmbedded ? 'w-full' : 'max-w-4xl mx-auto py-6 px-4 md:px-6'}>
-      <div className="bg-surface-primary border border-border-primary rounded-xl overflow-hidden">
+      <div
+        className={`bg-surface-primary overflow-hidden ${isReadOnly ? '' : 'border border-border-primary rounded-xl'}`}
+      >
         {/* ── Header ── */}
         <TaskListHeader
           title={title}
@@ -295,6 +301,7 @@ export default function TaskListView({
           totalTasksCount={tasks.length}
           toggleAllGroups={toggleAllGroups}
           setGroupByProject={setGroupByProject}
+          isReadOnly={isReadOnly}
         />
 
         {/* ── Filter / Sort Toolbar ── */}
@@ -344,36 +351,40 @@ export default function TaskListView({
             </FilterPopover>
 
             {/* Status filter */}
-            <FilterPopover label="Status" icon={Filter} active={filters.status.length > 0}>
-              <div className="p-1.5 space-y-0.5">
-                {STATUSES.map((s) => {
-                  const on = filters.status.includes(s);
-                  return (
-                    <button
-                      key={s}
-                      onClick={() => toggleStatus(s)}
-                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
-                        on
-                          ? 'bg-interactive-primary text-interactive-primary-text'
-                          : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full border ${
-                          s === 'Done'
-                            ? 'bg-green-500 border-green-400'
-                            : s === 'In Progress'
-                              ? 'bg-blue-500 border-blue-400'
-                              : 'bg-surface-secondary border-border-primary'
+            {!isReadOnly && (
+              <FilterPopover label="Status" icon={Filter} active={filters.status.length > 0}>
+                <div className="p-1.5 space-y-0.5">
+                  {STATUSES.map((s) => {
+                    const on = filters.status.includes(s);
+                    return (
+                      <button
+                        key={s}
+                        onClick={() => toggleStatus(s)}
+                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold transition-colors text-left cursor-pointer ${
+                          on
+                            ? 'bg-interactive-primary text-interactive-primary-text'
+                            : 'text-text-muted hover:bg-surface-hover hover:text-text-primary'
                         }`}
-                      />
-                      {s}
-                      {on && <Check className="w-3 h-3 ml-auto text-interactive-primary-text" />}
-                    </button>
-                  );
-                })}
-              </div>
-            </FilterPopover>
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full border ${
+                            s === 'Done'
+                              ? 'bg-green-500 border-green-400'
+                              : s === 'Need to Test'
+                                ? 'bg-orange-500 border-orange-400'
+                                : s === 'In Progress'
+                                  ? 'bg-blue-500 border-blue-400'
+                                  : 'bg-surface-secondary border-border-primary'
+                          }`}
+                        />
+                        {s}
+                        {on && <Check className="w-3 h-3 ml-auto text-interactive-primary-text" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </FilterPopover>
+            )}
 
             {/* Project filter */}
             {!isSimpleView && (
@@ -407,7 +418,7 @@ export default function TaskListView({
             )}
 
             {/* Due date filter */}
-            {!isSimpleView && (
+            {!isSimpleView && !isReadOnly && (
               <FilterPopover
                 label="Due Date"
                 icon={Calendar}
@@ -495,6 +506,8 @@ export default function TaskListView({
                       onToggleTask={onToggleTask}
                       onDeleteTask={onDeleteTask}
                       onSelectTask={onSelectTask}
+                      isReadOnly={isReadOnly}
+                      showProjectName={showProjectName}
                     />
                   );
                 })}
@@ -515,6 +528,9 @@ export default function TaskListView({
                       onToggleTask={onToggleTask}
                       onDeleteTask={onDeleteTask}
                       onSelectTask={onSelectTask}
+                      isReadOnly={isReadOnly}
+                      showProjectName={showProjectName}
+                      projectName={projects.find((p) => p.id === task.projectId)?.name}
                     />
                   ))}
                 </AnimatePresence>

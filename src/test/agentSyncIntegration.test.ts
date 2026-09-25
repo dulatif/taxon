@@ -59,6 +59,8 @@ vi.mock('../services/database', () => {
       db.sprints[sprint.id] = sprint;
     }),
     saveAuditLogEntry: vi.fn(async () => {}),
+    getActivityLog: vi.fn(async () => []),
+    saveActivityLogEntry: vi.fn(async () => {}),
     _getMockDb: () => db,
     _resetMockDb: () => {
       db.tasks = {};
@@ -194,6 +196,33 @@ New task added by agent.
     expect(diff.modifiedTasks.length).toBe(1);
     expect(diff.modifiedTasks[0]!.changedFields).toContain('priority');
     expect(diff.modifiedTasks[0]!.after.priority).toBe('High');
+  });
+
+  it('should preserve existing task dueDate when imported task has empty dueDate', async () => {
+    const existingTasksWithDueDate: Task[] = [
+      {
+        ...mockTasks[0]!,
+        dueDate: '2026-07-30',
+      },
+    ];
+
+    const importedTaskWithNoDueDate: Task[] = [
+      {
+        ...mockTasks[0]!,
+        dueDate: '',
+      },
+    ];
+
+    const diff = diffAgentChanges(
+      mockProject.id,
+      existingTasksWithDueDate,
+      mockSprints,
+      importedTaskWithNoDueDate,
+      [],
+    );
+
+    expect(diff.modifiedTasks.length).toBe(0);
+    expect(importedTaskWithNoDueDate[0]!.dueDate).toBe('2026-07-30');
   });
 
   it('should ignore deleted files in the diff', async () => {
@@ -364,5 +393,94 @@ Archived task.
     expect(fs['/mock/vault/.taxon/tasks/TASK-task-a-active-task.md']).toBeDefined();
     expect(fs['/mock/vault/.taxon/tasks/TASK-task-b-archived-task.md']).toBeUndefined();
     expect(fs['/mock/vault/.taxon/archive/TASK-task-b-archived-task.md']).toBeDefined();
+  });
+
+  it('should detect and apply task status changes from In Progress to Need to Test', async () => {
+    await exportProjectToAgent(mockProject, mockTasks, mockSprints, vaultPath);
+
+    // AI agent updates TASK-task-0 to Need to Test
+    const fs = (fsMock as any)._getMockFs();
+    const taskPath = Object.keys(fs).find((p) => p.includes('TASK-task-0'));
+    let content = fs[taskPath!];
+    content = content.replace('status: To Do', 'status: Need to Test');
+    await fsMock.writeTextFile(taskPath!, content);
+
+    const { tasks: parsedTasks, sprints: parsedSprints } = await scanAgentDirectory(
+      vaultPath,
+      mockProject.id,
+    );
+
+    const diff = diffAgentChanges(
+      mockProject.id,
+      mockTasks,
+      mockSprints,
+      parsedTasks,
+      parsedSprints,
+    );
+
+    expect(diff.modifiedTasks.length).toBe(1);
+    expect(diff.modifiedTasks[0]!.after.status).toBe('Need to Test');
+
+    const result = await applyAgentChanges(diff, mockProject.id);
+    expect(result.tasksApplied).toBe(1);
+
+    const db = (dbMock as any)._getMockDb();
+    expect(db.tasks['task-0']!.status).toBe('Need to Test');
+  });
+
+  it('blocks status regression when allowStatusRegression is false (production mode)', () => {
+    const existingTasks: Task[] = [
+      {
+        ...mockTasks[0]!,
+        id: 't-reg-1',
+        status: 'Need to Test',
+        completed: false,
+      },
+    ];
+
+    const agentTasks: Task[] = [
+      {
+        ...mockTasks[0]!,
+        id: 't-reg-1',
+        status: 'In Progress',
+        completed: false,
+      },
+    ];
+
+    const diff = diffAgentChanges(mockProject.id, existingTasks, [], agentTasks, [], {
+      allowStatusRegression: false,
+    });
+
+    // Should prevent regression back to In Progress
+    expect(diff.modifiedTasks.length).toBe(0);
+    expect(agentTasks[0]!.status).toBe('Need to Test');
+  });
+
+  it('allows status regression when allowStatusRegression is true (development mode)', () => {
+    const existingTasks: Task[] = [
+      {
+        ...mockTasks[0]!,
+        id: 't-reg-2',
+        status: 'Need to Test',
+        completed: false,
+      },
+    ];
+
+    const agentTasks: Task[] = [
+      {
+        ...mockTasks[0]!,
+        id: 't-reg-2',
+        status: 'In Progress',
+        completed: false,
+      },
+    ];
+
+    const diff = diffAgentChanges(mockProject.id, existingTasks, [], agentTasks, [], {
+      allowStatusRegression: true,
+    });
+
+    // Should allow regression back to In Progress
+    expect(diff.modifiedTasks.length).toBe(1);
+    expect(diff.modifiedTasks[0]!.after.status).toBe('In Progress');
   });
 });

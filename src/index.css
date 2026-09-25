@@ -9,6 +9,7 @@
   --color-surface-tertiary: var(--surface-tertiary);
   --color-surface-elevated: var(--surface-elevated);
   --color-surface-hover: var(--surface-hover);
+  --color-surface-active: var(--surface-active);
 
   /* Border colors */
   --color-border-primary: var(--border-primary);
@@ -24,6 +25,25 @@
   /* Interactive */
   --color-interactive-primary: var(--interactive-primary);
   --color-interactive-primary-text: var(--interactive-primary-text);
+
+  /* Workflow & Compatibility aliases */
+  --color-background: var(--surface-app);
+  --color-foreground: var(--text-primary);
+  --color-card: var(--surface-secondary);
+  --color-card-foreground: var(--text-primary);
+  --color-muted: var(--surface-tertiary);
+  --color-muted-foreground: var(--text-muted);
+  --color-border: var(--border-primary);
+  --color-primary: var(--interactive-primary);
+  --color-primary-foreground: var(--interactive-primary-text);
+  --color-workflow-node: var(--workflow-node-bg);
+  --color-workflow-node-border: var(--workflow-node-border);
+  --color-workflow-node-done: var(--workflow-node-done-bg);
+  --color-workflow-node-done-border: var(--workflow-node-done-border);
+  --color-workflow-node-test: var(--workflow-node-test-bg);
+  --color-workflow-node-test-border: var(--workflow-node-test-border);
+  --color-workflow-group-border: var(--workflow-group-border);
+  --color-workflow-group-bg: var(--workflow-group-bg);
 }
 
 /* Theme System */
@@ -138,4 +158,158 @@ select optgroup {
     background-color: var(--surface-hover);
     color: var(--text-primary);
   }
+}
+
+/* ─── Workflow Node Keyframe Animations ─── */
+@keyframes workflow-pulse-blue {
+  0%,
+  100% {
+    border-color: rgba(59, 130, 246, 0.4);
+    box-shadow:
+      0 0 0 0 rgba(59, 130, 246, 0),
+      0 0 8px rgba(59, 130, 246, 0.15);
+  }
+  50% {
+    border-color: rgba(59, 130, 246, 0.85);
+    box-shadow:
+      0 0 0 3px rgba(59, 130, 246, 0.2),
+      0 0 16px rgba(59, 130, 246, 0.4);
+  }
+}
+
+@keyframes workflow-pulse-purple {
+  0%,
+  100% {
+    border-color: rgba(168, 85, 247, 0.45);
+    box-shadow:
+      0 0 0 0 rgba(168, 85, 247, 0),
+      0 0 10px rgba(168, 85, 247, 0.2);
+  }
+  50% {
+    border-color: rgba(168, 85, 247, 0.95);
+    box-shadow:
+      0 0 0 4px rgba(168, 85, 247, 0.25),
+      0 0 20px rgba(168, 85, 247, 0.55);
+  }
+}
+
+@keyframes workflow-pulse-cyan {
+  0%,
+  100% {
+    border-color: rgba(34, 211, 238, 0.35);
+    box-shadow: 0 0 4px rgba(34, 211, 238, 0.1);
+  }
+  50% {
+    border-color: rgba(34, 211, 238, 0.8);
+    box-shadow: 0 0 12px rgba(34, 211, 238, 0.3);
+  }
+}
+
+@keyframes workflow-beacon {
+  0%,
+  100% {
+    transform: scale(0.85);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+.animate-workflow-blue {
+  animation: workflow-pulse-blue 2.5s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.animate-workflow-purple {
+  animation: workflow-pulse-purple 2.2s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.animate-workflow-cyan {
+  animation: workflow-pulse-cyan 2.5s ease-in-out infinite;
+  will-change: box-shadow, border-color;
+}
+
+.animate-workflow-beacon {
+  animation: workflow-beacon 2s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+/* ─── Workflow DAG Connector Edges ─── */
+@keyframes workflow-dash-flow {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.react-flow__edge.workflow-edge path.react-flow__edge-path {
+  stroke: var(--workflow-edge-stroke, #94a3b8) !important;
+  stroke-width: 1.75px !important;
+}
+
+.react-flow__edge.workflow-edge .react-flow__arrowhead path,
+.react-flow__edge.workflow-edge marker path {
+  fill: var(--workflow-edge-stroke, #94a3b8) !important;
+  stroke: var(--workflow-edge-stroke, #94a3b8) !important;
+}
+
+/* Dash animation for current task -> next queue task */
+.react-flow__edge.workflow-edge-queue path.react-flow__edge-path {
+  stroke: #60a5fa !important;
+  stroke-width: 2.25px !important;
+  stroke-dasharray: 8 5 !important;
+  animation: workflow-dash-flow 1s linear infinite !important;
+}
+
+.react-flow__edge.workflow-edge-queue .react-flow__arrowhead path,
+.react-flow__edge.workflow-edge-queue marker path {
+  fill: #60a5fa !important;
+  stroke: #60a5fa !important;
+}
+
+/* Agent Trajectory Edge */
+.react-flow__edge.workflow-edge-agent path.react-flow__edge-path {
+  stroke: #c084fc !important;
+  stroke-width: 2.5px !important;
+  stroke-dasharray: 8 5 !important;
+  animation: workflow-dash-flow 0.8s linear infinite !important;
+}
+
+.react-flow__edge.workflow-edge-agent .react-flow__arrowhead path,
+.react-flow__edge.workflow-edge-agent marker path {
+  fill: #c084fc !important;
+  stroke: #c084fc !important;
+}
+
+/* Generic fallback for any animated edge in React Flow */
+.react-flow__edge.animated path.react-flow__edge-path {
+  stroke-dasharray: 8 5 !important;
+  animation: workflow-dash-flow 1s linear infinite !important;
+}
+
+/* ─── Workflow DAG Task Node Styling ─── */
+.workflow-task-node {
+  background-color: var(--workflow-node-bg, #141416);
+  border-color: var(--workflow-node-border, #27272a);
+}
+
+.workflow-task-node-done {
+  background-color: var(--workflow-node-done-bg, #0a2e1d) !important;
+  border-color: var(--workflow-node-done-border, rgba(16, 185, 129, 0.35));
+}
+
+.workflow-task-node-test {
+  background-color: var(--workflow-node-test-bg, #220e36) !important;
+  border-color: var(--workflow-node-test-border, rgba(168, 85, 247, 0.35));
+}
+
+/* ─── Workflow Module Group Container ─── */
+.workflow-module-group {
+  border: 1.5px dashed var(--workflow-group-border, rgba(148, 163, 184, 0.4)) !important;
+  background-color: var(--workflow-group-bg, rgba(255, 255, 255, 0.02)) !important;
 }

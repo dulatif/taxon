@@ -13,6 +13,10 @@ export default tseslint.config(
       "src-tauri/**",
       "landing/**",
       "*.config.*",
+      "*.js",
+      "*.cjs",
+      "**/*.js",
+      "**/*.cjs",
     ],
   },
 

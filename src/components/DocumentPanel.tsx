@@ -12,10 +12,9 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
+import { useEffect, useRef, useState } from 'react';
 import type { VaultEntry } from '../types';
+import MarkdownViewer from './MarkdownViewer';
 
 interface DocumentPanelProps {
   isOpen: boolean;
@@ -24,104 +23,6 @@ interface DocumentPanelProps {
   onSaveContent: (path: string, content: string) => Promise<void>;
   onReadContent: (path: string) => Promise<string>;
 }
-
-const markdownComponents: Record<string, unknown> = {
-  h1: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h1
-      className="text-2xl font-black text-white mt-6 mb-4 border-b border-[#27272A] pb-2 tracking-tight font-sans"
-      {...props}
-    />
-  ),
-  h2: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h2 className="text-xl font-bold text-white mt-6 mb-3 tracking-tight font-sans" {...props} />
-  ),
-  h3: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h3 className="text-lg font-bold text-[#E4E4E7] mt-5 mb-2 font-sans" {...props} />
-  ),
-  h4: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <h4 className="text-base font-semibold text-[#D4D4D8] mt-4 mb-2 font-mono" {...props} />
-  ),
-  p: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <p className="text-sm text-[#C4C7C8] leading-relaxed mb-4" {...props} />
-  ),
-  a: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <a
-      className="text-blue-400 hover:text-blue-300 underline underline-offset-4"
-      target="_blank"
-      rel="noopener noreferrer"
-      {...props}
-    />
-  ),
-  ul: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <ul className="list-disc list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2" {...props} />
-  ),
-  ol: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <ol
-      className="list-decimal list-inside space-y-1.5 text-sm text-[#C4C7C8] mb-4 pl-2"
-      {...props}
-    />
-  ),
-  li: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <li className="leading-relaxed" {...props} />
-  ),
-  blockquote: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <blockquote
-      className="border-l-4 border-blue-500/60 bg-[#141313] px-4 py-3 rounded-r-lg text-sm text-[#A1A1AA] italic mb-4"
-      {...props}
-    />
-  ),
-  pre: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <pre
-      className="bg-[#141313] border border-[#27272A] rounded-xl p-4 overflow-x-auto my-4 text-xs font-mono text-cyan-300 shadow-inner"
-      {...props}
-    />
-  ),
-  code: ({ node: _node, className, children, ...props }: Record<string, unknown>) => {
-    const isBlock =
-      /language-(\w+)/.exec((className as string) || '') || String(children).includes('\n');
-    if (isBlock) {
-      return (
-        <code className={className as string} {...props}>
-          {children as ReactNode}
-        </code>
-      );
-    }
-    return (
-      <code
-        className="bg-[#141313] border border-[#27272A] text-cyan-300 rounded px-1.5 py-0.5 text-xs font-mono"
-        {...props}
-      >
-        {children as ReactNode}
-      </code>
-    );
-  },
-  table: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <div className="overflow-x-auto my-4 border border-[#27272A] rounded-xl">
-      <table className="w-full text-left text-xs border-collapse" {...props} />
-    </div>
-  ),
-  thead: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <thead
-      className="bg-[#141313] border-b border-[#27272A] text-white font-mono uppercase tracking-wider"
-      {...props}
-    />
-  ),
-  tbody: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <tbody className="divide-y divide-[#27272A]/50" {...props} />
-  ),
-  tr: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <tr className="hover:bg-white/5 transition-colors" {...props} />
-  ),
-  th: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <th className="px-4 py-2.5 font-bold" {...props} />
-  ),
-  td: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <td className="px-4 py-2.5 text-[#C4C7C8]" {...props} />
-  ),
-  hr: ({ node: _node, ...props }: Record<string, unknown>) => (
-    <hr className="border-[#27272A] my-6" {...props} />
-  ),
-};
 
 export default function DocumentPanel({
   isOpen,
@@ -238,12 +139,12 @@ export default function DocumentPanel({
           animate={{ x: 0 }}
           exit={{ x: '100%' }}
           transition={{ type: 'spring', damping: 28, stiffness: 300 }}
-          className="relative w-full max-w-2xl h-full bg-[#0A0A0A] border-l border-[#27272A] shadow-2xl flex flex-col pointer-events-auto z-10 text-white font-sans overflow-hidden"
+          className="relative w-full max-w-2xl h-full bg-surface-elevated border-l border-border-primary shadow-2xl flex flex-col pointer-events-auto z-10 text-text-primary font-sans overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-[#27272A] bg-[#0A0A0A] shrink-0">
+          <div className="flex items-center justify-between px-6 py-4 border-b border-border-primary bg-surface-elevated shrink-0">
             <div className="flex items-center gap-3 min-w-0 flex-1 mr-4">
-              <div className="p-2 rounded-lg bg-[#141313] border border-[#27272A] shrink-0">
+              <div className="p-2 rounded-lg bg-surface-primary border border-border-primary shrink-0">
                 {isCode ? (
                   <FileCode className="w-4 h-4 text-cyan-400" />
                 ) : (
@@ -252,13 +153,13 @@ export default function DocumentPanel({
               </div>
               <div className="min-w-0">
                 <h3
-                  className="text-sm font-bold text-white truncate tracking-tight font-sans"
+                  className="text-sm font-bold text-text-primary truncate tracking-tight font-sans"
                   title={entry.name}
                 >
                   {entry.name}
                 </h3>
                 <p
-                  className="text-[10px] text-[#8E9192] font-mono truncate mt-0.5"
+                  className="text-[10px] text-text-muted font-mono truncate mt-0.5"
                   title={entry.path}
                 >
                   {entry.path}
@@ -268,14 +169,14 @@ export default function DocumentPanel({
 
             <div className="flex items-center gap-2 shrink-0">
               {/* View / Edit Mode Toggle Button */}
-              <div className="bg-[#141313] p-1 rounded-lg border border-[#27272A] flex items-center gap-1">
+              <div className="bg-surface-primary p-1 rounded-lg border border-border-primary flex items-center gap-1">
                 <button
                   type="button"
                   onClick={() => handleToggleMode('view')}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                     mode === 'view'
-                      ? 'bg-white text-black font-bold shadow'
-                      : 'text-[#8E9192] hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow'
+                      : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <Eye className="w-3.5 h-3.5" />
@@ -286,8 +187,8 @@ export default function DocumentPanel({
                   onClick={() => handleToggleMode('edit')}
                   className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-mono transition-colors cursor-pointer ${
                     mode === 'edit'
-                      ? 'bg-white text-black font-bold shadow'
-                      : 'text-[#8E9192] hover:text-white'
+                      ? 'bg-interactive-primary text-interactive-primary-text font-bold shadow'
+                      : 'text-text-muted hover:text-text-primary'
                   }`}
                 >
                   <Edit3 className="w-3.5 h-3.5" />
@@ -300,7 +201,7 @@ export default function DocumentPanel({
                 type="button"
                 onClick={handleClose}
                 title="Close Document (Auto-Saves)"
-                className="p-2 text-[#8E9192] hover:text-white hover:bg-[#141313] rounded-lg transition-colors cursor-pointer"
+                className="p-2 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-lg transition-colors cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -308,19 +209,17 @@ export default function DocumentPanel({
           </div>
 
           {/* Document Content / Editor Area */}
-          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin bg-black/30">
+          <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin bg-surface-app/30">
             {isLoading ? (
-              <div className="h-full flex flex-col items-center justify-center text-[#8E9192] space-y-3">
-                <Loader2 className="w-6 h-6 animate-spin text-white" />
+              <div className="h-full flex flex-col items-center justify-center text-text-muted space-y-3">
+                <Loader2 className="w-6 h-6 animate-spin text-text-primary" />
                 <span className="text-xs font-mono uppercase tracking-wider">
                   Loading document...
                 </span>
               </div>
             ) : mode === 'view' ? (
               <div className="max-w-none">
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
-                  {content || '*Document is empty*'}
-                </ReactMarkdown>
+                <MarkdownViewer content={content || '*Document is empty*'} />
               </div>
             ) : (
               <textarea
@@ -330,13 +229,13 @@ export default function DocumentPanel({
                   setSaveStatus('dirty');
                 }}
                 placeholder="Write your markdown or text document here..."
-                className="w-full h-full min-h-[420px] bg-[#0E0E0F] border border-[#27272A] rounded-xl p-4 text-xs font-mono text-[#E4E4E7] leading-relaxed focus:outline-none focus:border-white/40 resize-none shadow-inner"
+                className="w-full h-full min-h-[420px] bg-surface-secondary border border-border-primary rounded-xl p-4 text-xs font-mono text-text-primary leading-relaxed focus:outline-none focus:border-interactive-primary/40 resize-none shadow-inner"
               />
             )}
           </div>
 
           {/* Footer Bar */}
-          <div className="px-6 py-3 border-t border-[#27272A] bg-[#0A0A0A] flex items-center justify-between gap-4 shrink-0">
+          <div className="px-6 py-3 border-t border-border-primary bg-surface-elevated flex items-center justify-between gap-4 shrink-0">
             <div className="flex items-center gap-2 text-xs font-mono">
               {saveStatus === 'saving' && (
                 <span className="flex items-center gap-1.5 text-amber-400">
@@ -369,7 +268,7 @@ export default function DocumentPanel({
                 <button
                   type="button"
                   onClick={() => handleSave()}
-                  className="ml-2 bg-white/10 hover:bg-white/20 text-white px-2 py-0.5 rounded flex items-center gap-1 text-[10px] cursor-pointer"
+                  className="ml-2 bg-interactive-primary/10 hover:bg-interactive-primary/20 text-interactive-primary px-2 py-0.5 rounded flex items-center gap-1 text-[10px] cursor-pointer"
                 >
                   <Save className="w-3 h-3" /> Save Now
                 </button>
@@ -389,7 +288,7 @@ export default function DocumentPanel({
                     console.error('Failed to open file in external editor:', e);
                   }
                 }}
-                className="flex items-center gap-1.5 bg-[#141313] hover:bg-[#201F1F] border border-[#27272A] text-[#C4C7C8] hover:text-white text-xs font-mono px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
+                className="flex items-center gap-1.5 bg-surface-primary hover:bg-surface-hover border border-border-primary text-text-muted hover:text-text-primary text-xs font-mono px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
                 <span>Open in external editor</span>

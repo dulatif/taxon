@@ -3,28 +3,38 @@ import {
   BarChart2,
   Calendar,
   Check,
+  CheckSquare,
   Command,
   Folder,
   FolderKanban,
+  HelpCircle,
+  History,
   Inbox,
+  Layers,
   LayoutDashboard,
+  Moon,
   Plus,
+  Repeat,
   Search,
   Settings,
   Sparkles,
+  Sun,
   Timer,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Project, Task } from '../types';
+import { useSettings } from '../contexts/SettingsContext';
+import type { Project, Sprint, Task } from '../types';
 
 interface SpotlightSearchModalProps {
   isOpen: boolean;
   onClose: () => void;
   tasks: Task[];
   projects: Project[];
+  sprints?: Sprint[];
   onToggleTask: (taskId: string) => void;
   onSelectProject: (projectId: string) => void;
+  onSelectProjectSprint?: (projectId: string, sprintId: string) => void;
   onSelectTask: (taskId: string) => void;
   onNavigate: (view: string) => void;
   onQuickAddTask: () => void;
@@ -33,7 +43,7 @@ interface SpotlightSearchModalProps {
 
 interface CombinedItem {
   id: string;
-  type: 'action' | 'task' | 'project';
+  type: 'action' | 'task' | 'project' | 'sprint';
   label: string;
   subLabel?: string;
   icon: React.ReactNode;
@@ -46,13 +56,16 @@ export default function SpotlightSearchModal({
   onClose,
   tasks,
   projects,
+  sprints,
   onToggleTask,
   onSelectProject,
+  onSelectProjectSprint,
   onSelectTask,
   onNavigate,
   onQuickAddTask,
   onLaunchFocusMode,
 }: SpotlightSearchModalProps) {
+  const { settings, updateSetting } = useSettings();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +118,22 @@ export default function SpotlightSearchModal({
         },
       },
       {
+        id: 'action-toggle-theme',
+        type: 'action' as const,
+        label: `Switch to ${settings.theme === 'dark' ? 'Light' : 'Dark'} Mode`,
+        subLabel: 'Toggle the application visual theme',
+        icon:
+          settings.theme === 'dark' ? (
+            <Sun className="w-4 h-4 text-orange-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-indigo-400" />
+          ),
+        action: () => {
+          onClose();
+          updateSetting('theme', settings.theme === 'dark' ? 'light' : 'dark');
+        },
+      },
+      {
         id: 'action-nav-dashboard',
         type: 'action' as const,
         label: 'Go to Dashboard',
@@ -124,6 +153,39 @@ export default function SpotlightSearchModal({
         action: () => {
           onClose();
           onNavigate('inbox');
+        },
+      },
+      {
+        id: 'action-nav-todo',
+        type: 'action' as const,
+        label: 'Go to Active Todo List',
+        subLabel: 'View all active todo items across workspace',
+        icon: <CheckSquare className="w-4 h-4 text-emerald-400" />,
+        action: () => {
+          onClose();
+          onNavigate('todo');
+        },
+      },
+      {
+        id: 'action-nav-history',
+        type: 'action' as const,
+        label: 'Go to Work Log & History',
+        subLabel: 'Inspect completion log and daily activity stats',
+        icon: <History className="w-4 h-4 text-indigo-400" />,
+        action: () => {
+          onClose();
+          onNavigate('history');
+        },
+      },
+      {
+        id: 'action-nav-recurring',
+        type: 'action' as const,
+        label: 'Go to Recurring Tasks',
+        subLabel: 'Manage automated recurring tasks and routines',
+        icon: <Repeat className="w-4 h-4 text-pink-400" />,
+        action: () => {
+          onClose();
+          onNavigate('recurring');
         },
       },
       {
@@ -170,47 +232,94 @@ export default function SpotlightSearchModal({
           onNavigate('settings');
         },
       },
+      {
+        id: 'action-nav-help',
+        type: 'action' as const,
+        label: 'Go to Help & Support',
+        subLabel: 'View documentation, shortcuts cheatsheet, and contact support',
+        icon: <HelpCircle className="w-4 h-4 text-blue-400" />,
+        action: () => {
+          onClose();
+          onNavigate('help');
+        },
+      },
     ],
-    [onClose, onQuickAddTask, onLaunchFocusMode, onNavigate],
+    [onClose, onQuickAddTask, onLaunchFocusMode, onNavigate, settings.theme, updateSetting],
   );
 
+  // Build sprint & backlog options for projects
+  const allSprintOptions = useMemo(() => {
+    const list: {
+      id: string;
+      projectId: string;
+      sprintId: string;
+      label: string;
+      subLabel: string;
+    }[] = [];
+
+    for (const p of projects) {
+      list.push({
+        id: `sprint-backlog-${p.id}`,
+        projectId: p.id,
+        sprintId: 'backlog',
+        label: `${p.name} Backlog`,
+        subLabel: `Navigate to ${p.name} Backlog (Unassigned Tasks)`,
+      });
+
+      if (sprints) {
+        const pSprints = sprints.filter((s) => s.projectId === p.id);
+        for (const s of pSprints) {
+          list.push({
+            id: `sprint-${s.id}`,
+            projectId: p.id,
+            sprintId: s.id,
+            label: `${p.name} ${s.name}`,
+            subLabel: `Navigate to ${p.name} ${s.name} (${s.status})`,
+          });
+        }
+      }
+    }
+    return list;
+  }, [projects, sprints]);
+
   // Filter items by search query
-  const { filteredActions, filteredTasks, filteredProjects } = useMemo(() => {
+  const { filteredActions, filteredTasks, filteredProjects, filteredSprints } = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) {
       return {
-        filteredActions: quickActionsList.slice(0, 4),
+        filteredActions: quickActionsList.slice(0, 5),
         filteredProjects: projects.slice(0, 4),
+        filteredSprints: [],
         filteredTasks: tasks.filter((t) => !t.completed).slice(0, 6),
       };
     }
 
-    const actions = quickActionsList.filter(
-      (a) =>
-        a.label.toLowerCase().includes(q) || (a.subLabel && a.subLabel.toLowerCase().includes(q)),
+    const searchTerms = q.split(/\s+/).filter(Boolean);
+
+    const matchesAllTerms = (...fields: (string | undefined | null)[]) => {
+      const combinedText = fields.filter(Boolean).join(' ').toLowerCase();
+      return searchTerms.every((term) => combinedText.includes(term));
+    };
+
+    const actions = quickActionsList.filter((a) => matchesAllTerms(a.label, a.subLabel));
+
+    const matchingProjects = projects.filter((p) =>
+      matchesAllTerms(p.name, p.category, p.description),
     );
 
-    const matchingProjects = projects.filter(
-      (p) =>
-        p.name.toLowerCase().includes(q) ||
-        p.category.toLowerCase().includes(q) ||
-        (p.description && p.description.toLowerCase().includes(q)),
-    );
+    const matchingSprints = allSprintOptions
+      .filter((s) => matchesAllTerms(s.label, s.subLabel))
+      .slice(0, 4);
 
-    const matchingTasks = tasks
-      .filter(
-        (t) =>
-          t.title.toLowerCase().includes(q) ||
-          (t.description && t.description.toLowerCase().includes(q)),
-      )
-      .slice(0, 6);
+    const matchingTasks = tasks.filter((t) => matchesAllTerms(t.title, t.description)).slice(0, 6);
 
     return {
       filteredActions: actions,
       filteredTasks: matchingTasks,
       filteredProjects: matchingProjects,
+      filteredSprints: matchingSprints,
     };
-  }, [query, quickActionsList, tasks, projects]);
+  }, [query, quickActionsList, tasks, projects, allSprintOptions]);
 
   // Combine grouped items into a single ordered array for index-based keyboard navigation
   const combinedList = useMemo<CombinedItem[]>(() => {
@@ -232,6 +341,25 @@ export default function SpotlightSearchModal({
         action: () => {
           onClose();
           onSelectProject(proj.id);
+        },
+      });
+    }
+
+    // Sprint filter group
+    for (const sp of filteredSprints) {
+      list.push({
+        id: sp.id,
+        type: 'sprint',
+        label: sp.label,
+        subLabel: sp.subLabel,
+        icon: <Layers className="w-4 h-4 text-blue-400" />,
+        action: () => {
+          onClose();
+          if (onSelectProjectSprint) {
+            onSelectProjectSprint(sp.projectId, sp.sprintId);
+          } else {
+            onSelectProject(sp.projectId);
+          }
         },
       });
     }
@@ -275,10 +403,12 @@ export default function SpotlightSearchModal({
     filteredActions,
     filteredTasks,
     filteredProjects,
+    filteredSprints,
     projectsMap,
     onClose,
     onToggleTask,
     onSelectProject,
+    onSelectProjectSprint,
     onSelectTask,
     onNavigate,
   ]);
@@ -324,10 +454,14 @@ export default function SpotlightSearchModal({
   };
 
   // Helper to get index offset for each group
-  const getIndexOffset = (type: 'action' | 'task' | 'project', indexInGroup: number): number => {
+  const getIndexOffset = (
+    type: 'action' | 'project' | 'sprint' | 'task',
+    indexInGroup: number,
+  ): number => {
     if (type === 'action') return indexInGroup;
     if (type === 'project') return filteredActions.length + indexInGroup;
-    return filteredActions.length + filteredProjects.length + indexInGroup;
+    if (type === 'sprint') return filteredActions.length + filteredProjects.length + indexInGroup;
+    return filteredActions.length + filteredProjects.length + filteredSprints.length + indexInGroup;
   };
 
   return (
@@ -397,7 +531,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={action.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={action.action}
                               className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
                                 isSelected
@@ -445,7 +579,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={proj.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={() => {
                                 onClose();
                                 onSelectProject(proj.id);
@@ -479,6 +613,59 @@ export default function SpotlightSearchModal({
                     </div>
                   )}
 
+                  {/* Sprints & Backlog Group */}
+                  {filteredSprints.length > 0 && (
+                    <div className="space-y-1">
+                      <div className="px-3 py-1 flex items-center gap-1.5 text-[10px] font-bold text-text-muted uppercase tracking-[0.15em] font-mono">
+                        <Layers className="w-3 h-3 text-text-muted" />
+                        <span>Sprints & Backlog ({filteredSprints.length})</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        {filteredSprints.map((sp, idx) => {
+                          const globalIdx = getIndexOffset('sprint', idx);
+                          const isSelected = selectedIndex === globalIdx;
+                          return (
+                            <div
+                              key={sp.id}
+                              data-index={globalIdx}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
+                              onClick={() => {
+                                onClose();
+                                if (onSelectProjectSprint) {
+                                  onSelectProjectSprint(sp.projectId, sp.sprintId);
+                                } else {
+                                  onSelectProject(sp.projectId);
+                                }
+                              }}
+                              className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
+                                isSelected
+                                  ? 'bg-surface-tertiary border border-border-primary text-text-primary shadow-sm'
+                                  : 'border border-transparent hover:bg-surface-secondary/50 text-text-muted hover:text-text-primary'
+                              }`}
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <div className="p-1.5 rounded-lg bg-surface-tertiary border border-border-primary/60 text-blue-400">
+                                  <Layers className="w-4 h-4" />
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="text-xs font-semibold truncate text-text-primary">
+                                    {sp.label}
+                                  </div>
+                                  <div className="text-[11px] text-text-muted/80 truncate">
+                                    {sp.subLabel}
+                                  </div>
+                                </div>
+                              </div>
+                              <ArrowRight
+                                className={`w-3.5 h-3.5 transition-opacity ${isSelected ? 'opacity-100 text-text-primary' : 'opacity-0'}`}
+                              />
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Tasks Group */}
                   {filteredTasks.length > 0 && (
                     <div className="space-y-1">
@@ -495,7 +682,7 @@ export default function SpotlightSearchModal({
                             <div
                               key={task.id}
                               data-index={globalIdx}
-                              onMouseEnter={() => setSelectedIndex(globalIdx)}
+                              onMouseMove={() => setSelectedIndex(globalIdx)}
                               onClick={() => {
                                 onClose();
                                 if (task.projectId) {

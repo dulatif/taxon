@@ -1,0 +1,128 @@
+/* Taxon Official Design Tokens & Theme System — Electric Cyan & Blue Palette
+   Deep OLED Pitch Black (#000000), Zinc (#27272A) borders,
+   crisp high-contrast typography, and Electric Cyan (#38BDF8) / Blue (#3B82F6) accents. */
+
+:root {
+  /* ─── Surface Colors (Taxon App Dark Theme) ─── */
+  --surface-app:           #000000;                       /* Main app background */
+  --surface-primary:       #0A0A0A;                       /* Primary card/panel background */
+  --surface-secondary:     #141313;                       /* Secondary/nested backgrounds */
+  --surface-tertiary:      #1C1B1B;                       /* Third-level backgrounds (inputs, wells) */
+  --surface-elevated:      #0A0A0A;                       /* Elevated surfaces (modals, popovers) */
+  --surface-hover:         #201F1F;                       /* Hover state for surfaces */
+  --surface-active:        #27272A;                       /* Active/pressed state */
+  --surface-glass:         rgba(10, 10, 10, 0.85);
+
+  /* Semantic Aliases */
+  --bg-canvas:             var(--surface-app);
+  --bg-surface:            var(--surface-primary);
+  --bg-surface-elevated:   var(--surface-secondary);
+  --bg-surface-glass:      var(--surface-glass);
+  --bg-card-header:        var(--surface-secondary);
+
+  /* ─── Border Colors ─── */
+  --border-primary:        #27272A;                       /* Default zinc borders */
+  --border-secondary:      rgba(39, 39, 42, 0.5);         /* Subtle borders */
+  --border-hover:          rgba(255, 255, 255, 0.2);      /* Hover state borders */
+  --border-focus:          rgba(56, 189, 248, 0.6);       /* Focus ring borders */
+
+  /* Aliases */
+  --border-subtle:         var(--border-secondary);
+  --border-medium:         var(--border-primary);
+  --border-active:         #38BDF8;                       /* Electric Cyan */
+  --border-cyan:           #38BDF8;
+
+  /* ─── Text Colors ─── */
+  --text-primary:          #FFFFFF;                       /* Primary text (headings, body) */
+  --text-secondary:        #C4C7C8;                       /* Secondary text (descriptions, labels) */
+  --text-muted:            #8E9192;                       /* Muted text (placeholders, hints) */
+  --text-dim:              #52525B;                       /* Dim annotations */
+  --text-inverted:         #000000;                       /* Text on inverted backgrounds */
+
+  /* ─── Interactive Colors ─── */
+  --interactive-primary:      #FFFFFF;                    /* Primary button (solid white) */
+  --interactive-primary-text: #000000;
+  --interactive-hover:        rgba(255, 255, 255, 0.9);
+
+  /* ─── Cyan & Blue Accents (Primary Signals) ─── */
+  --accent-cyan:           #38BDF8;
+  --accent-cyan-dim:       rgba(56, 189, 248, 0.12);
+  --accent-cyan-glow:      rgba(56, 189, 248, 0.25);
+
+  --accent-blue:           #3B82F6;
+  --accent-blue-dim:       rgba(59, 130, 246, 0.12);
+  --accent-blue-glow:      rgba(59, 130, 246, 0.25);
+
+  /* Emerald mapped to Cyan for unified blue/cyan styling */
+  --accent-emerald:        #38BDF8;
+  --accent-emerald-dim:    rgba(56, 189, 248, 0.12);
+  --accent-emerald-glow:   rgba(56, 189, 248, 0.25);
+
+  --accent-purple:         #818CF8;
+  --accent-amber:          #FBBF24;
+  --accent-red:            #EF4444;
+  --accent-orange:         #FB923C;
+
+  /* ─── Priority Colors ─── */
+  --priority-critical-text:   #F87171;
+  --priority-critical-bg:     rgba(239, 68, 68, 0.1);
+  --priority-critical-border: rgba(239, 68, 68, 0.3);
+  --priority-high-text:       #FB923C;
+  --priority-high-bg:         rgba(249, 115, 22, 0.1);
+  --priority-high-border:     rgba(249, 115, 22, 0.3);
+  --priority-medium-text:     #FACC15;
+  --priority-medium-bg:       rgba(234, 179, 8, 0.1);
+  --priority-medium-border:   rgba(234, 179, 8, 0.3);
+  --priority-low-text:        #A1A1AA;
+  --priority-low-bg:          rgba(161, 161, 170, 0.1);
+  --priority-low-border:      rgba(161, 161, 170, 0.3);
+
+  /* ─── Spacing Scale ─── */
+  --space-xs:   0.25rem;   /* 4px */
+  --space-sm:   0.5rem;    /* 8px */
+  --space-md:   0.75rem;   /* 12px */
+  --space-lg:   1rem;      /* 16px */
+  --space-xl:   1.5rem;    /* 24px */
+  --space-2xl:  2rem;      /* 32px */
+
+  /* ─── Radius Scale ─── */
+  --radius-sm:   0.375rem;  /* 6px */
+  --radius-md:   0.5rem;    /* 8px */
+  --radius-lg:   0.75rem;   /* 12px */
+  --radius-xl:   1rem;      /* 16px */
+  --radius-full: 9999px;
+  --radius-pill: 9999px;
+
+  /* ─── Typography ─── */
+  --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body:    "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono:    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+  /* Fluid typography scale */
+  --step-hero:    clamp(2.4rem, 5.2vw + 0.5rem, 4.25rem);
+  --step-section: clamp(1.75rem, 3.2vw, 2.75rem);
+  --step-lede:    clamp(1.05rem, 0.8vw + 0.75rem, 1.25rem);
+  --step-body:    0.9375rem;
+  --step-small:   0.8125rem;
+  --step-code:    0.8125rem;
+
+  --tracking-display: -0.03em;
+  --tracking-snug:    -0.015em;
+  --tracking-label:   0.08em;
+
+  --measure:        65ch;
+  --maxw:           1240px;
+  --gutter:         clamp(1.25rem, 4vw, 3rem);
+  --section-y:      clamp(4.5rem, 7vw, 7.5rem);
+
+  /* ─── Shadows ─── */
+  --shadow-sm:   0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md:   0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+  --shadow-lg:   0 10px 15px -3px rgba(0, 0, 0, 0.2), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+  --shadow-xl:   0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+  --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 0 0 1px var(--border-primary);
+
+  /* ─── Transitions ─── */
+  --t-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  --t-base: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}

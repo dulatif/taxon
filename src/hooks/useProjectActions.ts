@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react';
+import { toast } from 'sonner';
 import {
   deleteFile,
   deleteFilesByProject,
@@ -79,7 +80,14 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
   );
 
   const handleEditProject = useCallback(
-    (projectId: string, name: string, description: string, category?: string, dueDate?: string) => {
+    (
+      projectId: string,
+      name: string,
+      description: string,
+      category?: string,
+      dueDate?: string,
+      workspacePaths?: string[],
+    ) => {
       setProjects((prev) =>
         prev.map((p) => {
           if (p.id === projectId) {
@@ -89,6 +97,7 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
               description,
               ...(category ? { category } : {}),
               ...(dueDate !== undefined ? { dueDate } : {}),
+              ...(workspacePaths !== undefined ? { workspacePaths } : {}),
             };
             saveProject(up);
             return up;
@@ -142,6 +151,47 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
     deleteFile(id);
   }, []);
 
+  const handleTogglePinProject = useCallback((projectId: string) => {
+    setProjects((prev) => {
+      const pinnedCount = prev.filter((p) => p.pinned).length;
+      const targetProject = prev.find((p) => p.id === projectId);
+
+      if (targetProject && !targetProject.pinned && pinnedCount >= 9) {
+        toast.error('Maximum of 9 pinned projects allowed');
+        return prev;
+      }
+
+      return prev.map((p) => {
+        if (p.id === projectId) {
+          const up = { ...p, pinned: !p.pinned };
+          if (up.pinned) {
+            up.pinnedSortOrder = pinnedCount;
+          } else {
+            up.pinnedSortOrder = undefined;
+          }
+          saveProject(up);
+          return up;
+        }
+        return p;
+      });
+    });
+  }, []);
+
+  const handleReorderPinnedProjects = useCallback((reorderedPinnedProjects: Project[]) => {
+    const updated = reorderedPinnedProjects.map((p, idx) => ({ ...p, pinnedSortOrder: idx }));
+    setProjects((prev) => {
+      const newProjects = [...prev];
+      updated.forEach((up) => {
+        const idx = newProjects.findIndex((p) => p.id === up.id);
+        if (idx !== -1) {
+          newProjects[idx] = up;
+        }
+      });
+      return newProjects;
+    });
+    updated.forEach((p) => saveProject(p));
+  }, []);
+
   return {
     projects,
     setProjects,
@@ -153,6 +203,8 @@ export function useProjectActions(options?: UseProjectActionsOptions) {
     handleEditProject,
     handleSetVaultPath,
     handleReorderProjects,
+    handleTogglePinProject,
+    handleReorderPinnedProjects,
     handleAddFile,
     handleDeleteFile,
   };

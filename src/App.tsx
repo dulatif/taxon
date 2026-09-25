@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { Toaster } from 'sonner';
 
 import CalendarView from './components/CalendarView';
 import DashboardView from './components/DashboardView';
@@ -33,6 +34,7 @@ import AnalyticsView from './views/AnalyticsView';
 import HelpView from './views/HelpView';
 import SettingsView from './views/SettingsView';
 import TaskListView from './views/TaskListView';
+import WorkLogView from './views/WorkLogView';
 
 export default function App() {
   const {
@@ -44,6 +46,17 @@ export default function App() {
     setCurrentView,
   } = useAppNavigation();
   const [isSpotlightOpen, setIsSpotlightOpen] = useState(false);
+  const [selectedSprintFilterId, setSelectedSprintFilterId] = useState<string | undefined>(
+    undefined,
+  );
+
+  // --- Scroll Reset ---
+  useEffect(() => {
+    const mainContent = document.getElementById('main-scroll-container');
+    if (mainContent) {
+      mainContent.scrollTop = 0;
+    }
+  }, [currentView, selectedProjectId]);
 
   // --- Modal Dialog States ---
   const [isAddProjectOpen, setIsAddProjectOpen] = useState(false);
@@ -88,6 +101,8 @@ export default function App() {
     setImportPendingJson,
     onTickFocusTime,
     handleReorderProjects,
+    handleTogglePinProject,
+    handleReorderPinnedProjects,
     handleReorderTasks,
     handleSetVaultPath,
     handleArchiveTask,
@@ -128,7 +143,39 @@ export default function App() {
       document.getElementById('header-focus-mode')?.click();
     },
     onOpenSpotlight: () => setIsSpotlightOpen(true),
+    onStartPauseTimer: () => {
+      if (!focusTimer.timerIsRunning) {
+        focusTimer.unlinkTask();
+      }
+      focusTimer.toggleTimer();
+    },
+    onStopTimer: () => {
+      focusTimer.resetTimer();
+    },
   });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.altKey && !e.ctrlKey && !e.metaKey && !e.shiftKey) {
+        const key = e.key;
+        const num = parseInt(key, 10);
+        if (!isNaN(num) && num >= 1 && num <= 9) {
+          const pinned = projects
+            .filter((p) => p.pinned)
+            .sort((a, b) => (a.pinnedSortOrder ?? 0) - (b.pinnedSortOrder ?? 0));
+
+          if (num <= pinned.length) {
+            e.preventDefault();
+            const targetProj = pinned[num - 1];
+            selectProject(targetProj!.id);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentView, projects, selectProject]);
 
   const { settings } = useSettings();
 
@@ -138,6 +185,8 @@ export default function App() {
     shortBreak: settings.pomodoroShortBreak,
     longBreak: settings.pomodoroLongBreak,
     longBreakInterval: settings.pomodoroLongBreakInterval,
+    autoStartBreaks: settings.pomodoroAutoStartBreaks,
+    autoStartPomodoros: settings.pomodoroAutoStartPomodoros,
     onTickFocusTime: (task) => onTickFocusTime(task),
     soundEnabled: settings.soundAlerts,
   });
@@ -217,274 +266,300 @@ export default function App() {
   }
 
   return (
-    <AppLayout
-      titleBar={<TitleBar />}
-      sidebar={
-        <Sidebar
-          currentView={currentView}
-          onViewChange={navigateTo}
-          projects={projects}
-          selectedProjectId={selectedProjectId}
-          onProjectSelect={selectProject}
-          onAddProjectClick={() => setIsAddProjectOpen(true)}
-          onAddProjectToCategory={(cat) => {
-            setNewProjCategory(cat);
-            setIsAddProjectOpen(true);
-          }}
-          onReorderProjects={handleReorderProjects}
-          timerSeconds={focusTimer.timerSeconds}
-          timerIsRunning={focusTimer.timerIsRunning}
-          activeFocusTaskTitle={focusTimer.activeFocusTask?.title}
-          onLaunchFocusMode={focusTimer.launchFocusMode}
-          onToggleTimer={focusTimer.toggleTimer}
-        />
-      }
-      header={
-        <AppHeader
-          title={getHeaderTitle()}
-          onOpenSpotlight={() => setIsSpotlightOpen(true)}
-          onLaunchFocusMode={focusTimer.launchFocusMode}
-        />
-      }
-      focusMode={
-        <Render in={focusTimer.isFocusModeActive}>
-          <FocusModeView
-            activeTask={focusTimer.activeFocusTask}
+    <>
+      <Toaster theme="dark" position="bottom-right" />
+      <AppLayout
+        titleBar={<TitleBar />}
+        sidebar={
+          <Sidebar
+            currentView={currentView}
+            onViewChange={navigateTo}
             projects={projects}
-            tasks={tasks}
+            selectedProjectId={selectedProjectId}
+            onProjectSelect={selectProject}
+            onAddProjectClick={() => setIsAddProjectOpen(true)}
+            onAddProjectToCategory={(cat) => {
+              setNewProjCategory(cat);
+              setIsAddProjectOpen(true);
+            }}
+            onReorderProjects={handleReorderProjects}
+            onTogglePinProject={handleTogglePinProject}
+            onReorderPinnedProjects={handleReorderPinnedProjects}
             timerSeconds={focusTimer.timerSeconds}
             timerIsRunning={focusTimer.timerIsRunning}
-            phase={focusTimer.phase}
-            totalDuration={
-              focusTimer.phase === 'work'
-                ? (settings.pomodoroWorkDuration || 25) * 60
-                : focusTimer.phase === 'shortBreak'
-                  ? (settings.pomodoroShortBreak || 5) * 60
-                  : (settings.pomodoroLongBreak || 15) * 60
-            }
+            isSessionActive={focusTimer.isSessionActive}
+            activeFocusTaskTitle={focusTimer.activeFocusTask?.title}
+            onLaunchFocusMode={focusTimer.launchFocusMode}
             onToggleTimer={focusTimer.toggleTimer}
-            onSkipTimer={focusTimer.skipTimer}
-            onEndFocusMode={focusTimer.endFocusMode}
-            onSelectTaskToFocus={focusTimer.selectTaskToFocus}
-            onUnlinkTask={focusTimer.unlinkTask}
-            onMinimizeFocusMode={focusTimer.minimizeFocusMode}
+            onOpenSpotlight={() => setIsSpotlightOpen(true)}
           />
-        </Render>
-      }
-      taskDetailDrawer={
-        <Render in={!!selectedDetailTask}>
-          <TaskDetailView
-            task={selectedDetailTask}
-            projects={projects}
-            sprints={sprints}
-            onClose={() => setSelectedDetailTaskId(null)}
-            onUpdateTask={handleUpdateTaskDetail}
-            onDeleteTask={handleDeleteTask}
-            onStartFocus={focusTimer.startFocusSession}
-          />
-        </Render>
-      }
-    >
-      <Render in={currentView === 'dashboard'}>
-        <DashboardView
-          tasks={tasks}
-          projects={projects}
-          dailyActivity={dailyActivity}
-          onToggleTask={handleToggleTask}
-          onAddTask={handleAddTask}
-          onDeleteTask={handleDeleteTask}
-          onReorderTasks={handleReorderTasks}
-          onStartFocus={focusTimer.startFocusSession}
-          timerSeconds={focusTimer.timerSeconds}
-          timerIsRunning={focusTimer.timerIsRunning}
-          onToggleTimer={focusTimer.toggleTimer}
-          onResetTimer={focusTimer.resetTimer}
-          onSkipTimer={focusTimer.skipTimer}
-          activeFocusTask={focusTimer.activeFocusTask}
-          totalCompletedCount={completionsToday}
-          totalFocusedHours={focusedHoursToday}
-          onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
-        />
-      </Render>
-
-      <Render in={currentView === 'projects'}>
-        <ProjectsView
-          projects={projects}
-          tasks={tasks}
-          categories={categories}
-          sprints={sprints}
-          onAssignTaskToSprint={handleAssignTaskToSprint}
-          onProjectSelect={selectProject}
-          onViewChange={setCurrentView}
-          onAddProjectClick={() => setIsAddProjectOpen(true)}
-          onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
-          onMoveTaskStatus={handleMoveTaskStatus}
-          onAddTaskToProject={(title, projId, sprintId) =>
-            handleAddTask(title, projId, undefined, undefined, sprintId)
-          }
-          onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
-        />
-      </Render>
-
-      <Render in={currentView === 'project-details' && !!selectedProjectId}>
-        {selectedProjectId && (
-          <ProjectDetailView
-            project={projects.find((p) => p.id === selectedProjectId)!}
+        }
+        header={
+          <AppHeader title={getHeaderTitle()} onLaunchFocusMode={focusTimer.launchFocusMode} />
+        }
+        focusMode={
+          <Render in={focusTimer.isFocusModeActive}>
+            <FocusModeView
+              activeTask={focusTimer.activeFocusTask}
+              projects={projects}
+              timerSeconds={focusTimer.timerSeconds}
+              timerIsRunning={focusTimer.timerIsRunning}
+              phase={focusTimer.phase}
+              totalDuration={
+                focusTimer.phase === 'work'
+                  ? (settings.pomodoroWorkDuration || 25) * 60
+                  : focusTimer.phase === 'shortBreak'
+                    ? (settings.pomodoroShortBreak || 5) * 60
+                    : (settings.pomodoroLongBreak || 15) * 60
+              }
+              onToggleTimer={focusTimer.toggleTimer}
+              onSkipTimer={focusTimer.skipTimer}
+              onEndFocusMode={focusTimer.endFocusMode}
+              onUnlinkTask={focusTimer.unlinkTask}
+              onMinimizeFocusMode={focusTimer.minimizeFocusMode}
+            />
+          </Render>
+        }
+        taskDetailDrawer={
+          <Render in={!!selectedDetailTask}>
+            <TaskDetailView
+              task={selectedDetailTask}
+              projects={projects}
+              sprints={sprints}
+              allTasks={tasks}
+              onClose={() => setSelectedDetailTaskId(null)}
+              onUpdateTask={handleUpdateTaskDetail}
+              onDeleteTask={handleDeleteTask}
+              onStartFocus={focusTimer.startFocusSession}
+            />
+          </Render>
+        }
+      >
+        <Render in={currentView === 'dashboard'}>
+          <DashboardView
             tasks={tasks}
-            files={files}
-            availableCategories={categories}
-            sprints={sprints}
-            onCreateSprint={handleCreateSprint}
-            onEditSprint={handleEditSprint}
-            onCompleteSprint={handleCompleteSprint}
-            onDeleteSprint={handleDeleteSprint}
-            onAssignTaskToSprint={handleAssignTaskToSprint}
-            onSprintRollover={handleSprintRollover}
+            projects={projects}
+            dailyActivity={dailyActivity}
             onToggleTask={handleToggleTask}
             onAddTask={handleAddTask}
             onDeleteTask={handleDeleteTask}
-            onCompleteProject={handleCompleteProject}
-            onEditProject={handleEditProject}
-            onDeleteProject={handleDeleteProject}
-            onAddFile={handleAddFile}
-            onDeleteFile={handleDeleteFile}
             onReorderTasks={handleReorderTasks}
-            onBackToProjects={() => {
-              setSelectedProjectId(null);
-              setCurrentView('projects');
-            }}
+            onStartFocus={focusTimer.startFocusSession}
+            timerSeconds={focusTimer.timerSeconds}
+            timerIsRunning={focusTimer.timerIsRunning}
+            onToggleTimer={focusTimer.toggleTimer}
+            onResetTimer={focusTimer.resetTimer}
+            onSkipTimer={focusTimer.skipTimer}
+            activeFocusTask={focusTimer.activeFocusTask}
+            totalCompletedCount={completionsToday}
+            totalFocusedHours={focusedHoursToday}
             onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
-            onSetVaultPath={handleSetVaultPath}
-            onArchiveTask={handleArchiveTask}
-            onUnarchiveTask={handleUnarchiveTask}
-            onArchiveAllCompleted={handleArchiveAllCompleted}
-            refreshAllData={refreshAllData}
           />
-        )}
-      </Render>
+        </Render>
 
-      <Render in={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring'}>
-        <TaskListView
-          key={currentView}
-          title={getHeaderTitle()}
-          tasks={getFilteredViewTasks()}
+        <Render in={currentView === 'projects'}>
+          <ProjectsView
+            projects={projects}
+            tasks={tasks}
+            categories={categories}
+            sprints={sprints}
+            onAssignTaskToSprint={handleAssignTaskToSprint}
+            onProjectSelect={selectProject}
+            onViewChange={setCurrentView}
+            onAddProjectClick={() => setIsAddProjectOpen(true)}
+            onManageCategoriesClick={() => setIsManageCategoriesOpen(true)}
+            onMoveTaskStatus={handleMoveTaskStatus}
+            onAddTaskToProject={(title, projId, sprintId) =>
+              handleAddTask(title, projId, undefined, undefined, sprintId)
+            }
+            onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+          />
+        </Render>
+
+        <Render in={currentView === 'project-details' && !!selectedProjectId}>
+          {selectedProjectId && (
+            <ProjectDetailView
+              project={projects.find((p) => p.id === selectedProjectId)!}
+              tasks={tasks}
+              files={files}
+              availableCategories={categories}
+              sprints={sprints}
+              onCreateSprint={handleCreateSprint}
+              onEditSprint={handleEditSprint}
+              onCompleteSprint={handleCompleteSprint}
+              onDeleteSprint={handleDeleteSprint}
+              onAssignTaskToSprint={handleAssignTaskToSprint}
+              onSprintRollover={handleSprintRollover}
+              onMoveTaskStatus={handleMoveTaskStatus}
+              onToggleTask={handleToggleTask}
+              onAddTask={handleAddTask}
+              onDeleteTask={handleDeleteTask}
+              onCompleteProject={handleCompleteProject}
+              onEditProject={handleEditProject}
+              onDeleteProject={handleDeleteProject}
+              onAddFile={handleAddFile}
+              onDeleteFile={handleDeleteFile}
+              onReorderTasks={handleReorderTasks}
+              onBackToProjects={() => {
+                setSelectedProjectId(null);
+                setCurrentView('projects');
+              }}
+              onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+              onSetVaultPath={handleSetVaultPath}
+              onArchiveTask={handleArchiveTask}
+              onUnarchiveTask={handleUnarchiveTask}
+              onArchiveAllCompleted={handleArchiveAllCompleted}
+              refreshAllData={refreshAllData}
+              initialSprintId={selectedSprintFilterId}
+              onTogglePinProject={handleTogglePinProject}
+            />
+          )}
+        </Render>
+
+        <Render
+          in={currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring'}
+        >
+          <TaskListView
+            key={currentView}
+            title={getHeaderTitle()}
+            tasks={getFilteredViewTasks()}
+            projects={projects}
+            defaultGrouped={currentView !== 'inbox' && currentView !== 'recurring'}
+            isInboxView={currentView === 'inbox'}
+            isRecurringView={currentView === 'recurring'}
+            onAddTask={
+              currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring'
+                ? (title: string) =>
+                    handleAddTask(
+                      title,
+                      undefined,
+                      currentView === 'recurring' ? getTodayStr() : '',
+                      currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined,
+                    )
+                : undefined
+            }
+            addTaskPlaceholder={
+              currentView === 'inbox'
+                ? 'Add a new task to Inbox...'
+                : currentView === 'recurring'
+                  ? 'Add a new recurring task (defaults to daily)...'
+                  : 'Add a new task...'
+            }
+            onToggleTask={handleToggleTask}
+            onDeleteTask={handleDeleteTask}
+            onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+          />
+        </Render>
+
+        <Render in={currentView === 'scheduled'}>
+          <CalendarView
+            tasks={tasks}
+            projects={projects}
+            onToggleTask={handleToggleTask}
+            onDeleteTask={handleDeleteTask}
+            onAddTask={handleAddTask}
+            onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+          />
+        </Render>
+
+        <Render in={currentView === 'history'}>
+          <WorkLogView
+            tasks={tasks}
+            projects={projects}
+            activityLog={activityLog}
+            onToggleTask={handleToggleTask}
+            onDeleteTask={handleDeleteTask}
+            onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+          />
+        </Render>
+
+        <Render in={currentView === 'analytics'}>
+          <AnalyticsView tasks={tasks} dailyActivity={dailyActivity} activityLog={activityLog} />
+        </Render>
+
+        <Render in={currentView === 'settings'}>
+          <SettingsView
+            onExportData={handleExportData}
+            onImportDataTrigger={handleImportDataTrigger}
+          />
+        </Render>
+
+        <Render in={currentView === 'help'}>
+          <HelpView />
+        </Render>
+
+        {/* Modals */}
+        <ManageCategoriesModal
+          isOpen={isManageCategoriesOpen}
+          onClose={() => setIsManageCategoriesOpen(false)}
           projects={projects}
-          defaultGrouped={currentView !== 'inbox' && currentView !== 'recurring'}
-          isInboxView={currentView === 'inbox'}
-          isRecurringView={currentView === 'recurring'}
-          onAddTask={
-            currentView === 'inbox' || currentView === 'todo' || currentView === 'recurring'
-              ? (title: string) =>
-                  handleAddTask(
-                    title,
-                    undefined,
-                    currentView === 'recurring' ? getTodayStr() : '',
-                    currentView === 'recurring' ? { frequency: 'daily', interval: 1 } : undefined,
-                  )
-              : undefined
-          }
-          addTaskPlaceholder={
-            currentView === 'inbox'
-              ? 'Add a new task to Inbox...'
-              : currentView === 'recurring'
-                ? 'Add a new recurring task (defaults to daily)...'
-                : 'Add a new task...'
-          }
-          onToggleTask={handleToggleTask}
-          onDeleteTask={handleDeleteTask}
-          onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+          categories={categories}
+          onRenameCategory={handleRenameCategory}
+          onDeleteCategory={handleDeleteCategory}
+          onAddCategory={handleAddCategory}
         />
-      </Render>
 
-      <Render in={currentView === 'scheduled'}>
-        <CalendarView
+        <AddProjectModal
+          isOpen={isAddProjectOpen}
+          projName={newProjName}
+          projDesc={newProjDesc}
+          projCategory={newProjCategory}
+          projDueDate={newProjDueDate}
+          availableCategories={categories}
+          onChangeName={setNewProjName}
+          onChangeDesc={setNewProjDesc}
+          onChangeCategory={setNewProjCategory}
+          onChangeDueDate={setNewProjDueDate}
+          onClose={() => setIsAddProjectOpen(false)}
+          onSubmit={handleCreateProject}
+        />
+
+        <QuickAddTaskModal
+          isOpen={isQuickAddTaskOpen}
+          taskTitle={quickTaskTitle}
+          onChangeTitle={setQuickTaskTitle}
+          onClose={() => setIsQuickAddTaskOpen(false)}
+          onSubmit={() => {
+            if (quickTaskTitle.trim()) {
+              handleAddTask(quickTaskTitle.trim());
+              setQuickTaskTitle('');
+              setIsQuickAddTaskOpen(false);
+            }
+          }}
+        />
+
+        <ImportConfirmModal
+          isOpen={isImportConfirmOpen}
+          onCancel={() => {
+            setIsImportConfirmOpen(false);
+            setImportPendingJson(null);
+          }}
+          onConfirm={confirmImport}
+        />
+
+        <SpotlightSearchModal
+          isOpen={isSpotlightOpen}
+          onClose={() => setIsSpotlightOpen(false)}
           tasks={tasks}
           projects={projects}
+          sprints={sprints}
           onToggleTask={handleToggleTask}
-          onDeleteTask={handleDeleteTask}
-          onAddTask={handleAddTask}
-          onSelectTask={(task) => setSelectedDetailTaskId(task.id)}
+          onSelectProject={(projId) => {
+            selectProject(projId);
+            setSelectedSprintFilterId(undefined);
+          }}
+          onSelectProjectSprint={(projId, sprintId) => {
+            selectProject(projId);
+            setSelectedSprintFilterId(sprintId);
+          }}
+          onSelectTask={(id) => setSelectedDetailTaskId(id)}
+          onNavigate={navigateTo}
+          onQuickAddTask={() => setIsQuickAddTaskOpen(true)}
+          onLaunchFocusMode={() => {
+            document.getElementById('header-focus-mode')?.click();
+          }}
         />
-      </Render>
-
-      <Render in={currentView === 'analytics'}>
-        <AnalyticsView tasks={tasks} dailyActivity={dailyActivity} activityLog={activityLog} />
-      </Render>
-
-      <Render in={currentView === 'settings'}>
-        <SettingsView
-          onExportData={handleExportData}
-          onImportDataTrigger={handleImportDataTrigger}
-        />
-      </Render>
-
-      <Render in={currentView === 'help'}>
-        <HelpView />
-      </Render>
-
-      {/* Modals */}
-      <ManageCategoriesModal
-        isOpen={isManageCategoriesOpen}
-        onClose={() => setIsManageCategoriesOpen(false)}
-        projects={projects}
-        categories={categories}
-        onRenameCategory={handleRenameCategory}
-        onDeleteCategory={handleDeleteCategory}
-        onAddCategory={handleAddCategory}
-      />
-
-      <AddProjectModal
-        isOpen={isAddProjectOpen}
-        projName={newProjName}
-        projDesc={newProjDesc}
-        projCategory={newProjCategory}
-        projDueDate={newProjDueDate}
-        availableCategories={categories}
-        onChangeName={setNewProjName}
-        onChangeDesc={setNewProjDesc}
-        onChangeCategory={setNewProjCategory}
-        onChangeDueDate={setNewProjDueDate}
-        onClose={() => setIsAddProjectOpen(false)}
-        onSubmit={handleCreateProject}
-      />
-
-      <QuickAddTaskModal
-        isOpen={isQuickAddTaskOpen}
-        taskTitle={quickTaskTitle}
-        onChangeTitle={setQuickTaskTitle}
-        onClose={() => setIsQuickAddTaskOpen(false)}
-        onSubmit={() => {
-          if (quickTaskTitle.trim()) {
-            handleAddTask(quickTaskTitle.trim());
-            setQuickTaskTitle('');
-            setIsQuickAddTaskOpen(false);
-          }
-        }}
-      />
-
-      <ImportConfirmModal
-        isOpen={isImportConfirmOpen}
-        onCancel={() => {
-          setIsImportConfirmOpen(false);
-          setImportPendingJson(null);
-        }}
-        onConfirm={confirmImport}
-      />
-
-      <SpotlightSearchModal
-        isOpen={isSpotlightOpen}
-        onClose={() => setIsSpotlightOpen(false)}
-        tasks={tasks}
-        projects={projects}
-        onToggleTask={handleToggleTask}
-        onSelectProject={selectProject}
-        onSelectTask={(id) => setSelectedDetailTaskId(id)}
-        onNavigate={navigateTo}
-        onQuickAddTask={() => setIsQuickAddTaskOpen(true)}
-        onLaunchFocusMode={() => {
-          document.getElementById('header-focus-mode')?.click();
-        }}
-      />
-    </AppLayout>
+      </AppLayout>
+    </>
   );
 }

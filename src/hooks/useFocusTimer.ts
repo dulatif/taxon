@@ -1,6 +1,25 @@
-import { sendNotification } from '@tauri-apps/plugin-notification';
+import {
+  isPermissionGranted,
+  requestPermission,
+  sendNotification,
+} from '@tauri-apps/plugin-notification';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { Task } from '../types';
+
+async function sendNotificationSafely(title: string, body: string) {
+  try {
+    let granted = await isPermissionGranted();
+    if (!granted) {
+      const permission = await requestPermission();
+      granted = permission === 'granted';
+    }
+    if (granted) {
+      sendNotification({ title, body });
+    }
+  } catch (err) {
+    console.warn('Failed to send desktop notification:', err);
+  }
+}
 
 export type PomodoroPhase = 'work' | 'shortBreak' | 'longBreak';
 
@@ -12,6 +31,8 @@ interface UseFocusTimerOptions {
   shortBreak?: number; // in minutes
   longBreak?: number; // in minutes
   longBreakInterval?: number; // count
+  autoStartBreaks?: boolean;
+  autoStartPomodoros?: boolean;
 }
 
 interface UseFocusTimerReturn {
@@ -19,6 +40,7 @@ interface UseFocusTimerReturn {
   timerIsRunning: boolean;
   activeFocusTask: Task | null;
   isFocusModeActive: boolean;
+  isSessionActive: boolean;
   phase: PomodoroPhase;
   completedWorkSessions: number;
   switchPhase: (newPhase: PomodoroPhase) => void;
@@ -45,6 +67,8 @@ export function useFocusTimer({
   shortBreak = 5,
   longBreak = 15,
   longBreakInterval = 4,
+  autoStartBreaks = false,
+  autoStartPomodoros = false,
 }: UseFocusTimerOptions): UseFocusTimerReturn {
   const [phase, setPhase] = useState<PomodoroPhase>('work');
   const [completedWorkSessions, setCompletedWorkSessions] = useState(0);
@@ -52,6 +76,7 @@ export function useFocusTimer({
   const [timerIsRunning, setTimerIsRunning] = useState(false);
   const [activeFocusTask, setActiveFocusTask] = useState<Task | null>(null);
   const [isFocusModeActive, setIsFocusModeActive] = useState(false);
+  const [isSessionActive, setIsSessionActive] = useState(false);
 
   const onTimerCompleteRef = useRef(onTimerComplete);
   const onTickFocusTimeRef = useRef(onTickFocusTime);
@@ -63,7 +88,10 @@ export function useFocusTimer({
   const shortBreakRef = useRef(shortBreak);
   const longBreakRef = useRef(longBreak);
   const longBreakIntervalRef = useRef(longBreakInterval);
+  const autoStartBreaksRef = useRef(autoStartBreaks);
+  const autoStartPomodorosRef = useRef(autoStartPomodoros);
 
+  // Keep refs in sync
   useEffect(() => {
     onTimerCompleteRef.current = onTimerComplete;
     onTickFocusTimeRef.current = onTickFocusTime;
@@ -75,7 +103,22 @@ export function useFocusTimer({
     shortBreakRef.current = shortBreak;
     longBreakRef.current = longBreak;
     longBreakIntervalRef.current = longBreakInterval;
-  });
+    autoStartBreaksRef.current = autoStartBreaks;
+    autoStartPomodorosRef.current = autoStartPomodoros;
+  }, [
+    onTimerComplete,
+    onTickFocusTime,
+    activeFocusTask,
+    soundEnabled,
+    phase,
+    completedWorkSessions,
+    workDuration,
+    shortBreak,
+    longBreak,
+    longBreakInterval,
+    autoStartBreaks,
+    autoStartPomodoros,
+  ]);
 
   // Sync initial timerSeconds when duration settings change (if timer not actively running)
   const prevWorkDurationRef = useRef(workDuration);
@@ -145,7 +188,6 @@ export function useFocusTimer({
         setTimerSeconds((prev) => {
           if (prev <= 1) {
             // Timer elapsed
-            setTimerIsRunning(false);
 
             // Play completion sound
             playCompletionBeep();
@@ -155,29 +197,38 @@ export function useFocusTimer({
 
             if (currentPhase === 'work') {
               const nextCount = completedWorkSessionsRef.current + 1;
+              completedWorkSessionsRef.current = nextCount;
               setCompletedWorkSessions(nextCount);
-              sendNotification({
-                title: 'Work Session Complete!',
-                body: currentTask
+              sendNotificationSafely(
+                'Work Session Complete!',
+                currentTask
                   ? `Good job on: ${currentTask.title}. Time for a break!`
                   : 'Time for a break!',
-              });
+              );
               onTimerCompleteRef.current(currentTask, 'work');
 
-              if (nextCount % longBreakIntervalRef.current === 0) {
-                setPhase('longBreak');
-                return longBreakRef.current * 60;
-              } else {
-                setPhase('shortBreak');
-                return shortBreakRef.current * 60;
+              const nextPhase: PomodoroPhase =
+                nextCount % longBreakIntervalRef.current === 0 ? 'longBreak' : 'shortBreak';
+              phaseRef.current = nextPhase;
+              setPhase(nextPhase);
+
+              if (!autoStartBreaksRef.current) {
+                setTimerIsRunning(false);
               }
+
+              return nextPhase === 'longBreak'
+                ? longBreakRef.current * 60
+                : shortBreakRef.current * 60;
             } else {
-              sendNotification({
-                title: 'Break Ended!',
-                body: 'Time to get back to focus.',
-              });
+              sendNotificationSafely('Break Ended!', 'Time to get back to focus.');
               onTimerCompleteRef.current(currentTask, currentPhase);
+              phaseRef.current = 'work';
               setPhase('work');
+
+              if (!autoStartPomodorosRef.current) {
+                setTimerIsRunning(false);
+              }
+
               return workDurationRef.current * 60;
             }
           }
@@ -192,7 +243,10 @@ export function useFocusTimer({
   }, [timerIsRunning, playCompletionBeep]);
 
   const toggleTimer = useCallback(() => {
-    setTimerIsRunning((prev) => !prev);
+    setTimerIsRunning((prev) => {
+      if (!prev) setIsSessionActive(true);
+      return !prev;
+    });
   }, []);
 
   const resetTimer = useCallback(() => {
@@ -200,6 +254,7 @@ export function useFocusTimer({
     else if (phase === 'shortBreak') setTimerSeconds(shortBreak * 60);
     else setTimerSeconds(longBreak * 60);
     setTimerIsRunning(false);
+    setIsSessionActive(false);
   }, [phase, workDuration, shortBreak, longBreak]);
 
   const switchPhase = useCallback((newPhase: PomodoroPhase) => {
@@ -235,6 +290,7 @@ export function useFocusTimer({
     setPhase('work');
     setTimerIsRunning(true);
     setIsFocusModeActive(true);
+    setIsSessionActive(true);
   }, []);
 
   const selectTaskToFocus = useCallback((task: Task) => {
@@ -242,6 +298,7 @@ export function useFocusTimer({
     const workSecs = workDurationRef.current * 60;
     setTimerSeconds((prev) => (prev > 0 && prev < workSecs ? prev : workSecs));
     setTimerIsRunning(true);
+    setIsSessionActive(true);
   }, []);
 
   const unlinkTask = useCallback(() => {
@@ -251,6 +308,7 @@ export function useFocusTimer({
   const endFocusMode = useCallback(() => {
     setTimerIsRunning(false);
     setIsFocusModeActive(false);
+    setIsSessionActive(false);
   }, []);
 
   const minimizeFocusMode = useCallback(() => {
@@ -266,6 +324,7 @@ export function useFocusTimer({
     timerIsRunning,
     activeFocusTask,
     isFocusModeActive,
+    isSessionActive,
     phase,
     completedWorkSessions,
     switchPhase,

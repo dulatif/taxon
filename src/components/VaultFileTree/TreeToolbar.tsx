@@ -1,5 +1,6 @@
 import { AlertTriangle, Edit2, FilePlus, FolderDot, Plus, RefreshCw, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
+import Button from '../Button';
 
 interface TreeToolbarProps {
   vaultPath: string;
@@ -46,33 +47,32 @@ export default function TreeToolbar({
 
         {/* Action Button Group */}
         <div className="flex items-center gap-1.5 shrink-0 self-end sm:self-center">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={onChangeVaultPath}
             title="Change Vault Directory"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface-secondary hover:bg-surface-hover text-text-muted hover:text-text-primary rounded-lg border border-border-primary transition-all text-xs font-medium cursor-pointer"
           >
             <Edit2 className="w-3.5 h-3.5" />
             <span className="hidden md:inline">Change</span>
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="icon"
             onClick={onRefresh}
             title="Refresh Vault Scan"
-            className="p-1.5 bg-surface-secondary hover:bg-surface-hover text-text-muted hover:text-text-primary rounded-lg border border-border-primary transition-all cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant={isCreating ? 'danger' : 'primary'}
+            size="sm"
             onClick={() => setIsCreating(!isCreating)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all text-xs font-semibold cursor-pointer shadow-sm ${
-              isCreating
-                ? 'bg-red-500/10 text-red-400 border border-red-500/30 hover:bg-red-500/20'
-                : 'bg-white text-black hover:bg-white/90 border border-transparent'
-            }`}
           >
             {isCreating ? (
               <>
@@ -85,7 +85,7 @@ export default function TreeToolbar({
                 <span>New Note</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -113,13 +113,15 @@ export default function TreeToolbar({
                 />
               </div>
               <div className="flex items-center gap-2 justify-end">
-                <button
+                <Button
                   type="submit"
+                  variant="primary"
+                  size="sm"
                   disabled={!newDocName.trim()}
-                  className="px-4 py-2 bg-white text-black font-semibold text-xs rounded-lg disabled:opacity-40 hover:bg-white/90 transition-all cursor-pointer shrink-0 shadow-sm"
+                  className="shrink-0"
                 >
                   Create Document
-                </button>
+                </Button>
               </div>
             </div>
 

@@ -5,7 +5,7 @@
   "identifier": "com.taxon.app",
   "build": {
     "frontendDist": "../dist",
-    "devUrl": "http://localhost:3000",
+    "devUrl": "http://localhost:1422",
     "beforeDevCommand": "pnpm dev",
     "beforeBuildCommand": "pnpm build"
   },
@@ -17,9 +17,10 @@
         "width": 1400,
         "height": 800,
         "decorations": false,
-        "transparent": false,
+        "transparent": true,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "zoomHotkeysEnabled": false
       }
     ],
     "security": {
@@ -28,7 +29,7 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["rpm"],
     "icon": [
       "icons/32x32.png",
       "icons/64x64.png",

@@ -1,0 +1,216 @@
+---
+---
+
+<section class="privacy-section">
+  <div class="container">
+    <div class="privacy-grid">
+      <div class="privacy-copy reveal">
+        <div class="tag-badge">
+          <span>ZERO CLOUD LEAKS</span>
+        </div>
+        <h2 class="section-title">Your Codebase, Your Tasks. 100% Filesystem Sovereignty.</h2>
+        <p class="section-lede">
+          Taxon requires no cloud accounts, has zero telemetry daemons, and charges no per-seat subscription fees. All sprint history and DAG definitions remain strictly inside your repository.
+        </p>
+
+        <div class="privacy-features-list">
+          <div class="priv-row">
+            <div class="priv-icon">🔒</div>
+            <div class="priv-detail">
+              <h4>Air-Gapped &amp; Zero-Egress Ready</h4>
+              <p>Work seamlessly on planes, isolated corporate VPCS, or classified air-gapped workstations without losing graph state.</p>
+            </div>
+          </div>
+
+          <div class="priv-row">
+            <div class="priv-icon">🌿</div>
+            <div class="priv-detail">
+              <h4>Git-Native Versioning &amp; Diffs</h4>
+              <p>Branch, merge, and review tasks alongside source code using standard <code>git log</code>, <code>git diff</code>, and pull requests.</p>
+            </div>
+          </div>
+
+          <div class="priv-row">
+            <div class="priv-icon">📖</div>
+            <div class="priv-detail">
+              <h4>Human-Readable Open Markdown</h4>
+              <p>No proprietary binary databases. If Taxon is ever uninstalled, your tasks remain clean, permanent Markdown files.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Security Spec Card -->
+      <div class="privacy-spec-card glass-card reveal">
+        <div class="spec-header">
+          <span class="spec-title">SECURITY_MANIFEST.SPEC</span>
+          <span class="spec-badge">LOCAL ONLY</span>
+        </div>
+        <div class="spec-body">
+          <div class="spec-item">
+            <span class="spec-k">Storage Architecture</span>
+            <span class="spec-v">Filesystem (`.taxon/`)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-k">Remote Telemetry</span>
+            <span class="spec-v">Disabled (0 bytes egress)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-k">Cloud Dependencies</span>
+            <span class="spec-v">None (Zero cloud services)</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-k">Obsidian Bi-Directional Sync</span>
+            <span class="spec-v">Native File Watcher</span>
+          </div>
+          <div class="spec-item">
+            <span class="spec-k">License</span>
+            <span class="spec-v">MIT Open Source</span>
+          </div>
+        </div>
+        <div class="spec-foot">
+          <span>Cryptographic Hash Integrity: PASS</span>
+          <span class="spec-dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .privacy-section {
+    padding-top: var(--section-y);
+    padding-bottom: var(--section-y);
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .privacy-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr);
+    gap: clamp(2.5rem, 5vw, 4.5rem);
+    align-items: center;
+  }
+
+  .privacy-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .section-title {
+    font-size: var(--step-section);
+  }
+
+  .section-lede {
+    font-size: var(--step-lede);
+    color: var(--text-secondary);
+  }
+
+  .privacy-features-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 1rem;
+  }
+
+  .priv-row {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+
+  .priv-icon {
+    font-size: 1.2rem;
+    background-color: var(--bg-surface-elevated);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 0.35rem 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .priv-detail h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
+  }
+
+  .priv-detail p {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+
+  /* Spec Card */
+  .privacy-spec-card {
+    background-color: var(--bg-surface);
+    border: 1px solid var(--border-medium);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    font-family: var(--font-mono);
+  }
+
+  .spec-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.85rem 1.25rem;
+    background-color: var(--bg-card-header);
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .spec-badge {
+    color: var(--accent-emerald);
+    font-weight: 600;
+  }
+
+  .spec-body {
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    font-size: 0.8125rem;
+  }
+
+  .spec-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px dashed var(--border-subtle);
+    padding-bottom: 0.65rem;
+  }
+
+  .spec-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+  }
+
+  .spec-k { color: var(--text-muted); }
+  .spec-v { color: var(--accent-emerald); font-weight: 600; }
+
+  .spec-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.65rem 1.25rem;
+    background-color: var(--bg-card-header);
+    border-top: 1px solid var(--border-subtle);
+    font-size: 0.6875rem;
+    color: var(--text-dim);
+  }
+
+  .spec-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: var(--accent-emerald);
+  }
+
+  @media (max-width: 860px) {
+    .privacy-grid {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

@@ -1,7 +1,9 @@
 import { exists, mkdir, readDir, readTextFile, remove, writeTextFile } from '@tauri-apps/plugin-fs';
 import type { Project, Sprint, SubTask, Task } from '../types';
 import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
-import { saveAuditLogEntry, saveSprint, saveTask } from './database';
+import { getTodayStr } from '../utils/format-date';
+import { createLogEntry } from './activityLogger';
+import { saveActivityLogEntry, saveAuditLogEntry, saveSprint, saveTask } from './database';
 
 // AGENT-102: YAML frontmatter parser
 function joinPath(parent: string, child: string): string {
@@ -13,7 +15,7 @@ export function parseFrontmatter(markdown: string): {
   data: Record<string, unknown>;
   body: string;
 } {
-  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/;
+  const frontmatterRegex = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/;
   const match = markdown.match(frontmatterRegex);
 
   if (!match) {
@@ -25,20 +27,43 @@ export function parseFrontmatter(markdown: string): {
   const data: Record<string, unknown> = {};
 
   const lines = frontmatterStr.split(/\r?\n/);
+  let currentArrayKey: string | null = null;
+
   for (const line of lines) {
+    const listItemMatch = line.match(/^\s*-\s*(.*)$/);
+    if (listItemMatch?.[1] !== undefined && currentArrayKey) {
+      const itemVal = listItemMatch[1].trim().replace(/^['"]|['"]$/g, '');
+      if (Array.isArray(data[currentArrayKey])) {
+        (data[currentArrayKey] as string[]).push(itemVal);
+      } else {
+        data[currentArrayKey] = [itemVal];
+      }
+      continue;
+    }
+
     const colonIndex = line.indexOf(':');
-    if (colonIndex === -1) continue;
+    if (colonIndex === -1) {
+      currentArrayKey = null;
+      continue;
+    }
 
     const key = line.slice(0, colonIndex).trim();
     const value = line.slice(colonIndex + 1).trim();
 
-    if (value === 'true') {
+    if (value === '') {
+      currentArrayKey = key;
+      data[key] = '';
+    } else if (value === 'true') {
+      currentArrayKey = null;
       data[key] = true;
     } else if (value === 'false') {
+      currentArrayKey = null;
       data[key] = false;
     } else if (!isNaN(Number(value)) && value !== '') {
+      currentArrayKey = null;
       data[key] = Number(value);
     } else if (value.startsWith('[') && value.endsWith(']')) {
+      currentArrayKey = null;
       const arrContent = value.slice(1, -1).trim();
       if (arrContent) {
         data[key] = arrContent.split(',').map((s) => s.trim().replace(/^['"]|['"]$/g, ''));
@@ -46,6 +71,7 @@ export function parseFrontmatter(markdown: string): {
         data[key] = [];
       }
     } else {
+      currentArrayKey = null;
       data[key] = value.replace(/^['"]|['"]$/g, '');
     }
   }
@@ -91,6 +117,104 @@ export function sprintFilename(sprint: Sprint): string {
   return `SPRINT-${shortId}-${slugify(sprint.name)}.md`;
 }
 
+export interface TaskMarkdownSections {
+  description: string;
+  deliverables?: string;
+  acceptanceCriteria?: string;
+  subtasks: SubTask[];
+  customSections: { title: string; content: string }[];
+}
+
+export function extractTaskSections(body: string): TaskMarkdownSections {
+  const sections: { title: string; content: string }[] = [];
+  const lines = body.split(/\r?\n/);
+
+  let currentTitle: string | null = null;
+  let currentContentLines: string[] = [];
+
+  for (const line of lines) {
+    const headingMatch = line.match(/^##\s+(.*)$/);
+    if (headingMatch?.[1] !== undefined) {
+      if (currentTitle !== null) {
+        sections.push({
+          title: currentTitle,
+          content: currentContentLines.join('\n').trim(),
+        });
+      } else if (currentContentLines.some((l) => l.trim() !== '')) {
+        sections.push({
+          title: 'Description',
+          content: currentContentLines.join('\n').trim(),
+        });
+      }
+      currentTitle = headingMatch[1].trim();
+      currentContentLines = [];
+    } else {
+      currentContentLines.push(line);
+    }
+  }
+
+  if (currentTitle !== null) {
+    sections.push({
+      title: currentTitle,
+      content: currentContentLines.join('\n').trim(),
+    });
+  } else if (currentContentLines.some((l) => l.trim() !== '')) {
+    sections.push({
+      title: 'Description',
+      content: currentContentLines.join('\n').trim(),
+    });
+  }
+
+  let description = '';
+  let deliverables: string | undefined;
+  let acceptanceCriteria: string | undefined;
+  let subtasksText: string | undefined;
+  const customSections: { title: string; content: string }[] = [];
+
+  for (const section of sections) {
+    const lowerTitle = section.title.toLowerCase();
+    if (lowerTitle === 'description') {
+      description = section.content;
+    } else if (lowerTitle === 'deliverables') {
+      deliverables = section.content;
+    } else if (lowerTitle === 'acceptance criteria') {
+      acceptanceCriteria = section.content;
+    } else if (lowerTitle === 'subtasks') {
+      subtasksText = section.content;
+    } else {
+      customSections.push(section);
+    }
+  }
+
+  const subtasks: SubTask[] = [];
+  if (subtasksText) {
+    const subtaskLines = subtasksText.split(/\r?\n/);
+    for (const line of subtaskLines) {
+      const match = line.match(/^-\s*\[([ xX])\]\s+(.*)$/);
+      if (match?.[1] && match?.[2]) {
+        const title = match[2].trim();
+        let hash = 0;
+        for (let i = 0; i < title.length; i++) {
+          hash = (Math.imul(31, hash) + title.charCodeAt(i)) | 0;
+        }
+        subtasks.push({
+          id: `sub-${Math.abs(hash).toString(16).substring(0, 8)}`,
+          title,
+          completed: match[1].toLowerCase() === 'x',
+        });
+      }
+    }
+  }
+
+  return {
+    description,
+    deliverables,
+    acceptanceCriteria,
+    subtasks,
+    customSections,
+  };
+}
+
 // AGENT-104: Task ↔ markdown serializer
 export function taskToMarkdown(task: Task): string {
   const frontmatterData: Record<string, unknown> = {
@@ -107,12 +231,48 @@ export function taskToMarkdown(task: Task): string {
     sortOrder: task.sortOrder,
     archived: task.archived,
     archivedAt: task.archivedAt,
+    workspacePath: task.workspacePath,
+    linkedFiles: task.linkedFiles,
+    dependsOn: task.dependsOn,
+    moduleGroup: task.moduleGroup,
+    inputs: task.inputs,
+    outputs: task.outputs,
   };
 
   let markdown = serializeFrontmatter(frontmatterData);
+
+  const {
+    description: descText,
+    deliverables,
+    acceptanceCriteria,
+    customSections,
+  } = extractTaskSections(task.description || '');
+
   markdown += '\n## Description\n\n';
-  markdown += task.description || '';
-  markdown += '\n\n## Subtasks\n\n';
+  markdown += descText || '';
+  markdown += '\n';
+
+  if (deliverables !== undefined && deliverables !== '') {
+    markdown += '\n## Deliverables\n\n';
+    markdown += deliverables;
+    markdown += '\n';
+  }
+
+  if (acceptanceCriteria !== undefined && acceptanceCriteria !== '') {
+    markdown += '\n## Acceptance Criteria\n\n';
+    markdown += acceptanceCriteria;
+    markdown += '\n';
+  }
+
+  for (const custom of customSections) {
+    if (custom.content) {
+      markdown += `\n## ${custom.title}\n\n`;
+      markdown += custom.content;
+      markdown += '\n';
+    }
+  }
+
+  markdown += '\n## Subtasks\n\n';
 
   if (task.subtasks && task.subtasks.length > 0) {
     for (const subtask of task.subtasks) {
@@ -127,33 +287,37 @@ export function taskToMarkdown(task: Task): string {
 export function markdownToTask(markdown: string, projectId: string): Task {
   const { data, body } = parseFrontmatter(markdown);
 
-  // Parse description and subtasks
-  const descMatch = body.match(/## Description\s*\n([\s\S]*?)(?:## Subtasks|$)/);
-  const description = descMatch?.[1]?.trim() ?? '';
+  const {
+    description: descText,
+    deliverables,
+    acceptanceCriteria,
+    subtasks,
+    customSections,
+  } = extractTaskSections(body);
 
-  const subtasksMatch = body.match(/## Subtasks\s*\n([\s\S]*)$/);
-  const subtasks: SubTask[] = [];
-
-  if (subtasksMatch?.[1]) {
-    const subtasksText = subtasksMatch[1];
-    const lines = subtasksText.split(/\r?\n/);
-    for (const line of lines) {
-      const match = line.match(/^-\s*\[([ xX])\]\s+(.*)$/);
-      if (match?.[1] && match?.[2]) {
-        // use hash of title for deterministic ID if possible, otherwise random
-        const title = match[2].trim();
-        let hash = 0;
-        for (let i = 0; i < title.length; i++) {
-          hash = (Math.imul(31, hash) + title.charCodeAt(i)) | 0;
-        }
-        subtasks.push({
-          id: `sub-${Math.abs(hash).toString(16).substring(0, 8)}`,
-          title,
-          completed: match[1].toLowerCase() === 'x',
-        });
-      }
+  const descParts: string[] = [];
+  if (descText) {
+    descParts.push(descText);
+  }
+  if (deliverables !== undefined && deliverables !== '') {
+    descParts.push(`## Deliverables\n${deliverables}`);
+  }
+  if (acceptanceCriteria !== undefined && acceptanceCriteria !== '') {
+    descParts.push(`## Acceptance Criteria\n${acceptanceCriteria}`);
+  }
+  for (const custom of customSections) {
+    if (custom.content) {
+      descParts.push(`## ${custom.title}\n${custom.content}`);
     }
   }
+
+  const description = descParts.join('\n\n');
+
+  const parseArrayField = (val: unknown): string[] => {
+    if (Array.isArray(val)) return val.map((item) => String(item).trim()).filter(Boolean);
+    if (typeof val === 'string' && val.trim()) return [val.trim()];
+    return [];
+  };
 
   return {
     id: (data.id as string) || generateShortId(),
@@ -163,18 +327,27 @@ export function markdownToTask(markdown: string, projectId: string): Task {
     priority: (data.priority as Task['priority']) || 'Medium',
     status: (data.status as Task['status']) || 'To Do',
     completed: (data.completed as boolean) || false,
-    sprintId: data.sprintId as string | undefined,
-    dueDate: data.dueDate as string | undefined,
-    labels: (data.labels as string[]) || [],
+    sprintId: (data.sprintId as string) || undefined,
+    dueDate: (data.dueDate as string) || undefined,
+    labels: parseArrayField(data.labels),
     subtasks,
     duration: '',
     timeEffort: data.timeEffort as number | undefined,
     timeSpent: (data.timeSpent as number) || 0,
     sortOrder: (data.sortOrder as number) || 0,
     archived: (data.archived as boolean) || false,
-    archivedAt: data.archivedAt as string | undefined,
+    archivedAt: (data.archivedAt as string) || undefined,
+    workspacePath: (data.workspacePath as string) || undefined,
+    linkedFiles: parseArrayField(data.linkedFiles),
+    dependsOn: parseArrayField(data.dependsOn),
+    moduleGroup: (data.moduleGroup as string) || undefined,
+    inputs: parseArrayField(data.inputs),
+    outputs: parseArrayField(data.outputs),
   } as Task;
 }
+
+export const parseTaskMarkdown = markdownToTask;
+export const exportTaskMarkdown = taskToMarkdown;
 
 // AGENT-105: Sprint ↔ markdown serializer
 export function sprintToMarkdown(sprint: Sprint, tasks: Task[]): string {
@@ -192,9 +365,17 @@ export function sprintToMarkdown(sprint: Sprint, tasks: Task[]): string {
   markdown += sprint.goal || '';
   markdown += '\n\n## Tasks\n\n';
 
-  for (const task of tasks) {
-    if (task.sprintId === sprint.id) {
-      markdown += `- ${taskFilename(task)}\n`;
+  const sprintTasks = tasks.filter((t) => t.sprintId === sprint.id);
+  const STATUS_ORDER: Task['status'][] = ['To Do', 'In Progress', 'Need to Test', 'Done'];
+
+  for (const status of STATUS_ORDER) {
+    const statusTasks = sprintTasks.filter((t) => t.status === status);
+    if (statusTasks.length > 0) {
+      markdown += `### ${status}\n`;
+      for (const task of statusTasks) {
+        markdown += `- [${task.priority || 'Medium'}] ${taskFilename(task)}\n`;
+      }
+      markdown += '\n';
     }
   }
 
@@ -213,8 +394,8 @@ export function markdownToSprint(markdown: string, projectId: string): Sprint {
     name: (data.name as string) || 'Untitled Sprint',
     goal,
     status: (data.status as Sprint['status']) || 'Planned',
-    startDate: (data.startDate as string) || new Date().toISOString(),
-    endDate: (data.endDate as string) || new Date().toISOString(),
+    startDate: (data.startDate as string) || getTodayStr(),
+    endDate: (data.endDate as string) || getTodayStr(),
     completedAt: data.completedAt as string | undefined,
   } as Sprint;
 }
@@ -283,13 +464,22 @@ export function markdownToProject(markdown: string): Partial<Project> {
 
 // AGENT-107: AGENTS.md and CLAUDE.md templates
 export function generateAgentInstructions(project: Project): string {
+  let workspacesSection = '';
+  if (project.workspacePaths && project.workspacePaths.length > 0) {
+    workspacesSection = `\n## Local Workspaces\nThis project spans the following local repositories:\n`;
+    for (const p of project.workspacePaths) {
+      workspacesSection += `- \`${p}\`\n`;
+    }
+    workspacesSection += `\n**Agent Instruction**: You are authorized to freely read, explore, and modify code within any of the above local repositories to accomplish your assigned tasks.\n`;
+  }
+
   return `# Taxon Project — AI Agent Integration
 
 This directory is managed by **Taxon**, a project & task management app.
 Task data is synced via files in the \`.taxon/\` directory.
 
 Project Name: ${project.name}
-
+${workspacesSection}
 ## Directory Structure
 - \`.taxon/project.md\` — Project metadata (read-only context)
 - \`.taxon/tasks/\` — One markdown file per task
@@ -303,15 +493,23 @@ All task files are stored in \`.taxon/tasks/\`[cite: 1].
 - DO NOT list or scan all files in \`.taxon/tasks/\` blindly[cite: 1].
 - Use the \`File Path\` provided in \`.taxon/project.md\` to open only the specific task file you need[cite: 1].
 
-### Creating New Tasks
+### Creating New Tasks (Task Contracts)
 Create a new \`.md\` file in \`.taxon/tasks/\` with this format:
 - Filename: \`TASK-{6-char-id}-{slugified-title}.md\`
 - Generate a unique 6-character alphanumeric ID (e.g. \`a1b2c3\`)
 - Required frontmatter: \`id\`, \`title\`, \`priority\`, \`status\`
+- Workflow frontmatter: \`moduleGroup\`, \`dependsOn\`, \`inputs\`, \`outputs\`, \`linkedFiles\`
 - Valid priorities: \`Critical\`, \`High\`, \`Medium\`, \`Low\`
-- Valid statuses: \`To Do\`, \`In Progress\`, \`Done\`
+- Valid statuses: \`To Do\`, \`In Progress\`, \`Need to Test\`, \`Done\`
 
-Example Task File:
+**Task Contract & Workflow Fields**:
+- \`moduleGroup\`: Short architectural category (e.g., "Frontend UI", "Database", "Authentication", "API"). Cluster into **2 to 4 module groups per sprint**.
+- \`dependsOn\`: Array of prerequisite task IDs that must be completed before starting this task.
+- \`inputs\`: Array of prerequisite files, contracts, or parent task files the agent must read before coding.
+- \`outputs\`: Array of target file paths to be created or modified by this task.
+- \`linkedFiles\`: Array of relevant workspace file paths.
+
+Example Task Contract File:
 \`\`\`markdown
 ---
 id: a1b2c3
@@ -319,23 +517,44 @@ title: Implement Login Screen
 priority: High
 status: To Do
 completed: false
-sprintId: 
+sprintId: sp1234
+moduleGroup: Authentication
+dependsOn:
+  - x9y8z7
+inputs:
+  - docs/contracts/auth-ipc.md
+  - .taxon/tasks/TASK-x9y8z7-auth-ipc.md
+outputs:
+  - src/components/LoginScreen.tsx
+  - src/hooks/useAuth.ts
+linkedFiles:
+  - src/components/LoginScreen.tsx
 labels:
   - frontend
   - auth
 ---
 ## Description
-Implement the login screen using React Hook Form.
+Implement the login screen using React Hook Form and connect to IPC auth service.
+
+## Deliverables
+<!-- Filled upon completion -->
+- [LoginScreen.tsx](file:///mnt/Linux/Projects/taxon/src/components/LoginScreen.tsx): UI component with validation.
+- [useAuth.ts](file:///mnt/Linux/Projects/taxon/src/hooks/useAuth.ts): Hook binding IPC auth events.
+
+## Acceptance Criteria
+- [ ] Renders email and password fields with validation.
+- [ ] Error messages display on invalid credentials.
+- [ ] Successfully invokes IPC login command on submit.
 
 ## Subtasks
-- [x] Create form component
+- [ ] Create form component
 - [ ] Add validation
-- [ ] Connect to API
+- [ ] Connect to IPC API
 \`\`\`
 
 ### Modifying Tasks
 Edit the frontmatter fields or markdown body directly.
-- To complete a task: set \`completed: true\` and \`status: Done\`.
+- To complete a task: set \`completed: false\` and \`status: Need to Test\`. AI agents MUST NOT set status to 'Done'.
 - To archive: set \`archived: true\`.
 - To assign to a sprint: add the sprint's ID to \`sprintId\`. Leave empty or omit for backlog tasks.
 
@@ -344,14 +563,14 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Filename: \`SPRINT-{6-char-id}-{slugified-name}.md\`
 - Required frontmatter: \`id\`, \`name\`, \`status\`, \`startDate\`, \`endDate\`
 - Valid statuses: \`Planned\`, \`Active\`
-- Dates must be ISO strings (e.g. \`2024-01-01T00:00:00.000Z\`)
+- Dates must be YYYY-MM-DD strings (e.g. \`2024-01-01\`)
 - List task filenames under \`## Tasks\`
 - Set each task's \`sprintId\` in its frontmatter to match this sprint's \`id\`.
 
 ### Git Commit Task References
 - Reference tasks in git commits using \`(TASK-{6-char-id})\` or \`TASK-{6-char-id}\` in commit messages.
 - Example: \`feat(auth): implement login flow (TASK-a1b2c3)\`
-- Installing the post-commit git hook (\`.taxon/hooks/post-commit\`) will automatically complete the task in Taxon upon commit!
+- Installing the post-commit git hook (\`.taxon/hooks/post-commit\`) will automatically mark the task as 'Need to Test' in Taxon upon commit!
 
 ### Common Mistakes / Rules
 - **DO NOT** delete task files to delete tasks. Instead, mark unwanted tasks as \`archived: true\`.
@@ -359,7 +578,41 @@ Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Ensure YAML syntax is strictly valid.
 - Subtasks must strictly use the format \`- [ ] Title\` or \`- [x] Title\`.
 - IDs must be unique across all tasks/sprints in the entire database, so use truly random alphanumeric strings.
+- You can optionally set \`workspacePath\` to one of the project's Local Workspaces, and \`linkedFiles\` to an array of relative file paths within that workspace to point to specific code.
 - Version: 1.0.0
+
+### Tidying Legacy Tasks (Workflow & DAG)
+**Mandatory Step 1 for Sprints**: Before writing any code for an active sprint, you MUST inspect all tasks in that sprint. If they lack workflow metadata (\`moduleGroup\` or \`dependsOn\`), you must tidy and organize them first.
+**Scope Restriction**: Only tidy tasks within the active sprint. Do NOT modify backlog tasks or tasks outside the current sprint to avoid massive unnecessary edits.
+
+When organizing tasks:
+1. **Module Groups (\`moduleGroup\` field)**: Dynamically assign \`moduleGroup\` names based on the technical context of the task (e.g., "Frontend UI", "Database", "Authentication", "API"). **Cluster related tasks together so the sprint has only 2 to 4 module groups total**. Never create a single-use \`moduleGroup\` for just one task unless it is completely isolated.
+2. **Dependencies (\`dependsOn\` field)**: Infer logical sequential dependencies based on technical architecture. If Task A (e.g., building an API) must logically precede Task B (e.g., building the UI for that API), add Task A's ID to the \`dependsOn\` array in Task B's frontmatter.
+   Example:
+   \`\`\`yaml
+   moduleGroup: Authentication
+   dependsOn:
+     - TASK-a1b2c3
+   \`\`\`
+3. Use your best judgment to create a natural, top-to-bottom execution flow. Do not leave tasks entirely orphaned if they logically belong to a sequence.
+
+### Artifact Chaining & Task Execution Protocol
+
+1. **Read Prerequisites**: Before writing code for any task, read all files listed in \`inputs\` and review the \`## Deliverables\` section of parent tasks listed in \`dependsOn\`.
+2. **Blocker Check**:
+   - If working autonomously: Find the highest priority task in \`To Do\` where ALL \`dependsOn\` tasks have status \`Need to Test\` or \`Done\`.
+   - If assigned a specific task ID: Verify that all \`dependsOn\` tasks are already \`Need to Test\` or \`Done\`. If any blocker is \`To Do\` or \`In Progress\`, **REFUSE** to implement and warn the user about the unresolved dependency.
+3. **Fulfill Acceptance Criteria**: Implement code following the \`## Acceptance Criteria\` checklist.
+4. **Record Deliverables**: When finished, populate the task's \`## Deliverables\` section with file links, check off completed acceptance criteria, and set \`status: Need to Test\`.
+
+### Multi-Agent Parallel Execution Protocol
+
+When multiple AI coding agents (or subagents) work concurrently on a project:
+1. **DAG Graph Independence**: Agents may only work in parallel on tasks from different branches of the DAG. A task is eligible for execution only when all tasks in its \`dependsOn\` array are already \`Need to Test\` or \`Done\`.
+2. **Disjoint File Boundaries**: Before starting, verify that the task's \`outputs\` and \`linkedFiles\` do not overlap with any other concurrently running task. If two tasks touch the same files, they must be executed sequentially.
+3. **Task Status Locking**: An agent starting work on a task should mark the task as \`status: In Progress\` to signal other agents that the task is actively being handled.
+4. **Git Branch / Worktree Isolation**: If using multiple agents with autonomous git commit capabilities, use isolated git worktrees or branches per agent to prevent merge conflicts before integrating into the main branch.
+5. **Completion & Sync**: Upon completion, populate \`## Deliverables\`, check off \`Acceptance Criteria\`, and set \`status: Need to Test\`. Never set \`status: Done\`.
 `;
 }
 
@@ -398,7 +651,7 @@ fi
 
 for FULL_ID in $TASK_IDS; do
   SHORT_ID=\${FULL_ID#TASK-}
-  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 1, status = 'Done' WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
+  sqlite3 "$DB_PATH" "UPDATE tasks SET completed = 0, status = 'Need to Test', dueDate = CASE WHEN dueDate IS NULL OR dueDate = '' THEN date('now') ELSE dueDate END WHERE id LIKE '%$SHORT_ID%';" 2>/dev/null
 done
 `;
 }
@@ -416,21 +669,16 @@ export async function exportProjectToAgent(
   const taxonPath = joinPath(vaultPath, '.taxon');
   const tasksPath = joinPath(taxonPath, 'tasks');
   const sprintsPath = joinPath(taxonPath, 'sprints');
+  const logsPath = joinPath(taxonPath, 'logs');
 
-  const taxonExists = await exists(taxonPath).catch(() => false);
-  if (taxonExists) {
-    const tasksExists = await exists(tasksPath).catch(() => false);
-    if (tasksExists) await remove(tasksPath, { recursive: true }).catch(console.error);
-    const sprintsExists = await exists(sprintsPath).catch(() => false);
-    if (sprintsExists) await remove(sprintsPath, { recursive: true }).catch(console.error);
-  } else {
-    await mkdir(taxonPath, { recursive: true });
-  }
+  await mkdir(taxonPath, { recursive: true }).catch(() => {});
+  await mkdir(tasksPath, { recursive: true }).catch(() => {});
+  await mkdir(sprintsPath, { recursive: true }).catch(() => {});
+  await mkdir(logsPath, { recursive: true }).catch(() => {});
 
-  await mkdir(tasksPath, { recursive: true });
-  await mkdir(sprintsPath, { recursive: true });
-
-  const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+  const projectTasks = tasks.filter(
+    (t) => t.projectId === project.id && !t.archived && !t.completed && t.status !== 'Done',
+  );
   const projectSprints = sprints.filter((s) => s.projectId === project.id);
 
   await writeTextFile(
@@ -445,11 +693,70 @@ export async function exportProjectToAgent(
     exportedTaskCount++;
   }
 
+  // Clean up obsolete task files in .taxon/tasks
+  const existingTaskEntries = await readDir(tasksPath).catch(() => []);
+  const validTaskFiles = new Set(projectTasks.map((t) => taskFilename(t)));
+  for (const entry of existingTaskEntries) {
+    if (
+      !entry.isDirectory &&
+      entry.name.toLowerCase().endsWith('.md') &&
+      !validTaskFiles.has(entry.name)
+    ) {
+      await remove(joinPath(tasksPath, entry.name)).catch(() => {});
+    }
+  }
+
   let exportedSprintCount = 0;
   for (const sprint of projectSprints) {
     const filePath = joinPath(sprintsPath, sprintFilename(sprint));
     await writeTextFile(filePath, sprintToMarkdown(sprint, projectTasks));
     exportedSprintCount++;
+  }
+
+  // Clean up obsolete sprint files in .taxon/sprints
+  const existingSprintEntries = await readDir(sprintsPath).catch(() => []);
+  const validSprintFiles = new Set(projectSprints.map((s) => sprintFilename(s)));
+  for (const entry of existingSprintEntries) {
+    if (
+      !entry.isDirectory &&
+      entry.name.toLowerCase().endsWith('.md') &&
+      !validSprintFiles.has(entry.name)
+    ) {
+      await remove(joinPath(sprintsPath, entry.name)).catch(() => {});
+    }
+  }
+
+  // Export Daily Work Logs to Second Brain
+  const { getActivityLog } = await import('./database');
+  const activityLog = await getActivityLog();
+  const taskCompletionMap = new Map<string, string>();
+  for (const log of activityLog) {
+    taskCompletionMap.set(log.taskId, log.completedAt);
+  }
+
+  const completedTasks = projectTasks.filter((t) => t.completed && taskCompletionMap.has(t.id));
+  const tasksByDate = completedTasks.reduce(
+    (acc, t) => {
+      const completedAt = taskCompletionMap.get(t.id);
+      if (!completedAt) return acc;
+      const dateStr = completedAt.split('T')[0];
+      if (!dateStr) return acc;
+      if (!acc[dateStr]) acc[dateStr] = [];
+      acc[dateStr].push(t);
+      return acc;
+    },
+    {} as Record<string, Task[]>,
+  );
+
+  for (const [dateStr, dateTasks] of Object.entries(tasksByDate)) {
+    const logPath = joinPath(logsPath, `${dateStr}.md`);
+    let content = `# Work Log: ${dateStr}\n\n`;
+    content += `**Total Tasks Completed:** ${dateTasks.length}\n\n`;
+    content += `## Completed Tasks\n\n`;
+    for (const t of dateTasks) {
+      content += `- [x] ${t.title} (Time spent: ${t.timeSpent || 0}m)\n`;
+    }
+    await writeTextFile(logPath, content);
   }
 
   const hooksPath = joinPath(taxonPath, 'hooks');
@@ -484,25 +791,40 @@ export async function scanAgentDirectory(
     return { tasks, sprints, warnings };
   }
 
-  const seenTaskIds = new Set<string>();
+  const seenTaskIds = new Map<string, { task: Task; filename: string }>();
   const tasksExists = await exists(tasksPath).catch(() => false);
   if (tasksExists) {
     const entries = await readDir(tasksPath).catch(() => []);
-    // Sort to make the first file deterministic (alphabetical)
     entries.sort((a, b) => a.name.localeCompare(b.name));
 
     for (const entry of entries) {
       if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
         try {
-          const content = await readTextFile(joinPath(tasksPath, entry.name));
+          const filePath = joinPath(tasksPath, entry.name);
+          const content = await readTextFile(filePath);
           const task = markdownToTask(content, projectId);
+          const canonicalName = taskFilename(task);
+
           if (seenTaskIds.has(task.id)) {
-            warnings.push(
-              `Duplicate task ID '${task.id}' found — using first found, skipping ${entry.name}`,
-            );
+            const existing = seenTaskIds.get(task.id)!;
+            // If current file is the canonical name, replace the stale one and remove stale file from disk
+            if (entry.name === canonicalName && existing.filename !== canonicalName) {
+              await remove(joinPath(tasksPath, existing.filename)).catch(() => {});
+              seenTaskIds.set(task.id, { task, filename: entry.name });
+              const idx = tasks.findIndex((t) => t.id === task.id);
+              if (idx !== -1) tasks[idx] = task;
+            } else if (existing.filename === canonicalName) {
+              // Existing is canonical, entry is stale — silently clean up stale file
+              await remove(filePath).catch(() => {});
+            } else {
+              warnings.push(
+                `Duplicate task ID '${task.id}' found — using first found, skipping ${entry.name}`,
+              );
+            }
             continue;
           }
-          seenTaskIds.add(task.id);
+
+          seenTaskIds.set(task.id, { task, filename: entry.name });
           tasks.push(task);
         } catch {
           warnings.push(`Failed to parse task file: ${entry.name}`);
@@ -511,7 +833,7 @@ export async function scanAgentDirectory(
     }
   }
 
-  const seenSprintIds = new Set<string>();
+  const seenSprintIds = new Map<string, { sprint: Sprint; filename: string }>();
   const sprintsExists = await exists(sprintsPath).catch(() => false);
   if (sprintsExists) {
     const entries = await readDir(sprintsPath).catch(() => []);
@@ -520,15 +842,29 @@ export async function scanAgentDirectory(
     for (const entry of entries) {
       if (!entry.isDirectory && entry.name.toLowerCase().endsWith('.md')) {
         try {
-          const content = await readTextFile(joinPath(sprintsPath, entry.name));
+          const filePath = joinPath(sprintsPath, entry.name);
+          const content = await readTextFile(filePath);
           const sprint = markdownToSprint(content, projectId);
+          const canonicalName = sprintFilename(sprint);
+
           if (seenSprintIds.has(sprint.id)) {
-            warnings.push(
-              `Duplicate sprint ID '${sprint.id}' found — using first found, skipping ${entry.name}`,
-            );
+            const existing = seenSprintIds.get(sprint.id)!;
+            if (entry.name === canonicalName && existing.filename !== canonicalName) {
+              await remove(joinPath(sprintsPath, existing.filename)).catch(() => {});
+              seenSprintIds.set(sprint.id, { sprint, filename: entry.name });
+              const idx = sprints.findIndex((s) => s.id === sprint.id);
+              if (idx !== -1) sprints[idx] = sprint;
+            } else if (existing.filename === canonicalName) {
+              await remove(filePath).catch(() => {});
+            } else {
+              warnings.push(
+                `Duplicate sprint ID '${sprint.id}' found — using first found, skipping ${entry.name}`,
+              );
+            }
             continue;
           }
-          seenSprintIds.add(sprint.id);
+
+          seenSprintIds.set(sprint.id, { sprint, filename: entry.name });
           sprints.push(sprint);
         } catch {
           warnings.push(`Failed to parse sprint file: ${entry.name}`);
@@ -589,6 +925,12 @@ function normalizeTask(task: Task): Task {
     sortOrder: task.sortOrder || 0,
     archived: task.archived || false,
     dueDate: task.dueDate || undefined,
+    workspacePath: task.workspacePath || undefined,
+    linkedFiles: task.linkedFiles || [],
+    dependsOn: task.dependsOn || [],
+    moduleGroup: task.moduleGroup || undefined,
+    inputs: task.inputs || [],
+    outputs: task.outputs || [],
   };
 }
 
@@ -600,12 +942,17 @@ function normalizeSprint(sprint: Sprint): Sprint {
   };
 }
 
+export interface DiffAgentChangesOptions {
+  allowStatusRegression?: boolean;
+}
+
 export function diffAgentChanges(
   projectId: string,
   allTasks: Task[],
   allSprints: Sprint[],
   agentTasks: Task[],
   agentSprints: Sprint[],
+  options?: DiffAgentChangesOptions,
 ): AgentDiffResult {
   const newTasks: Task[] = [];
   const modifiedTasks: { before: Task; after: Task; changedFields: string[] }[] = [];
@@ -616,8 +963,45 @@ export function diffAgentChanges(
   const allTasksMap = new Map(allTasks.map((t) => [t.id, t]));
   const allSprintsMap = new Map(allSprints.map((s) => [s.id, s]));
 
+  const isDev =
+    options?.allowStatusRegression !== undefined
+      ? options.allowStatusRegression
+      : (import.meta.env?.DEV ?? process.env.NODE_ENV !== 'production');
+
   for (const agentTask of agentTasks) {
     const existingTask = allTasksMap.get(agentTask.id);
+
+    const statusRank: Record<Task['status'], number> = {
+      'To Do': 0,
+      'In Progress': 1,
+      'Need to Test': 2,
+      Done: 3,
+    };
+
+    if (existingTask) {
+      const existingRank = statusRank[existingTask.status] ?? 0;
+      const agentRank = statusRank[agentTask.status] ?? 0;
+
+      // Prevent task status regression (moving backward in status workflow) in production.
+      // In DEV / testing mode, allow markdown files to freely update or reset task status.
+      if (!isDev) {
+        if (existingTask.completed || existingTask.status === 'Done' || existingRank > agentRank) {
+          agentTask.status = existingTask.status;
+          agentTask.completed = existingTask.completed;
+        }
+      }
+    }
+
+    // Prevent AI agents from marking tasks as 'Done' directly if not already done.
+    if (agentTask.status === 'Done' || agentTask.completed) {
+      const wasAlreadyDone =
+        existingTask && (existingTask.status === 'Done' || existingTask.completed);
+      if (!wasAlreadyDone && !isDev) {
+        agentTask.status = 'Need to Test';
+        agentTask.completed = false;
+      }
+    }
+
     if (!existingTask) {
       newTasks.push(agentTask);
     } else if (existingTask.projectId !== projectId) {
@@ -631,6 +1015,14 @@ export function diffAgentChanges(
       agentTask.reminders = existingTask.reminders;
       agentTask.deadline = existingTask.deadline;
       agentTask.recurrence = existingTask.recurrence;
+      if (existingTask.dueDate && (!agentTask.dueDate || agentTask.dueDate.trim() === '')) {
+        agentTask.dueDate = existingTask.dueDate;
+      }
+      const statusChangedToNeedToTest =
+        agentTask.status === 'Need to Test' && existingTask.status !== 'Need to Test';
+      if (statusChangedToNeedToTest && (!agentTask.dueDate || agentTask.dueDate.trim() === '')) {
+        agentTask.dueDate = getTodayStr();
+      }
       if (agentTask.timeEffort === undefined) agentTask.timeEffort = existingTask.timeEffort;
       if (agentTask.timeSpent === 0) agentTask.timeSpent = existingTask.timeSpent;
       if (agentTask.sortOrder === 0) agentTask.sortOrder = existingTask.sortOrder;
@@ -643,6 +1035,28 @@ export function diffAgentChanges(
       );
       if (changedFields.length > 0) {
         modifiedTasks.push({ before: existingTask, after: agentTask, changedFields });
+      }
+    }
+  }
+  let currentActiveSprintId = allSprints.find(
+    (s) => s.projectId === projectId && s.status === 'Active',
+  )?.id;
+
+  for (const agentSprint of agentSprints) {
+    if (agentSprint.id === currentActiveSprintId && agentSprint.status !== 'Active') {
+      currentActiveSprintId = undefined;
+    }
+  }
+
+  for (const agentSprint of agentSprints) {
+    if (agentSprint.status === 'Active') {
+      if (currentActiveSprintId && currentActiveSprintId !== agentSprint.id) {
+        agentSprint.status = 'Planned';
+        warnings.push(
+          `Sprint '${agentSprint.name}' was imported as Active, but another sprint is already active. Forced status to Planned.`,
+        );
+      } else {
+        currentActiveSprintId = agentSprint.id;
       }
     }
   }
@@ -685,6 +1099,10 @@ export async function applyAgentChanges(
 
   for (const task of diff.newTasks) {
     await saveTask(task);
+    if (task.completed || task.status === 'Done') {
+      const logEntry = createLogEntry(task.id, task.title);
+      await saveActivityLogEntry(logEntry).catch(console.error);
+    }
     const entry: AuditLogEntry = {
       id: generateShortId(),
       projectId,
@@ -701,6 +1119,10 @@ export async function applyAgentChanges(
 
   for (const modified of diff.modifiedTasks) {
     await saveTask(modified.after);
+    if (modified.after.completed || modified.after.status === 'Done') {
+      const logEntry = createLogEntry(modified.after.id, modified.after.title);
+      await saveActivityLogEntry(logEntry).catch(console.error);
+    }
     const diffSummary: Record<string, { before: string; after: string }> = {};
     for (const field of modified.changedFields) {
       diffSummary[field] = {
@@ -812,8 +1234,17 @@ export function generateContextSnapshot(
   project: Project,
   tasks: Task[],
   sprints: Sprint[],
+  selectedSprintId?: string | 'all' | 'backlog',
 ): string {
-  const projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+  let projectTasks = tasks.filter((t) => t.projectId === project.id && !t.archived);
+
+  if (selectedSprintId && selectedSprintId !== 'all') {
+    if (selectedSprintId === 'backlog') {
+      projectTasks = projectTasks.filter((t) => !t.sprintId);
+    } else {
+      projectTasks = projectTasks.filter((t) => t.sprintId === selectedSprintId);
+    }
+  }
 
   const activeTasks = projectTasks.filter(
     (t) => t.status === 'In Progress' || t.status === 'To Do',
@@ -906,4 +1337,76 @@ export function generateChangelog(entries: AuditLogEntry[]): string {
   }
 
   return md;
+}
+
+export async function exportSingleTaskToAgent(task: Task, vaultPath: string): Promise<boolean> {
+  if (task.archived) return false;
+  try {
+    const tasksDir = joinPath(vaultPath, '.taxon/tasks');
+    const dirExists = await exists(tasksDir).catch(() => false);
+    if (!dirExists) {
+      await mkdir(tasksDir, { recursive: true });
+    }
+
+    const targetName = taskFilename(task);
+    const targetPath = joinPath(tasksDir, targetName);
+    const shortId = task.id.slice(-6);
+
+    // Remove any stale files for this task (e.g. old slug or title)
+    const existingEntries = await readDir(tasksDir).catch(() => []);
+    for (const entry of existingEntries) {
+      if (entry.isDirectory || !entry.name.toLowerCase().endsWith('.md')) continue;
+      if (entry.name === targetName) continue;
+
+      const matchesPrefix =
+        entry.name.startsWith(`TASK-${shortId}-`) || entry.name.startsWith(`TASK-${task.id}-`);
+      if (matchesPrefix) {
+        await remove(joinPath(tasksDir, entry.name)).catch(() => {});
+      }
+    }
+
+    await writeTextFile(targetPath, taskToMarkdown(task));
+    return true;
+  } catch (err) {
+    console.error('Failed to export single task to agent:', err);
+    return false;
+  }
+}
+
+export async function exportSingleSprintToAgent(
+  sprint: Sprint,
+  sprintTasks: Task[],
+  vaultPath: string,
+): Promise<boolean> {
+  try {
+    const sprintsDir = joinPath(vaultPath, '.taxon/sprints');
+    const dirExists = await exists(sprintsDir).catch(() => false);
+    if (!dirExists) {
+      await mkdir(sprintsDir, { recursive: true });
+    }
+
+    const targetName = sprintFilename(sprint);
+    const targetPath = joinPath(sprintsDir, targetName);
+    const shortId = sprint.id.slice(-6);
+
+    // Remove any stale sprint files for this sprint
+    const existingEntries = await readDir(sprintsDir).catch(() => []);
+    for (const entry of existingEntries) {
+      if (entry.isDirectory || !entry.name.toLowerCase().endsWith('.md')) continue;
+      if (entry.name === targetName) continue;
+
+      const matchesPrefix =
+        entry.name.startsWith(`SPRINT-${shortId}-`) ||
+        entry.name.startsWith(`SPRINT-${sprint.id}-`);
+      if (matchesPrefix) {
+        await remove(joinPath(sprintsDir, entry.name)).catch(() => {});
+      }
+    }
+
+    await writeTextFile(targetPath, sprintToMarkdown(sprint, sprintTasks));
+    return true;
+  } catch (err) {
+    console.error('Failed to export single sprint to agent:', err);
+    return false;
+  }
 }

@@ -1,6 +1,7 @@
 import { exists, mkdir, readTextFile, writeTextFile } from '@tauri-apps/plugin-fs';
 import { Command } from '@tauri-apps/plugin-shell';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { toast } from 'sonner';
 import {
   applyAgentChanges,
   cleanUpArchivedFiles,
@@ -21,6 +22,24 @@ import { scanAgentVault } from '../services/vaultScanner';
 import type { Project, Sprint, Task, VaultEntry } from '../types';
 import type { AgentDiffResult, AgentSyncState, AuditLogEntry } from '../types/agent';
 
+export function extractErrorMessage(err: unknown, fallback = 'Unknown error occurred'): string {
+  if (!err) return fallback;
+  if (err instanceof Error && err.message) return err.message;
+  if (typeof err === 'string' && err.trim().length > 0) return err;
+  if (typeof err === 'object') {
+    if ('message' in err && typeof (err as { message: unknown }).message === 'string') {
+      return (err as { message: string }).message;
+    }
+    try {
+      const json = JSON.stringify(err);
+      if (json !== '{}') return json;
+    } catch {
+      // ignore
+    }
+  }
+  return String(err) || fallback;
+}
+
 export function useAgentSync(
   project: Project | null,
   tasks: Task[],
@@ -34,6 +53,10 @@ export function useAgentSync(
   const [isImporting, setIsImporting] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
 
   const [auditSummary, setAuditSummary] = useState<{
     count: number;
@@ -112,7 +135,7 @@ export function useAgentSync(
       await refreshAgentEntries();
     } catch (err: unknown) {
       console.error('Failed to export to agent', err);
-      setError(err instanceof Error ? err.message : 'Unknown error during export');
+      setError(extractErrorMessage(err, 'Failed to export tasks to AI agent'));
     } finally {
       setIsExporting(false);
     }
@@ -153,7 +176,7 @@ export function useAgentSync(
       }
     } catch (err: unknown) {
       console.error('Failed to scan agent directory for changes', err);
-      setError(err instanceof Error ? err.message : 'Unknown error during scan');
+      setError(extractErrorMessage(err, 'Failed to scan agent directory for changes'));
     } finally {
       setIsScanning(false);
     }
@@ -199,7 +222,7 @@ export function useAgentSync(
       setAgentDiff(null);
     } catch (err: unknown) {
       console.error('Failed to apply agent changes', err);
-      setError(err instanceof Error ? err.message : 'Unknown error during apply');
+      setError(extractErrorMessage(err, 'Failed to apply agent changes'));
     } finally {
       setIsImporting(false);
     }
@@ -225,7 +248,7 @@ export function useAgentSync(
       return result;
     } catch (err: unknown) {
       console.error('Failed to clean up archived files', err);
-      const errMsg = err instanceof Error ? err.message : 'Unknown error during cleanup';
+      const errMsg = extractErrorMessage(err, 'Failed to clean up archived files');
       setError(errMsg);
       return { movedCount: 0, errors: [errMsg] };
     } finally {
@@ -233,25 +256,35 @@ export function useAgentSync(
     }
   };
 
-  const copyContextSnapshot = async (): Promise<{ success: boolean; activeCount: number }> => {
+  const copyContextSnapshot = async (
+    selectedSprintId?: string | 'all' | 'backlog',
+  ): Promise<{ success: boolean; activeCount: number }> => {
     if (!project) {
       setError('No project selected.');
       return { success: false, activeCount: 0 };
     }
 
     try {
-      const snapshot = generateContextSnapshot(project, tasks, sprints);
+      const snapshot = generateContextSnapshot(project, tasks, sprints, selectedSprintId);
       await navigator.clipboard.writeText(snapshot);
-      const activeCount = tasks.filter(
+      let targetTasks = tasks.filter(
         (t) =>
           t.projectId === project.id &&
           !t.archived &&
           (t.status === 'In Progress' || t.status === 'To Do'),
-      ).length;
-      return { success: true, activeCount };
+      );
+      if (selectedSprintId && selectedSprintId !== 'all') {
+        if (selectedSprintId === 'backlog') {
+          targetTasks = targetTasks.filter((t) => !t.sprintId);
+        } else {
+          targetTasks = targetTasks.filter((t) => t.sprintId === selectedSprintId);
+        }
+      }
+      toast.success('Sprint context copied to clipboard!');
+      return { success: true, activeCount: targetTasks.length };
     } catch (err: unknown) {
       console.error('Failed to copy context snapshot to clipboard', err);
-      const errMsg = err instanceof Error ? err.message : 'Failed to copy to clipboard';
+      const errMsg = extractErrorMessage(err, 'Failed to copy sprint context to clipboard');
       setError(errMsg);
       return { success: false, activeCount: 0 };
     }
@@ -329,10 +362,113 @@ export function useAgentSync(
       };
     } catch (err: unknown) {
       console.error('Failed to install git hook', err);
-      const errMsg = err instanceof Error ? err.message : 'Failed to install git hook';
+      const errMsg = extractErrorMessage(err, 'Failed to install git hook');
       return { success: false, message: errMsg };
     }
   };
+
+  const isAutoSyncingRef = useRef(false);
+
+  const autoImportChanges = useCallback(async () => {
+    if (
+      !project?.vaultPath ||
+      isImporting ||
+      isScanning ||
+      isExporting ||
+      isAutoSyncingRef.current
+    ) {
+      return;
+    }
+
+    isAutoSyncingRef.current = true;
+    try {
+      const {
+        tasks: agentTasks,
+        sprints: agentSprints,
+        warnings,
+      } = await scanAgentDirectory(project.vaultPath, project.id);
+
+      const diff = diffAgentChanges(project.id, tasks, sprints, agentTasks, agentSprints);
+      diff.warnings.push(...warnings);
+
+      const hasChanges =
+        diff.newTasks.length > 0 ||
+        diff.modifiedTasks.length > 0 ||
+        diff.newSprints.length > 0 ||
+        diff.modifiedSprints.length > 0;
+
+      if (!hasChanges) return;
+
+      const result = await applyAgentChanges(diff, project.id);
+
+      const newState: AgentSyncState = syncState
+        ? { ...syncState }
+        : {
+            exportedTaskCount: 0,
+            exportedSprintCount: 0,
+            lastExportedAt: null,
+            lastImportedAt: null,
+          };
+
+      newState.lastImportedAt = new Date().toISOString();
+      await saveAgentSyncState(project.id, newState);
+      setSyncState(newState);
+
+      if (project.vaultPath && result.auditEntries.length > 0) {
+        try {
+          const allEntries = await getAuditLog(project.id, 200);
+          const changelogContent = generateChangelog(allEntries);
+          await writeTextFile(`${project.vaultPath}/.taxon/CHANGELOG.md`, changelogContent);
+        } catch (err) {
+          console.error('Failed to write CHANGELOG.md', err);
+        }
+      }
+
+      await refreshAuditSummary();
+      await refreshAllData();
+      await refreshAgentEntries();
+    } catch (err) {
+      console.error('Auto sync error:', err);
+    } finally {
+      isAutoSyncingRef.current = false;
+    }
+  }, [
+    project,
+    isImporting,
+    isScanning,
+    isExporting,
+    tasks,
+    sprints,
+    syncState,
+    refreshAuditSummary,
+    refreshAllData,
+    refreshAgentEntries,
+  ]);
+
+  const autoImportRef = useRef(autoImportChanges);
+  useEffect(() => {
+    autoImportRef.current = autoImportChanges;
+  }, [autoImportChanges]);
+
+  const [isLiveSyncEnabled, setIsLiveSyncEnabled] = useState(() => {
+    return localStorage.getItem('taxon_live_sync') === 'true';
+  });
+
+  const toggleLiveSync = useCallback((enabled: boolean) => {
+    setIsLiveSyncEnabled(enabled);
+    localStorage.setItem('taxon_live_sync', String(enabled));
+  }, []);
+
+  // Periodic auto-sync when vaultPath is active and live sync is enabled (polls every 3s)
+  useEffect(() => {
+    if (!project?.vaultPath || !isLiveSyncEnabled) return;
+
+    const intervalId = setInterval(() => {
+      autoImportRef.current();
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [project?.vaultPath, isLiveSyncEnabled]);
 
   return {
     syncState,
@@ -345,10 +481,12 @@ export function useAgentSync(
     isImporting,
     isScanning,
     error,
+    clearError,
     exportToAgent,
     scanForChanges,
     confirmImport,
     cancelImport,
+    autoImportChanges,
     cleanUpArchived,
     copyContextSnapshot,
     openAuditLog,
@@ -357,5 +495,7 @@ export function useAgentSync(
     installGitHook,
     refreshAuditSummary,
     refreshAgentEntries,
+    isLiveSyncEnabled,
+    toggleLiveSync,
   };
 }
