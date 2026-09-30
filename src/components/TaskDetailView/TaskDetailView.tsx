@@ -26,6 +26,7 @@ import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';
 import { DeliverablesDiffViewer, ReviewModal } from '../DiffViewer';
 import MarkdownViewer from '../MarkdownViewer';
 import { RequestRevisionModal } from '../Revision/RequestRevisionModal';
+import { RevisionHistoryViewer } from '../Revision/RevisionHistoryViewer';
 import SubtaskList from '../SubtaskList/SubtaskList';
 
 interface TaskDetailViewProps {
@@ -795,6 +796,9 @@ export default function TaskDetailView({
                     )}
                   </div>
                 )}
+
+                {/* Revision History Section */}
+                <RevisionHistoryViewer task={editedTask} />
 
                 {/* Description Section */}
                 <div className="space-y-2 pt-2 border-t border-border-primary/60">

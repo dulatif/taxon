@@ -152,3 +152,22 @@ export function parseRevisionHistory(description: string): RevisionBlock[] {
 
   return blocks;
 }
+
+export function extractAttemptResolutions(description?: string): Map<number, string> {
+  const map = new Map<number, string>();
+  if (!description) return map;
+
+  const delivMatch = description.match(/##\s+Deliverables\s*([\s\S]*?)(?=\n##\s+|$)/i);
+  if (!delivMatch || !delivMatch[1]) return map;
+
+  const content = delivMatch[1];
+  const resRegex =
+    /###\s+Revision(?:\s+Attempt)?\s+(\d+)\s+Resolution\s*([\s\S]*?)(?=\n###\s+|$)/gi;
+
+  for (const m of content.matchAll(resRegex)) {
+    const num = parseInt(m[1] as string, 10);
+    map.set(num, (m[2] || '').trim());
+  }
+
+  return map;
+}
