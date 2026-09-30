@@ -1539,6 +1539,19 @@ export function sortTasksTopologically(tasks: Task[], lookup: Map<string, string
     }
   }
 
+  queue.sort((a, b) => {
+    const aElevated = a.status === 'To Do' && (a.revisionCount ?? 0) > 0 && !a.escalated;
+    const bElevated = b.status === 'To Do' && (b.revisionCount ?? 0) > 0 && !b.escalated;
+    if (aElevated && !bElevated) return -1;
+    if (!aElevated && bElevated) return 1;
+    if (aElevated && bElevated) {
+      if (a.lastRevisionAt && b.lastRevisionAt) {
+        return new Date(b.lastRevisionAt).getTime() - new Date(a.lastRevisionAt).getTime();
+      }
+    }
+    return (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999);
+  });
+
   const result: Task[] = [];
   while (queue.length > 0) {
     const curr = queue.shift()!;

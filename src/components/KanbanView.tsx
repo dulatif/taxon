@@ -2,6 +2,7 @@ import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { CheckCircle, MoreHorizontal, Plus } from 'lucide-react';
 import { Fragment, useState } from 'react';
+import { sortTasksWithQueueElevation } from '../hooks/useTaskActions';
 import type { Project, Sprint, Task } from '../types';
 
 interface KanbanViewProps {
@@ -171,9 +172,11 @@ export default function KanbanView({
         >
           {columns.map((colName) => {
             // Sync database status filter
-            const colTasks = activeTasks.filter(
+            const filteredTasks = activeTasks.filter(
               (t) => t.status === colName || (colName === 'Done' && t.completed),
             );
+            const colTasks =
+              colName === 'To Do' ? sortTasksWithQueueElevation(filteredTasks) : filteredTasks;
             const countVal = colTasks.length;
 
             return (

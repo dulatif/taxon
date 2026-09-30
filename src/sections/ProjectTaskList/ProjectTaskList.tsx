@@ -78,6 +78,17 @@ export default function ProjectTaskList({
 
   const sortTasksHelper = (list: Task[]) => {
     return [...list].sort((a, b) => {
+      const aElevated = a.status === 'To Do' && (a.revisionCount ?? 0) > 0 && !a.escalated;
+      const bElevated = b.status === 'To Do' && (b.revisionCount ?? 0) > 0 && !b.escalated;
+      if (aElevated && !bElevated) return -1;
+      if (!aElevated && bElevated) return 1;
+      if (aElevated && bElevated) {
+        if (a.lastRevisionAt && b.lastRevisionAt) {
+          const tDiff = new Date(b.lastRevisionAt).getTime() - new Date(a.lastRevisionAt).getTime();
+          if (tDiff !== 0) return tDiff;
+        }
+      }
+
       if (selectedSort === 'priority') {
         const weights: Record<string, number> = { Critical: 4, High: 3, Medium: 2, Low: 1 };
         return (weights[b.priority || 'Medium'] || 2) - (weights[a.priority || 'Medium'] || 2);

@@ -315,7 +315,17 @@ export const deleteProject = async (id: string) => {
 export const getTasks = async (): Promise<Task[]> => {
   const d = await initDb();
   const rawTasks = await d.select<Record<string, unknown>[]>(
-    'SELECT * FROM tasks ORDER BY COALESCE(sortOrder, 999999) ASC, id ASC',
+    `SELECT * FROM tasks ORDER BY 
+      CASE 
+        WHEN status = 'To Do' AND COALESCE(revisionCount, 0) > 0 AND (escalated IS NULL OR escalated = 0) THEN 0 
+        ELSE 1 
+      END ASC,
+      CASE 
+        WHEN status = 'To Do' AND COALESCE(revisionCount, 0) > 0 AND (escalated IS NULL OR escalated = 0) THEN lastRevisionAt 
+        ELSE NULL 
+      END DESC,
+      COALESCE(sortOrder, 999999) ASC, 
+      id ASC`,
   );
   const parseJSON = (val: unknown) => {
     if (typeof val === 'string' && val.trim().startsWith('[')) {

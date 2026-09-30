@@ -9,6 +9,44 @@ interface UseTaskActionsOptions {
   onProjectProgressChanged?: (projectId: string) => void;
 }
 
+const PRIORITY_WEIGHTS: Record<Task['priority'], number> = {
+  Critical: 4,
+  High: 3,
+  Medium: 2,
+  Low: 1,
+};
+
+export function sortTasksWithQueueElevation(taskList: Task[]): Task[] {
+  return [...taskList].sort((a, b) => {
+    const aElevated = a.status === 'To Do' && (a.revisionCount ?? 0) > 0 && !a.escalated;
+    const bElevated = b.status === 'To Do' && (b.revisionCount ?? 0) > 0 && !b.escalated;
+
+    if (aElevated && !bElevated) return -1;
+    if (!aElevated && bElevated) return 1;
+
+    if (aElevated && bElevated) {
+      if (a.lastRevisionAt && b.lastRevisionAt) {
+        const timeDiff =
+          new Date(b.lastRevisionAt).getTime() - new Date(a.lastRevisionAt).getTime();
+        if (timeDiff !== 0) return timeDiff;
+      } else if (a.lastRevisionAt) {
+        return -1;
+      } else if (b.lastRevisionAt) {
+        return 1;
+      }
+
+      const pDiff = (PRIORITY_WEIGHTS[b.priority] || 2) - (PRIORITY_WEIGHTS[a.priority] || 2);
+      if (pDiff !== 0) return pDiff;
+    }
+
+    const aOrder = a.sortOrder ?? 999999;
+    const bOrder = b.sortOrder ?? 999999;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+
+    return a.id.localeCompare(b.id);
+  });
+}
+
 export function useTaskActions(options?: UseTaskActionsOptions) {
   const [tasks, setTasks] = useState<Task[]>([]);
 
@@ -397,5 +435,6 @@ export function useTaskActions(options?: UseTaskActionsOptions) {
     handleArchiveAllCompleted,
     handleReorderTasks,
     handleAssignTaskToSprint,
+    sortTasksWithQueueElevation,
   };
 }
