@@ -1,6 +1,6 @@
 import type { DropResult } from '@hello-pangea/dnd';
 import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
-import { CheckCircle, MoreHorizontal, Plus } from 'lucide-react';
+import { AlertCircle, CheckCircle, MoreHorizontal, Plus } from 'lucide-react';
 import { Fragment, useState } from 'react';
 import { sortTasksWithQueueElevation } from '../hooks/useTaskActions';
 import type { Project, Sprint, Task } from '../types';
@@ -250,12 +250,17 @@ export default function KanbanView({
                                       >
                                         {task.priority || 'Medium'}
                                       </span>
-                                      {task.revisionCount !== undefined &&
-                                        task.revisionCount > 0 && (
-                                          <span className="px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
-                                            Attempt {task.revisionCount + 1}
-                                          </span>
-                                        )}
+                                      {task.escalated ? (
+                                        <span className="flex items-center gap-1 px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider bg-rose-500/15 text-rose-400 border border-rose-500/30">
+                                          <AlertCircle className="w-2.5 h-2.5 text-rose-400" />
+                                          <span>Escalated</span>
+                                        </span>
+                                      ) : task.revisionCount !== undefined &&
+                                        task.revisionCount > 0 ? (
+                                        <span className="px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                          Attempt {task.revisionCount + 1}
+                                        </span>
+                                      ) : null}
                                     </div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-text-muted text-[10px] font-mono leading-none bg-surface-primary/40 px-1.5 py-0.5 rounded border border-border-primary/40">

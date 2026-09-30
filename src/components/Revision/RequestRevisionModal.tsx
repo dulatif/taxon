@@ -103,12 +103,25 @@ export const RequestRevisionModal: React.FC<RequestRevisionModalProps> = ({
               <AlertCircle className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-sm font-bold text-text-primary font-mono">
-                Request Revision (Attempt {currentAttempt})
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-bold text-text-primary font-mono">
+                  Request Revision (Attempt {currentAttempt})
+                </h2>
+                {currentAttempt >= 3 && (
+                  <span className="px-1.5 py-0.5 text-[9px] font-mono font-bold uppercase rounded bg-rose-500/20 text-rose-300 border border-rose-500/30">
+                    Trips Circuit Breaker
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-text-muted">
-                Task will revert to <span className="font-mono text-amber-400">To Do</span> with
-                structured failure context
+                {currentAttempt >= 3 ? (
+                  'Submitting will escalate task to human and bar autonomous agents'
+                ) : (
+                  <>
+                    Task will revert to <span className="font-mono text-amber-400">To Do</span> with
+                    structured failure context
+                  </>
+                )}
               </p>
             </div>
           </div>

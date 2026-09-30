@@ -193,6 +193,19 @@ export default function TaskDetailView({
     });
   };
 
+  const handleResetCircuitBreaker = async () => {
+    if (!editedTask) return;
+    const updated: Task = {
+      ...editedTask,
+      escalated: false,
+      revisionCount: 0,
+    };
+    setEditedTask(updated);
+    onUpdateTask(updated);
+    const { saveTask } = await import('../../services/database');
+    await saveTask(updated);
+  };
+
   // Input Contract Handlers
   const handleAddInput = (e: React.FormEvent) => {
     e.preventDefault();
@@ -394,6 +407,41 @@ export default function TaskDetailView({
             ) : (
               /* Scrollable Main Content */
               <div className="flex-1 overflow-y-auto px-6 py-6 space-y-7 scrollbar-thin">
+                {/* Circuit Breaker Escalation Warning Banner */}
+                {editedTask.escalated && (
+                  <div className="p-4 rounded-2xl bg-rose-950/30 border border-rose-500/40 space-y-3 shadow-lg shadow-rose-950/20">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3">
+                        <div className="p-2 rounded-xl bg-rose-500/20 border border-rose-500/30 text-rose-400 shrink-0">
+                          <AlertTriangle className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-xs text-rose-300 font-mono tracking-wide uppercase">
+                              Circuit Breaker Tripped
+                            </span>
+                            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                              Attempt {editedTask.revisionCount || 3}
+                            </span>
+                          </div>
+                          <p className="text-xs text-rose-200/90 leading-relaxed font-mono text-[11px]">
+                            Autonomous AI agents are barred from working on this task due to
+                            repeated rejection. A human developer must intervene, resolve edge
+                            cases, and reset the circuit breaker.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleResetCircuitBreaker}
+                        className="px-3 py-1.5 bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/50 rounded-xl text-xs font-mono font-semibold transition-all cursor-pointer whitespace-nowrap shrink-0 shadow-sm"
+                      >
+                        Reset Circuit Breaker
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 {/* Title Section */}
                 <div className="space-y-2">
                   <label className="block text-xs font-bold text-text-muted uppercase tracking-wider font-mono">
