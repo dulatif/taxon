@@ -1,6 +1,7 @@
-import { Check, CheckCircle2, Circle, GitCommit, Loader2 } from 'lucide-react';
+import { Check, CheckCircle2, Circle, GitCommit, Loader2, RotateCcw } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import type { Task } from '../../types';
+import { RequestRevisionModal } from '../Revision/RequestRevisionModal';
 import { type CriterionItem, parseAcceptanceCriteria, updateAcceptanceCriterion } from './criteria';
 
 interface AcceptanceChecklistBarProps {
@@ -21,6 +22,7 @@ export const AcceptanceChecklistBar: React.FC<AcceptanceChecklistBarProps> = ({
   const [shouldCommit, setShouldCommit] = useState(true);
   const [isApproving, setIsApproving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
 
   const criteria = useMemo(() => {
     return parseAcceptanceCriteria(task.description);
@@ -132,25 +134,47 @@ export const AcceptanceChecklistBar: React.FC<AcceptanceChecklistBarProps> = ({
           </span>
         </label>
 
-        <button
-          type="button"
-          onClick={handleApprove}
-          disabled={!isAllApproved || isApproving}
-          className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-semibold text-xs rounded-xl hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-900/20 transition-all cursor-pointer font-mono"
-        >
-          {isApproving ? (
-            <>
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              <span>Committing & Approving...</span>
-            </>
-          ) : (
-            <>
-              <Check className="w-4 h-4" />
-              <span>Approve & Mark Done</span>
-            </>
+        <div className="flex items-center gap-2">
+          {task.status === 'Need to Test' && (
+            <button
+              type="button"
+              onClick={() => setIsRevisionModalOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-xl text-xs font-mono font-medium transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Request Revision</span>
+            </button>
           )}
-        </button>
+
+          <button
+            type="button"
+            onClick={handleApprove}
+            disabled={!isAllApproved || isApproving}
+            className="flex items-center gap-2 px-4 py-2 bg-emerald-600 text-white font-semibold text-xs rounded-xl hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed shadow-md shadow-emerald-900/20 transition-all cursor-pointer font-mono"
+          >
+            {isApproving ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <span>Committing & Approving...</span>
+              </>
+            ) : (
+              <>
+                <Check className="w-4 h-4" />
+                <span>Approve & Mark Done</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
+
+      {isRevisionModalOpen && (
+        <RequestRevisionModal
+          isOpen={isRevisionModalOpen}
+          onClose={() => setIsRevisionModalOpen(false)}
+          task={task}
+          onUpdateTask={onUpdateTask}
+        />
+      )}
     </div>
   );
 };

@@ -14,6 +14,7 @@ import {
   Maximize2,
   Play,
   Plus,
+  RotateCcw,
   Trash2,
   X,
 } from 'lucide-react';
@@ -24,6 +25,7 @@ import type { Project, Sprint, SubTask, Task } from '../../types';
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog';
 import { DeliverablesDiffViewer, ReviewModal } from '../DiffViewer';
 import MarkdownViewer from '../MarkdownViewer';
+import { RequestRevisionModal } from '../Revision/RequestRevisionModal';
 import SubtaskList from '../SubtaskList/SubtaskList';
 
 interface TaskDetailViewProps {
@@ -146,6 +148,7 @@ export default function TaskDetailView({
   const [isEditingDescription, setIsEditingDescription] = useState(false);
   const [activeTab, setActiveTab] = useState<'overview' | 'diff'>('overview');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
 
   const [newInputText, setNewInputText] = useState('');
   const [newOutputText, setNewOutputText] = useState('');
@@ -678,17 +681,29 @@ export default function TaskDetailView({
                         Acceptance Criteria
                       </h3>
                     </div>
-                    {acceptanceChecklist.length > 0 && (
-                      <span
-                        className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
-                          completedCriteriaCount === acceptanceChecklist.length
-                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                            : 'bg-surface-secondary text-text-muted border-border-primary'
-                        }`}
-                      >
-                        {completedCriteriaCount}/{acceptanceChecklist.length} Completed
-                      </span>
-                    )}
+                    <div className="flex items-center gap-2">
+                      {editedTask.status === 'Need to Test' && (
+                        <button
+                          type="button"
+                          onClick={() => setIsRevisionModalOpen(true)}
+                          className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-mono font-medium transition-colors cursor-pointer"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>Request Revision</span>
+                        </button>
+                      )}
+                      {acceptanceChecklist.length > 0 && (
+                        <span
+                          className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded border ${
+                            completedCriteriaCount === acceptanceChecklist.length
+                              ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                              : 'bg-surface-secondary text-text-muted border-border-primary'
+                          }`}
+                        >
+                          {completedCriteriaCount}/{acceptanceChecklist.length} Completed
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {acceptanceChecklist.length > 0 ? (
@@ -898,6 +913,18 @@ export default function TaskDetailView({
             onClose();
           }}
           onClose={() => setIsDeleteConfirmOpen(false)}
+        />
+      )}
+
+      {isRevisionModalOpen && editedTask && (
+        <RequestRevisionModal
+          isOpen={isRevisionModalOpen}
+          onClose={() => setIsRevisionModalOpen(false)}
+          task={editedTask}
+          onUpdateTask={(updated) => {
+            setEditedTask(updated);
+            onUpdateTask(updated);
+          }}
         />
       )}
     </AnimatePresence>
