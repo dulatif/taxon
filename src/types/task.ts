@@ -39,4 +39,5 @@ export interface Task {
   moduleGroup?: string;
   inputs?: string[];
   outputs?: string[];
+  baseCommit?: string;
 }

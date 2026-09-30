@@ -7,6 +7,8 @@ use tauri::{
 };
 use tauri_plugin_sql::{Migration, MigrationKind};
 
+pub mod commands;
+
 struct BackupState {
     frequency: Mutex<String>,
 }
@@ -30,7 +32,14 @@ pub fn run() {
         .manage(BackupState {
             frequency: Mutex::new("Never".to_string()),
         })
-        .invoke_handler(tauri::generate_handler![set_backup_frequency])
+        .invoke_handler(tauri::generate_handler![
+            set_backup_frequency,
+            commands::git_diff::get_current_head_commit,
+            commands::git_diff::get_task_diff_summary,
+            commands::git_diff::get_file_diff_payload,
+            commands::git_diff::save_remediated_file,
+            commands::git_diff::commit_approved_task,
+        ])
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_fs::init())

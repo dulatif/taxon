@@ -237,6 +237,7 @@ export function taskToMarkdown(task: Task): string {
     moduleGroup: task.moduleGroup,
     inputs: task.inputs,
     outputs: task.outputs,
+    baseCommit: task.baseCommit,
   };
 
   let markdown = serializeFrontmatter(frontmatterData);
@@ -343,6 +344,7 @@ export function markdownToTask(markdown: string, projectId: string): Task {
     moduleGroup: (data.moduleGroup as string) || undefined,
     inputs: parseArrayField(data.inputs),
     outputs: parseArrayField(data.outputs),
+    baseCommit: (data.baseCommit as string) || undefined,
   } as Task;
 }
 
@@ -931,6 +933,7 @@ function normalizeTask(task: Task): Task {
     moduleGroup: task.moduleGroup || undefined,
     inputs: task.inputs || [],
     outputs: task.outputs || [],
+    baseCommit: task.baseCommit || undefined,
   };
 }
 

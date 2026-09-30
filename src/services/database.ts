@@ -147,6 +147,7 @@ export const initDb = (): Promise<Database> => {
         'moduleGroup',
         'inputs',
         'outputs',
+        'baseCommit',
       ];
 
       for (const col of cols) {
@@ -344,6 +345,7 @@ export const getTasks = async (): Promise<Task[]> => {
       dependsOn: parseJSON(t.dependsOn),
       inputs: parseJSON(t.inputs),
       outputs: parseJSON(t.outputs),
+      baseCommit: (t.baseCommit as string) || undefined,
       workspacePath: (t.workspacePath as string) || undefined,
       moduleGroup: (t.moduleGroup as string) || undefined,
       timeEffort: timeEffortNum,
@@ -356,6 +358,43 @@ export const getTasks = async (): Promise<Task[]> => {
 
 export const saveTask = async (t: Task) => {
   const d = await initDb();
+
+  if (t.status === 'In Progress' && !t.baseCommit) {
+    try {
+      let repoPath = t.workspacePath;
+      if (!repoPath && t.projectId) {
+        const projs = await d.select<{ vaultPath: string; workspacePaths: string }[]>(
+          'SELECT vaultPath, workspacePaths FROM projects WHERE id = $1',
+          [t.projectId],
+        );
+        const firstProj = projs[0];
+        if (firstProj) {
+          if (firstProj.workspacePaths) {
+            try {
+              const ws =
+                typeof firstProj.workspacePaths === 'string'
+                  ? JSON.parse(firstProj.workspacePaths)
+                  : firstProj.workspacePaths;
+              if (Array.isArray(ws) && ws.length > 0) repoPath = ws[0];
+            } catch (err) {
+              void err;
+            }
+          }
+          if (!repoPath) repoPath = firstProj.vaultPath;
+        }
+      }
+      const { invoke } = await import('@tauri-apps/api/core');
+      const headCommit = await invoke<string>('get_current_head_commit', {
+        repoPath: repoPath || null,
+      });
+      if (headCommit && typeof headCommit === 'string') {
+        t.baseCommit = headCommit.trim();
+      }
+    } catch {
+      // In tests or non-tauri environment, ignore gracefully
+    }
+  }
+
   const labelsStr = t.labels ? JSON.stringify(t.labels) : null;
   const remindersStr = t.reminders ? JSON.stringify(t.reminders) : null;
   const subtasksStr = t.subtasks ? JSON.stringify(t.subtasks) : null;
@@ -366,7 +405,7 @@ export const saveTask = async (t: Task) => {
   const outputsStr = t.outputs ? JSON.stringify(t.outputs) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs, baseCommit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)',
     [
       t.id ?? null,
       t.projectId ?? null,
@@ -394,6 +433,7 @@ export const saveTask = async (t: Task) => {
       t.moduleGroup ?? null,
       inputsStr,
       outputsStr,
+      t.baseCommit ?? null,
     ],
   );
 
