@@ -221,6 +221,31 @@ Update agentSync.ts markdown parser and serializer to support task contracts.
       expect(serialized).toContain('## Subtasks');
       expect(serialized).toContain('- [x] Add inputs and outputs to frontmatter');
     });
+
+    it('should serialize and parse revision metadata (revisionCount, lastRevisionAt, escalated)', () => {
+      const task: Task = {
+        id: 'rev-001',
+        projectId: 'proj-1',
+        title: 'Rev Task',
+        completed: false,
+        duration: '1h',
+        priority: 'High',
+        status: 'To Do',
+        revisionCount: 2,
+        lastRevisionAt: '2026-09-30T22:00:00.000Z',
+        escalated: true,
+      };
+
+      const markdown = taskToMarkdown(task);
+      expect(markdown).toContain('revisionCount: 2');
+      expect(markdown).toContain('lastRevisionAt: 2026-09-30T22:00:00.000Z');
+      expect(markdown).toContain('escalated: true');
+
+      const parsed = markdownToTask(markdown, 'proj-1');
+      expect(parsed.revisionCount).toBe(2);
+      expect(parsed.lastRevisionAt).toBe('2026-09-30T22:00:00.000Z');
+      expect(parsed.escalated).toBe(true);
+    });
   });
 
   describe('Sprint Serialization (AGENT-105)', () => {

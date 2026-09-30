@@ -241,11 +241,19 @@ export default function KanbanView({
 
                                   {/* Bottom metadata row: Priority, Time effort/duration, Done indicator */}
                                   <div className="flex items-center justify-between pt-2.5 mt-2.5 border-t border-border-primary/40">
-                                    <span
-                                      className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}
-                                    >
-                                      {task.priority || 'Medium'}
-                                    </span>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span
+                                        className={`px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider ${getPriorityClass(task.priority)}`}
+                                      >
+                                        {task.priority || 'Medium'}
+                                      </span>
+                                      {task.revisionCount !== undefined &&
+                                        task.revisionCount > 0 && (
+                                          <span className="px-2 py-0.5 text-[9px] font-bold font-mono rounded-sm uppercase tracking-wider bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                                            Attempt {task.revisionCount + 1}
+                                          </span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2">
                                       <span className="text-text-muted text-[10px] font-mono leading-none bg-surface-primary/40 px-1.5 py-0.5 rounded border border-border-primary/40">
                                         {task.duration || '25m'}

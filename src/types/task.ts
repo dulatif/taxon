@@ -40,4 +40,7 @@ export interface Task {
   inputs?: string[];
   outputs?: string[];
   baseCommit?: string;
+  revisionCount?: number;
+  lastRevisionAt?: string;
+  escalated?: boolean;
 }

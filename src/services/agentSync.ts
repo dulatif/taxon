@@ -238,6 +238,9 @@ export function taskToMarkdown(task: Task): string {
     inputs: task.inputs,
     outputs: task.outputs,
     baseCommit: task.baseCommit,
+    revisionCount: task.revisionCount,
+    lastRevisionAt: task.lastRevisionAt,
+    escalated: task.escalated,
   };
 
   let markdown = serializeFrontmatter(frontmatterData);
@@ -345,6 +348,9 @@ export function markdownToTask(markdown: string, projectId: string): Task {
     inputs: parseArrayField(data.inputs),
     outputs: parseArrayField(data.outputs),
     baseCommit: (data.baseCommit as string) || undefined,
+    revisionCount: typeof data.revisionCount === 'number' ? data.revisionCount : undefined,
+    lastRevisionAt: (data.lastRevisionAt as string) || undefined,
+    escalated: typeof data.escalated === 'boolean' ? data.escalated : undefined,
   } as Task;
 }
 

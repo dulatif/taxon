@@ -206,6 +206,21 @@ export const initDb = (): Promise<Database> => {
         // Column already exists
       }
       try {
+        await database.execute('ALTER TABLE tasks ADD COLUMN revisionCount INTEGER DEFAULT 0');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE tasks ADD COLUMN lastRevisionAt TEXT');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE tasks ADD COLUMN escalated INTEGER DEFAULT 0');
+      } catch {
+        // Column already exists
+      }
+      try {
         const tableInfo = await database.select<{ name: string; pk: number }[]>(
           'PRAGMA table_info(activity)',
         );
@@ -346,6 +361,10 @@ export const getTasks = async (): Promise<Task[]> => {
       inputs: parseJSON(t.inputs),
       outputs: parseJSON(t.outputs),
       baseCommit: (t.baseCommit as string) || undefined,
+      revisionCount:
+        t.revisionCount !== null && t.revisionCount !== undefined ? Number(t.revisionCount) : 0,
+      lastRevisionAt: (t.lastRevisionAt as string) || undefined,
+      escalated: !!t.escalated,
       workspacePath: (t.workspacePath as string) || undefined,
       moduleGroup: (t.moduleGroup as string) || undefined,
       timeEffort: timeEffortNum,
@@ -405,7 +424,7 @@ export const saveTask = async (t: Task) => {
   const outputsStr = t.outputs ? JSON.stringify(t.outputs) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs, baseCommit) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs, baseCommit, revisionCount, lastRevisionAt, escalated) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)',
     [
       t.id ?? null,
       t.projectId ?? null,
@@ -434,6 +453,9 @@ export const saveTask = async (t: Task) => {
       inputsStr,
       outputsStr,
       t.baseCommit ?? null,
+      t.revisionCount ?? 0,
+      t.lastRevisionAt ?? null,
+      t.escalated ? 1 : 0,
     ],
   );
 
