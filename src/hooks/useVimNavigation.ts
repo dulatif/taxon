@@ -131,23 +131,26 @@ export function useVimNavigation({
         const { stage, categoryIndex } = jumpStateRef.current;
 
         if (stage === 'category') {
-          // Direct view chords: g s (settings), g p (projects), g t (todo)
-          if (key === 's') {
+          // Direct view chords:
+          // g d (dashboard), g i (inbox), g p (projects), g t (todo),
+          // g c (scheduled / calendar), g w (work log / history), g r (recurring),
+          // g a (analytics), g s (settings)
+          const viewChords: Record<string, string> = {
+            d: 'dashboard',
+            i: 'inbox',
+            p: 'projects',
+            t: 'todo',
+            c: 'scheduled',
+            w: 'history',
+            r: 'recurring',
+            a: 'analytics',
+            s: 'settings',
+          };
+
+          if (viewChords[key]) {
             e.preventDefault();
             cancelJump();
-            opts.onNavigate?.('settings');
-            return;
-          }
-          if (key === 'p') {
-            e.preventDefault();
-            cancelJump();
-            opts.onNavigate?.('projects');
-            return;
-          }
-          if (key === 't') {
-            e.preventDefault();
-            cancelJump();
-            opts.onNavigate?.('todo');
+            opts.onNavigate?.(viewChords[key]);
             return;
           }
 

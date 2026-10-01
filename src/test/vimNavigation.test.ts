@@ -62,7 +62,7 @@ describe('useVimNavigation', () => {
     expect(result.current.jumpState.isActive).toBe(false);
   });
 
-  it('triggers view navigation chords: g s, g p, g t', () => {
+  it('triggers view navigation chords: g s, g p, g t, g d, g i, g c, g w, g r, g a', () => {
     const onNavigate = vi.fn();
 
     renderHook(() =>
@@ -74,26 +74,25 @@ describe('useVimNavigation', () => {
       }),
     );
 
-    // g s -> settings
-    act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
-    });
-    expect(onNavigate).toHaveBeenCalledWith('settings');
+    const testPairs: [string, string][] = [
+      ['s', 'settings'],
+      ['p', 'projects'],
+      ['t', 'todo'],
+      ['d', 'dashboard'],
+      ['i', 'inbox'],
+      ['c', 'scheduled'],
+      ['w', 'history'],
+      ['r', 'recurring'],
+      ['a', 'analytics'],
+    ];
 
-    // g p -> projects
-    act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'p' }));
-    });
-    expect(onNavigate).toHaveBeenCalledWith('projects');
-
-    // g t -> todo
-    act(() => {
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
-    });
-    expect(onNavigate).toHaveBeenCalledWith('todo');
+    for (const [key, expectedView] of testPairs) {
+      act(() => {
+        window.dispatchEvent(new KeyboardEvent('keydown', { key: 'g' }));
+        window.dispatchEvent(new KeyboardEvent('keydown', { key }));
+      });
+      expect(onNavigate).toHaveBeenCalledWith(expectedView);
+    }
   });
 
   it('triggers cheatsheet on ? key', () => {
