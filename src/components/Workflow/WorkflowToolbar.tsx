@@ -4,6 +4,8 @@ import {
   Layers,
   LayoutGrid,
   Maximize2,
+  Minimize2,
+  Scan,
   Search,
   Sparkles,
   ZoomIn,
@@ -17,6 +19,8 @@ export interface WorkflowToolbarProps {
   onZoomOut: () => void;
   onFitView: () => void;
   onTidyLayout?: () => void;
+  isTheaterMode?: boolean;
+  onToggleTheaterMode?: () => void;
   moduleGroups: string[];
   selectedGroup: string | null;
   onSelectGroup: (group: string | null) => void;
@@ -36,6 +40,8 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
   onZoomOut,
   onFitView,
   onTidyLayout,
+  isTheaterMode,
+  onToggleTheaterMode,
   moduleGroups,
   selectedGroup,
   onSelectGroup,
@@ -153,8 +159,25 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
           title="Fit View"
           className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
         >
-          <Maximize2 className="w-4 h-4" />
+          <Scan className="w-4 h-4" />
         </button>
+        {onToggleTheaterMode && (
+          <>
+            <div className="h-4 w-px bg-border/60 mx-0.5" />
+            <button
+              type="button"
+              onClick={onToggleTheaterMode}
+              title={isTheaterMode ? 'Exit Full Screen' : 'Full Screen'}
+              className="p-1.5 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-colors"
+            >
+              {isTheaterMode ? (
+                <Minimize2 className="w-4 h-4" />
+              ) : (
+                <Maximize2 className="w-4 h-4" />
+              )}
+            </button>
+          </>
+        )}
         {onTidyLayout && (
           <>
             <div className="h-4 w-px bg-border/60 mx-0.5" />

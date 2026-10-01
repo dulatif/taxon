@@ -17,6 +17,7 @@ import '@xyflow/react/dist/style.css';
 import { GitFork, Plus } from 'lucide-react';
 import React, { memo, useCallback, useMemo, useState } from 'react';
 import { useAgentHeartbeat } from '../../hooks/useAgentHeartbeat';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import type { Project, Sprint, Task } from '../../types';
 import { BusEdge } from './BusEdge';
 import { ModuleGroupNode } from './ModuleGroupNode';
@@ -69,6 +70,16 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
     const [internalSprintId, setInternalSprintId] = useState<string | 'all' | 'backlog'>('all');
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
     const [hoveredTaskId, setHoveredTaskId] = useState<string | null>(null);
+    const [isTheaterMode, setIsTheaterMode] = useState(false);
+
+    useEscapeKey(() => setIsTheaterMode(false), { enabled: isTheaterMode, priority: 5 });
+
+    React.useEffect(() => {
+      const timer = setTimeout(() => {
+        fitView({ padding: 0.2, duration: 250 });
+      }, 50);
+      return () => clearTimeout(timer);
+    }, [isTheaterMode, fitView]);
 
     const currentSprintId = externalSprintId !== undefined ? externalSprintId : internalSprintId;
     const handleSelectSprint = useCallback(
@@ -325,7 +336,13 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
     }
 
     return (
-      <div className="w-full h-full relative overflow-hidden bg-background">
+      <div
+        className={
+          isTheaterMode
+            ? 'fixed inset-0 z-50 bg-background flex flex-col w-screen h-screen overflow-hidden'
+            : 'w-full h-full relative overflow-hidden bg-background'
+        }
+      >
         <WorkflowToolbar
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
@@ -342,6 +359,8 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
           onZoomOut={() => zoomOut({ duration: 300 })}
           onFitView={handleFitView}
           onTidyLayout={handleTidyLayout}
+          isTheaterMode={isTheaterMode}
+          onToggleTheaterMode={() => setIsTheaterMode((prev) => !prev)}
           totalTasksCount={tasks.filter((t) => !t.archived).length}
         />
 
