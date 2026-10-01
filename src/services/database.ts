@@ -418,36 +418,82 @@ export const getTasks = async (): Promise<Task[]> => {
 export const saveTask = async (t: Task) => {
   const d = await initDb();
 
-  if (t.status === 'In Progress' && !t.baseCommit) {
+  if (t.status === 'In Progress') {
     try {
       let repoPath = t.workspacePath;
-      if (!repoPath && t.projectId) {
-        const projs = await d.select<{ vaultPath: string; workspacePaths: string }[]>(
-          'SELECT vaultPath, workspacePaths FROM projects WHERE id = $1',
+      let firstProj:
+        | {
+            vaultPath: string;
+            workspacePaths: string;
+            worktreeEnabled: number;
+            worktreeDir: string;
+            worktreeSetupCommand: string;
+          }
+        | undefined;
+
+      if (t.projectId) {
+        const projs = await d.select<
+          {
+            vaultPath: string;
+            workspacePaths: string;
+            worktreeEnabled: number;
+            worktreeDir: string;
+            worktreeSetupCommand: string;
+          }[]
+        >(
+          'SELECT vaultPath, workspacePaths, worktreeEnabled, worktreeDir, worktreeSetupCommand FROM projects WHERE id = $1',
           [t.projectId],
         );
-        const firstProj = projs[0];
-        if (firstProj) {
-          if (firstProj.workspacePaths) {
-            try {
-              const ws =
-                typeof firstProj.workspacePaths === 'string'
-                  ? JSON.parse(firstProj.workspacePaths)
-                  : firstProj.workspacePaths;
-              if (Array.isArray(ws) && ws.length > 0) repoPath = ws[0];
-            } catch (err) {
-              void err;
-            }
+        firstProj = projs[0];
+      }
+
+      if (firstProj) {
+        if (!repoPath && firstProj.workspacePaths) {
+          try {
+            const ws =
+              typeof firstProj.workspacePaths === 'string'
+                ? JSON.parse(firstProj.workspacePaths)
+                : firstProj.workspacePaths;
+            if (Array.isArray(ws) && ws.length > 0) repoPath = ws[0];
+          } catch (err) {
+            void err;
           }
-          if (!repoPath) repoPath = firstProj.vaultPath;
+        }
+        if (!repoPath) repoPath = firstProj.vaultPath;
+
+        if (firstProj.worktreeEnabled && !t.workspacePath && repoPath) {
+          try {
+            const { invoke } = await import('@tauri-apps/api/core');
+            const wtInfo = await invoke<{ workspacePath: string; worktreeBranch: string }>(
+              'git_worktree_spawn',
+              {
+                projectPath: repoPath,
+                taskId: t.id,
+                worktreeDir: firstProj.worktreeDir || '.worktrees',
+                baseBranch: null,
+                setupCommand: firstProj.worktreeSetupCommand || null,
+              },
+            );
+            if (wtInfo?.workspacePath) {
+              t.workspacePath = wtInfo.workspacePath;
+              t.worktreeBranch = wtInfo.worktreeBranch;
+              t.worktreeStatus = 'active';
+              repoPath = t.workspacePath;
+            }
+          } catch (spawnErr) {
+            console.warn('Auto worktree spawn skipped or failed:', spawnErr);
+          }
         }
       }
-      const { invoke } = await import('@tauri-apps/api/core');
-      const headCommit = await invoke<string>('get_current_head_commit', {
-        repoPath: repoPath || null,
-      });
-      if (headCommit && typeof headCommit === 'string') {
-        t.baseCommit = headCommit.trim();
+
+      if (!t.baseCommit) {
+        const { invoke } = await import('@tauri-apps/api/core');
+        const headCommit = await invoke<string>('get_current_head_commit', {
+          repoPath: repoPath || null,
+        });
+        if (headCommit && typeof headCommit === 'string') {
+          t.baseCommit = headCommit.trim();
+        }
       }
     } catch {
       // In tests or non-tauri environment, ignore gracefully

@@ -39,6 +39,11 @@ pub fn run() {
             commands::git_diff::get_file_diff_payload,
             commands::git_diff::save_remediated_file,
             commands::git_diff::commit_approved_task,
+            commands::git_worktree::git_worktree_spawn,
+            commands::git_worktree::launch_sandbox_terminal,
+            commands::git_worktree::launch_sandbox_editor,
+            commands::git_worktree::git_worktree_merge,
+            commands::git_worktree::git_worktree_prune,
         ])
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
