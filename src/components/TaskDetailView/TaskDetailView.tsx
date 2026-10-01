@@ -28,6 +28,7 @@ import MarkdownViewer from '../MarkdownViewer';
 import { RequestRevisionModal } from '../Revision/RequestRevisionModal';
 import { RevisionHistoryViewer } from '../Revision/RevisionHistoryViewer';
 import SubtaskList from '../SubtaskList/SubtaskList';
+import MergeWorktreeDialog from '../Worktree/MergeWorktreeDialog';
 import WorktreeControlPanel from '../Worktree/WorktreeControlPanel';
 
 interface TaskDetailViewProps {
@@ -151,6 +152,7 @@ export default function TaskDetailView({
   const [activeTab, setActiveTab] = useState<'overview' | 'diff'>('overview');
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isRevisionModalOpen, setIsRevisionModalOpen] = useState(false);
+  const [isMergeDialogOpen, setIsMergeDialogOpen] = useState(false);
 
   const [newInputText, setNewInputText] = useState('');
   const [newOutputText, setNewOutputText] = useState('');
@@ -470,7 +472,10 @@ export default function TaskDetailView({
 
                 {/* Worktree Sandbox Launchers & Branch Panel */}
                 {(editedTask.workspacePath || editedTask.worktreeStatus === 'active') && (
-                  <WorktreeControlPanel task={editedTask} />
+                  <WorktreeControlPanel
+                    task={editedTask}
+                    onOpenMergeDialog={() => setIsMergeDialogOpen(true)}
+                  />
                 )}
 
                 {/* Task Contracts (Inputs & Outputs & Linked Files) */}
@@ -980,6 +985,19 @@ export default function TaskDetailView({
           onClose={() => setIsRevisionModalOpen(false)}
           task={editedTask}
           onUpdateTask={(updated) => {
+            setEditedTask(updated);
+            onUpdateTask(updated);
+          }}
+        />
+      )}
+
+      {isMergeDialogOpen && editedTask && (
+        <MergeWorktreeDialog
+          isOpen={isMergeDialogOpen}
+          onClose={() => setIsMergeDialogOpen(false)}
+          task={editedTask}
+          project={projects.find((p) => p.id === editedTask.projectId)}
+          onMergeSuccess={(updated) => {
             setEditedTask(updated);
             onUpdateTask(updated);
           }}
