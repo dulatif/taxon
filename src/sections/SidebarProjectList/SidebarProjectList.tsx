@@ -163,20 +163,22 @@ export default function SidebarProjectList({
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full font-bold bg-surface-secondary text-text-muted">
                       {catProjects.length}
                     </span>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (onAddProjectToCategory) {
-                          onAddProjectToCategory(cat);
-                        } else {
-                          onAddProjectClick();
-                        }
-                      }}
-                      className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-interactive-primary transition-opacity cursor-pointer"
-                      title={`Add project to ${cat}`}
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
+                    {cat !== 'Completed' && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (onAddProjectToCategory) {
+                            onAddProjectToCategory(cat);
+                          } else {
+                            onAddProjectClick();
+                          }
+                        }}
+                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:text-interactive-primary transition-opacity cursor-pointer"
+                        title={`Add project to ${cat}`}
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </div>
 

@@ -48,10 +48,14 @@ export default function Sidebar({
   onOpenSpotlight,
 }: SidebarProps) {
   const { settings, updateSetting } = useSettings();
-  const activeProjects = projects.filter((p) => p.category !== 'Completed');
+  const activeProjects = settings.showCompletedProjectsInSidebar
+    ? projects
+    : projects.filter((p) => p.category !== 'Completed');
   const categories = useMemo(() => {
     const cats = Array.from(new Set(activeProjects.map((p) => p.category))).filter(Boolean);
     return cats.sort((a, b) => {
+      if (a === 'Completed') return 1;
+      if (b === 'Completed') return -1;
       const idxA = (PROJECT_CATEGORIES as readonly string[]).indexOf(a);
       const idxB = (PROJECT_CATEGORIES as readonly string[]).indexOf(b);
       if (idxA !== -1 && idxB !== -1) return idxA - idxB;

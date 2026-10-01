@@ -9,4 +9,5 @@ export interface SettingsState {
   pomodoroLongBreakInterval: number;
   pomodoroAutoStartBreaks: boolean;
   pomodoroAutoStartPomodoros: boolean;
+  showCompletedProjectsInSidebar: boolean;
 }

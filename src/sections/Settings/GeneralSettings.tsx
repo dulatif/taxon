@@ -8,6 +8,7 @@ interface GeneralSettingsProps {
   pomodoroAutoStartBreaks: boolean;
   pomodoroAutoStartPomodoros: boolean;
   backupFrequency: string;
+  showCompletedProjectsInSidebar: boolean;
   updateSetting: <K extends keyof SettingsState>(key: K, value: SettingsState[K]) => void;
   toggleSetting: (key: keyof SettingsState) => void;
   onExportData: () => void;
@@ -22,6 +23,7 @@ export default function GeneralSettings({
   pomodoroAutoStartBreaks,
   pomodoroAutoStartPomodoros,
   backupFrequency,
+  showCompletedProjectsInSidebar,
   updateSetting,
   toggleSetting,
   onExportData,
@@ -193,6 +195,33 @@ export default function GeneralSettings({
           <option value="Weekly">Weekly</option>
           <option value="Never">Never</option>
         </select>
+      </div>
+
+      {/* Completed Projects in Sidebar Preference */}
+      <div className="flex items-center justify-between p-3.5 bg-surface-secondary border border-border-primary/80 rounded-lg">
+        <div>
+          <h4 className="text-xs font-bold text-[#C4C7C8] uppercase tracking-wide font-mono">
+            Show Completed Projects in Sidebar
+          </h4>
+          <p className="text-[10px] text-text-muted mt-0.5">
+            Display completed projects under a collapsible section at the bottom of the sidebar.
+          </p>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={showCompletedProjectsInSidebar}
+          onClick={() => toggleSetting('showCompletedProjectsInSidebar')}
+          className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+            showCompletedProjectsInSidebar ? 'bg-interactive-primary' : 'bg-surface-primary'
+          }`}
+        >
+          <span
+            className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+              showCompletedProjectsInSidebar ? 'translate-x-4' : 'translate-x-0'
+            }`}
+          />
+        </button>
       </div>
 
       {/* Data Export / Import */}

@@ -351,4 +351,5 @@ export const DEFAULT_SETTINGS: SettingsState = {
   pomodoroLongBreakInterval: 4,
   pomodoroAutoStartBreaks: false,
   pomodoroAutoStartPomodoros: false,
+  showCompletedProjectsInSidebar: true,
 };
