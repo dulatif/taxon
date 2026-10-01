@@ -126,8 +126,10 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
         projectSprints.length > 0 &&
         !projectSprints.some((s) => s.id === currentSprintId)
       ) {
+        const defaultSprint =
+          projectSprints.find((s) => s.status === 'Active') || projectSprints[0];
         queueMicrotask(() => {
-          handleSelectSprint('all');
+          handleSelectSprint(defaultSprint ? defaultSprint.id : 'backlog');
         });
       }
     }, [currentSprintId, projectSprints, handleSelectSprint]);

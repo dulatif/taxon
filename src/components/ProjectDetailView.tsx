@@ -204,7 +204,7 @@ export default function ProjectDetailView({
   };
 
   const cycleSprintFilter = () => {
-    const options: string[] = ['all', 'backlog'];
+    const options: string[] = viewMode === 'workflow' ? ['backlog'] : ['all', 'backlog'];
     if (sprints) {
       const projectSprints = sprints.filter(
         (s) => s.projectId === project.id && (s.status === 'Active' || s.status === 'Planned'),
@@ -215,9 +215,17 @@ export default function ProjectDetailView({
     }
     const currentIndex = options.indexOf(selectedSprintId);
     const nextIndex = (currentIndex + 1) % options.length;
-    const targetSprint = options[nextIndex] ?? 'all';
+    const targetSprint = options[nextIndex] ?? (viewMode === 'workflow' ? 'backlog' : 'all');
     setSelectedSprintId(targetSprint);
   };
+
+  // Auto-fallback from workflow view to list view when 'all' sprints is selected
+  useEffect(() => {
+    if (selectedSprintId === 'all' && viewMode === 'workflow') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setViewMode('list');
+    }
+  }, [selectedSprintId, viewMode]);
 
   const refreshVault = async () => {
     if (project.vaultPath) {
@@ -241,7 +249,7 @@ export default function ProjectDetailView({
   // ProjectDetail keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
+      const target = e.target instanceof HTMLElement ? e.target : null;
       if (
         target &&
         (target.tagName === 'INPUT' ||
@@ -265,7 +273,9 @@ export default function ProjectDetailView({
         }
         if (e.key === '3') {
           e.preventDefault();
-          setViewMode('workflow');
+          if (selectedSprintId !== 'all') {
+            setViewMode('workflow');
+          }
           return;
         }
         if (e.key === '[' || e.key === ']') {
@@ -366,7 +376,7 @@ export default function ProjectDetailView({
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSprintId, sprints, project.id, exportToAgent, copyContextSnapshot]);
+  }, [selectedSprintId, viewMode, sprints, project.id, exportToAgent, copyContextSnapshot]);
 
   const handleSetVaultDirectory = async () => {
     try {
@@ -546,8 +556,18 @@ export default function ProjectDetailView({
               <Button
                 type="button"
                 size="sm"
+                disabled={selectedSprintId === 'all'}
                 variant={viewMode === 'workflow' ? 'primary' : 'ghost'}
-                onClick={() => setViewMode('workflow')}
+                onClick={() => {
+                  if (selectedSprintId !== 'all') {
+                    setViewMode('workflow');
+                  }
+                }}
+                title={
+                  selectedSprintId === 'all'
+                    ? 'Select a specific sprint to view workflow'
+                    : 'Workflow'
+                }
                 className="text-xs font-semibold px-3 flex items-center gap-1.5"
               >
                 <GitFork className="w-3.5 h-3.5" />

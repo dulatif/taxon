@@ -46,7 +46,7 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
   selectedGroup,
   onSelectGroup,
   sprints = [],
-  selectedSprintId = 'all',
+  selectedSprintId = 'backlog',
   onSelectSprint,
   searchQuery,
   onSearchChange,
@@ -76,18 +76,21 @@ export const WorkflowToolbar: React.FC<WorkflowToolbarProps> = ({
           <div className="flex items-center gap-1 pl-1 border-l border-border/60">
             <Layers className="w-3.5 h-3.5 text-muted-foreground ml-1" />
             <select
-              value={selectedSprintId || 'all'}
+              value={
+                selectedSprintId && selectedSprintId !== 'all'
+                  ? selectedSprintId
+                  : sprints[0]?.id || 'backlog'
+              }
               onChange={(e) => onSelectSprint(e.target.value)}
               className="text-xs bg-muted/40 hover:bg-muted/70 text-foreground py-1 px-2 rounded-lg border border-transparent focus:border-primary/40 focus:outline-hidden cursor-pointer transition-colors max-w-[180px] truncate"
             >
-              <option value="all">All Sprints ({sprints.length})</option>
-              <option value="backlog">Backlog Only</option>
               {sprints.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.status === 'Active' ? '🟢 ' : ''}
                   {s.name}
                 </option>
               ))}
+              <option value="backlog">Backlog Only</option>
             </select>
           </div>
         )}
