@@ -21,6 +21,7 @@
     "check-all": "pnpm run format:check && pnpm run oxlint && pnpm run lint && pnpm run type-check && pnpm run test",
     "tauri": "tauri",
     "tauri:dev": "tauri dev -c src-tauri/tauri.dev.conf.json",
+    "tauri:dev-gui": "[ -f \"$HOME/.cargo/env\" ] && . \"$HOME/.cargo/env\"; tauri dev -c src-tauri/tauri.dev.conf.json -- -- --gui",
     "cli:build": "[ -f \"$HOME/.cargo/env\" ] && . \"$HOME/.cargo/env\"; cargo build --release --manifest-path src-tauri/Cargo.toml -p taxon-cli",
     "cli:install": "[ -f \"$HOME/.cargo/env\" ] && . \"$HOME/.cargo/env\"; cargo install --path src-tauri/taxon-cli --force",
     "prepare": "husky"
