@@ -570,14 +570,73 @@ Edit the frontmatter fields or markdown body directly.
 - To archive: set \`archived: true\`.
 - To assign to a sprint: add the sprint's ID to \`sprintId\`. Leave empty or omit for backlog tasks.
 
-### Creating Sprints
+### Creating Sprints (Sprint Contracts)
 Create a new \`.md\` file in \`.taxon/sprints/\`:
 - Filename: \`SPRINT-{6-char-id}-{slugified-name}.md\`
+- Generate a unique 6-character alphanumeric ID (e.g. \`nav013\` or \`sp1234\`)
 - Required frontmatter: \`id\`, \`name\`, \`status\`, \`startDate\`, \`endDate\`
 - Valid statuses: \`Planned\`, \`Active\`
-- Dates must be YYYY-MM-DD strings (e.g. \`2024-01-01\`)
-- List task filenames under \`## Tasks\`
+- Dates must be YYYY-MM-DD strings (e.g. \`2026-11-16\`)
 - Set each task's \`sprintId\` in its frontmatter to match this sprint's \`id\`.
+
+**Sprint Description Structure (\`## Goal\`)**:
+Sprint descriptions under \`## Goal\` must follow this standardized structure to ensure clarity across agents and clean rendering in Taxon's expandable markdown viewer:
+- \`### Objective\`: 1-2 concise sentences summarizing the overarching business or architectural outcome of the sprint.
+- \`### Key Deliverables\`: High-level summary of capabilities delivered, organized by the sprint's 2 to 4 \`moduleGroup\` clusters.
+- \`### Success Metrics\`: Bulleted verifiable criteria or definition of done for the sprint.
+- \`### Out of Scope\`: (Optional) Explicitly deferred items to protect sprint boundaries.
+
+**Task Grouping (\`## Tasks\`)**:
+List tasks under \`## Tasks\` grouped by status:
+- \`### To Do\`
+- \`### In Progress\`
+- \`### Need to Test\`
+- \`### Done\`
+Format: \`- [Priority] TASK-{6-char-id}-{slugified-title}.md\`
+
+Example Sprint Contract File:
+\`\`\`markdown
+---
+id: nav013
+name: Sprint 13 - Power Navigation & Workflow Theater
+status: Active
+startDate: 2026-11-16
+endDate: 2026-11-30
+---
+
+## Goal
+
+### Objective
+Deliver high-velocity keyboard navigation and expansive visualization for power users.
+
+### Key Deliverables
+- **Navigation & Modals**: Universal \`useEscapeKey\` dismissal stack and \`g > <cat> > <proj>\` positional Vim jumping.
+- **UI & Layout**: Workflow Theater Mode (\`fixed top-10\`), expandable sprint markdown viewer, completed project sidebar toggle.
+
+### Success Metrics
+- Zero modal escape leaks across all dialogs.
+- Instant project switching without mouse interaction.
+- Full-screen DAG inspection with title bar buffer.
+
+### Out of Scope
+- Global search indexing overhaul.
+
+## Tasks
+
+### To Do
+- [Medium] TASK-196397-fix-disable-workflow-tab-when-the-filter-is-all-sp.md
+
+### Need to Test
+- [Medium] TASK-990053-feat-enhance-keybinding.md
+
+### Done
+- [Critical] TASK-730959-fix-press-esc-button-close-the-modal-it-applies-fo.md
+- [Critical] TASK-759815-fix-don-t-hide-completed-project-in-the-sidebar.md
+- [High] TASK-781958-style-the-sprint-goal-should-be-markdown-viewer.md
+- [High] TASK-136947-add-feature-to-pop-up-the-dag-become-full-screen.md
+- [Medium] TASK-250411-feat-enhance-the-workflow-feature-to-handle-the-gr.md
+\`\`\`
+
 
 ### Git Commit Task References
 - Reference tasks in git commits using \`(TASK-{6-char-id})\` or \`TASK-{6-char-id}\` in commit messages.
