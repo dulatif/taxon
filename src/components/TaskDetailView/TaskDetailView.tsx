@@ -28,6 +28,7 @@ import MarkdownViewer from '../MarkdownViewer';
 import { RequestRevisionModal } from '../Revision/RequestRevisionModal';
 import { RevisionHistoryViewer } from '../Revision/RevisionHistoryViewer';
 import SubtaskList from '../SubtaskList/SubtaskList';
+import WorktreeControlPanel from '../Worktree/WorktreeControlPanel';
 
 interface TaskDetailViewProps {
   task: Task | null;
@@ -466,6 +467,11 @@ export default function TaskDetailView({
                   allTasks={allTasks}
                   onChange={handleFieldChange}
                 />
+
+                {/* Worktree Sandbox Launchers & Branch Panel */}
+                {(editedTask.workspacePath || editedTask.worktreeStatus === 'active') && (
+                  <WorktreeControlPanel task={editedTask} />
+                )}
 
                 {/* Task Contracts (Inputs & Outputs & Linked Files) */}
                 <div className="space-y-4 pt-2 border-t border-border-primary/60">
