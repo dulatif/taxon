@@ -503,6 +503,7 @@ export default function ProjectDetailView({
         onCompleteProject={onCompleteProject}
         onDeleteProjectClick={() => setIsDeleteConfirmOpen(true)}
         onTogglePinProject={onTogglePinProject}
+        onProjectUpdated={refreshAllData}
       />
 
       {sprints && onCreateSprint && onEditSprint && onDeleteSprint && (

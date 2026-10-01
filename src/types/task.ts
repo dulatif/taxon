@@ -34,6 +34,8 @@ export interface Task {
   archived?: boolean;
   archivedAt?: string;
   workspacePath?: string;
+  worktreeBranch?: string;
+  worktreeStatus?: 'none' | 'active' | 'merged' | 'orphaned';
   linkedFiles?: string[];
   dependsOn?: string[];
   moduleGroup?: string;

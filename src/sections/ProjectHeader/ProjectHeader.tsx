@@ -1,7 +1,18 @@
 import { open } from '@tauri-apps/plugin-dialog';
-import { CalendarIcon, CheckCircle, Edit, Folder, Pin, Plus, Trash2, X } from 'lucide-react';
+import {
+  CalendarIcon,
+  CheckCircle,
+  Edit,
+  Folder,
+  Pin,
+  Plus,
+  Settings,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { useState } from 'react';
 import Button from '../../components/Button';
+import ProjectSettingsModal from '../../components/ProjectSettingsModal';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
 import { formatDisplayDate } from '../../utils/format-date';
@@ -21,6 +32,7 @@ interface ProjectHeaderProps {
   onCompleteProject: (projectId: string) => void;
   onDeleteProjectClick: () => void;
   onTogglePinProject?: (projectId: string) => void;
+  onProjectUpdated?: (updated: Project) => void;
 }
 
 export default function ProjectHeader({
@@ -31,7 +43,9 @@ export default function ProjectHeader({
   onCompleteProject,
   onDeleteProjectClick,
   onTogglePinProject,
+  onProjectUpdated,
 }: ProjectHeaderProps) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isEditingProj, setIsEditingProj] = useState(false);
   const [editName, setEditName] = useState(project.name);
   const [editDesc, setEditDesc] = useState(project.description);
@@ -270,6 +284,14 @@ export default function ProjectHeader({
                 >
                   <Edit className="w-3.5 h-3.5" /> Edit
                 </Button>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className="flex items-center gap-1.5"
+                >
+                  <Settings className="w-3.5 h-3.5" /> Settings
+                </Button>
                 {project.category !== 'Completed' && (
                   <Button variant="success" size="sm" onClick={() => onCompleteProject(project.id)}>
                     <CheckCircle className="w-4 h-4" /> Complete
@@ -296,6 +318,13 @@ export default function ProjectHeader({
               />
             </div>
           </div>
+
+          <ProjectSettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            project={project}
+            onSave={(updated) => onProjectUpdated?.(updated)}
+          />
         </>
       )}
     </section>

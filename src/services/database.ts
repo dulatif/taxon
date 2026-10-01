@@ -29,7 +29,10 @@ export const initDb = (): Promise<Database> => {
             dueDate TEXT,
             sortOrder INTEGER,
             vaultPath TEXT,
-            workspacePaths TEXT
+            workspacePaths TEXT,
+            worktreeEnabled BOOLEAN DEFAULT 0,
+            worktreeDir TEXT DEFAULT '.worktrees',
+            worktreeSetupCommand TEXT
         );
       `)
         .catch(() => {});
@@ -148,6 +151,8 @@ export const initDb = (): Promise<Database> => {
         'inputs',
         'outputs',
         'baseCommit',
+        'worktreeBranch',
+        'worktreeStatus',
       ];
 
       for (const col of cols) {
@@ -192,6 +197,23 @@ export const initDb = (): Promise<Database> => {
       }
       try {
         await database.execute('ALTER TABLE projects ADD COLUMN pinnedSortOrder INTEGER');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN worktreeEnabled BOOLEAN DEFAULT 0');
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute(
+          "ALTER TABLE projects ADD COLUMN worktreeDir TEXT DEFAULT '.worktrees'",
+        );
+      } catch {
+        // Column already exists
+      }
+      try {
+        await database.execute('ALTER TABLE projects ADD COLUMN worktreeSetupCommand TEXT');
       } catch {
         // Column already exists
       }
@@ -280,6 +302,9 @@ export const getProjects = async (): Promise<Project[]> => {
     pinned: !!p.pinned,
     pinnedSortOrder: typeof p.pinnedSortOrder === 'number' ? p.pinnedSortOrder : undefined,
     workspacePaths: parseJSON(p.workspacePaths),
+    worktreeEnabled: !!p.worktreeEnabled,
+    worktreeDir: (p.worktreeDir as string) || '.worktrees',
+    worktreeSetupCommand: (p.worktreeSetupCommand as string) || undefined,
   })) as unknown as Project[];
 };
 
@@ -288,7 +313,7 @@ export const saveProject = async (p: Project) => {
   const workspacePathsStr = p.workspacePaths ? JSON.stringify(p.workspacePaths) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate, workspacePaths, pinned, pinnedSortOrder) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)',
+    'INSERT OR REPLACE INTO projects (id, name, description, category, progress, dueDays, sortOrder, vaultPath, dueDate, workspacePaths, pinned, pinnedSortOrder, worktreeEnabled, worktreeDir, worktreeSetupCommand) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)',
     [
       p.id ?? null,
       p.name ?? null,
@@ -302,6 +327,9 @@ export const saveProject = async (p: Project) => {
       workspacePathsStr,
       p.pinned ? 1 : 0,
       p.pinnedSortOrder ?? null,
+      p.worktreeEnabled ? 1 : 0,
+      p.worktreeDir ?? '.worktrees',
+      p.worktreeSetupCommand ?? null,
     ],
   );
 };
@@ -376,6 +404,8 @@ export const getTasks = async (): Promise<Task[]> => {
       lastRevisionAt: (t.lastRevisionAt as string) || undefined,
       escalated: !!t.escalated,
       workspacePath: (t.workspacePath as string) || undefined,
+      worktreeBranch: (t.worktreeBranch as string) || undefined,
+      worktreeStatus: (t.worktreeStatus as Task['worktreeStatus']) || 'none',
       moduleGroup: (t.moduleGroup as string) || undefined,
       timeEffort: timeEffortNum,
       timeSpent: timeSpentNum,
@@ -434,7 +464,7 @@ export const saveTask = async (t: Task) => {
   const outputsStr = t.outputs ? JSON.stringify(t.outputs) : null;
 
   await d.execute(
-    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs, baseCommit, revisionCount, lastRevisionAt, escalated) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30)',
+    'INSERT OR REPLACE INTO tasks (id, projectId, sprintId, title, completed, duration, priority, status, dueDate, description, labels, reminders, deadline, subtasks, timeEffort, timeSpent, sortOrder, recurrence, archived, archivedAt, workspacePath, linkedFiles, dependsOn, moduleGroup, inputs, outputs, baseCommit, revisionCount, lastRevisionAt, escalated, worktreeBranch, worktreeStatus) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32)',
     [
       t.id ?? null,
       t.projectId ?? null,
@@ -466,6 +496,8 @@ export const saveTask = async (t: Task) => {
       t.revisionCount ?? 0,
       t.lastRevisionAt ?? null,
       t.escalated ? 1 : 0,
+      t.worktreeBranch ?? null,
+      t.worktreeStatus ?? 'none',
     ],
   );
 

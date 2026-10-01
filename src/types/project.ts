@@ -20,4 +20,7 @@ export interface Project {
   workspacePaths?: string[];
   pinned?: boolean;
   pinnedSortOrder?: number;
+  worktreeEnabled?: boolean;
+  worktreeDir?: string;
+  worktreeSetupCommand?: string;
 }
