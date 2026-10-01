@@ -1,5 +1,6 @@
 import { Check, ChevronDown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 export interface CustomSelectOption<T extends string = string> {
   value: T;
@@ -38,25 +39,20 @@ export default function CustomSelect<T extends string = string>({
 
   const selectedOption = options.find((opt) => opt.value === value);
 
+  useEscapeKey(() => setIsOpen(false), { enabled: isOpen, priority: 10 });
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (isOpen && event.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
 
     document.addEventListener('mousedown', handleClickOutside);
-    document.addEventListener('keydown', handleKeyDown);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
-      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, []);
 
   const sizeClasses = {
     xs: 'px-2 py-1.5 text-xs',

@@ -2,6 +2,7 @@
 import { AlertTriangle, ChevronDown, ChevronRight, FileDiff, Loader2 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { AgentDiffResult } from '../types/agent';
 
 interface AgentImportModalProps {
@@ -19,6 +20,8 @@ export default function AgentImportModal({
   onConfirm,
   onCancel,
 }: AgentImportModalProps) {
+  useEscapeKey(onCancel, { enabled: isOpen && !isImporting });
+
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     newTasks: true,
     newSprints: true,

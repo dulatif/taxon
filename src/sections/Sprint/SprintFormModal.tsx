@@ -1,6 +1,7 @@
 import { Edit3, Sparkles, X } from 'lucide-react';
 import { motion } from 'motion/react';
 import CustomSelect from '../../components/CustomSelect';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import type { Sprint } from '../../types';
 import SprintDatePicker from './SprintDatePicker';
 
@@ -35,6 +36,8 @@ export default function SprintFormModal({
   onClose,
   onSubmit,
 }: SprintFormModalProps) {
+  useEscapeKey(onClose);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSubmit();

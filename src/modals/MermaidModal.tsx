@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useRef } from 'react';
 import { TransformComponent, TransformWrapper, useControls } from 'react-zoom-pan-pinch';
 import { useSettings } from '../contexts/SettingsContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface MermaidModalProps {
   isOpen: boolean;
@@ -43,6 +44,7 @@ function ZoomControls() {
 }
 
 export default function MermaidModal({ isOpen, chartCode, onClose }: MermaidModalProps) {
+  useEscapeKey(onClose, { enabled: isOpen });
   const ref = useRef<HTMLDivElement>(null);
   const { settings } = useSettings();
 

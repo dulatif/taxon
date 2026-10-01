@@ -1,5 +1,6 @@
 import { AlertCircle, CheckSquare, Code, CornerDownLeft, FileText, Square, X } from 'lucide-react';
 import React, { useState } from 'react';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import { saveTask } from '../../services/database';
 import { appendRevisionBlock } from '../../services/revisionSync';
 import type { Task } from '../../types';
@@ -21,6 +22,8 @@ export const RequestRevisionModal: React.FC<RequestRevisionModalProps> = ({
   onUpdateTask,
   onRevisionSubmitted,
 }) => {
+  useEscapeKey(onClose, { enabled: isOpen && !isSubmitting });
+
   const allCriteria = parseAcceptanceCriteria(task.description);
   // Pre-select criteria that are currently unchecked (failing)
   const initialFailing = allCriteria.filter((c) => !c.completed).map((c) => c.text);

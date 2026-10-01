@@ -1,5 +1,6 @@
 import { Maximize2, Minimize2, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
+import { useEscapeKey } from '../../hooks/useEscapeKey';
 import type { Project, Task } from '../../types';
 import { DeliverablesDiffViewer } from './DeliverablesDiffViewer';
 
@@ -20,18 +21,17 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
 }) => {
   const [isFullScreen, setIsFullScreen] = useState(false);
 
+  useEscapeKey(() => setIsFullScreen(false), { enabled: isOpen && isFullScreen, priority: 10 });
+  useEscapeKey(onClose, { enabled: isOpen && !isFullScreen, priority: 0 });
+
   useEffect(() => {
     if (!isOpen) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if user is typing in textarea or input
       const target = e.target as HTMLElement | null;
       const isInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA';
 
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        onClose();
-      } else if (!isInput && (e.key === 'f' || e.key === 'F')) {
+      if (!isInput && (e.key === 'f' || e.key === 'F')) {
         e.preventDefault();
         setIsFullScreen((prev) => !prev);
       }
@@ -39,7 +39,7 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   if (!isOpen) return null;
 

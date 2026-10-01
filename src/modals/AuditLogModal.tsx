@@ -1,5 +1,6 @@
 import { Bot, Calendar, Download, FileText, History, X } from 'lucide-react';
 import { useState } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { AuditLogEntry } from '../types/agent';
 
 interface AuditLogModalProps {
@@ -17,6 +18,8 @@ export default function AuditLogModal({
   onClose,
   onExportChangelog,
 }: AuditLogModalProps) {
+  useEscapeKey(onClose, { enabled: isOpen });
+
   const [isExported, setIsExported] = useState(false);
 
   if (!isOpen) return null;

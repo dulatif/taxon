@@ -24,6 +24,7 @@ import {
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { Project, Sprint, Task } from '../types';
 
 interface SpotlightSearchModalProps {
@@ -65,6 +66,8 @@ export default function SpotlightSearchModal({
   onQuickAddTask,
   onLaunchFocusMode,
 }: SpotlightSearchModalProps) {
+  useEscapeKey(onClose, { enabled: isOpen });
+
   const { settings, updateSetting } = useSettings();
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);

@@ -1,6 +1,7 @@
 import { FolderGit2, Info, Settings, Terminal, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import React, { useState } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { saveProject } from '../services/database';
 import type { Project } from '../types';
 import Button from './Button';
@@ -18,6 +19,8 @@ export const ProjectSettingsModal: React.FC<ProjectSettingsModalProps> = ({
   project,
   onSave,
 }) => {
+  useEscapeKey(onClose, { enabled: isOpen });
+
   const [worktreeEnabled, setWorktreeEnabled] = useState(project.worktreeEnabled ?? false);
   const [worktreeDir, setWorktreeDir] = useState(project.worktreeDir || '.worktrees');
   const [worktreeSetupCommand, setWorktreeSetupCommand] = useState(

@@ -2,6 +2,7 @@ import { AlertTriangle, Check, Edit2, Plus, Trash2, X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { CATEGORY_COLORS, PROJECT_CATEGORIES } from '../constants/categories';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import { getCategoryColorId, getCategoryStyle } from '../services/category-color';
 import type { Project } from '../types';
 
@@ -34,6 +35,19 @@ export default function ManageCategoriesModal({
   const [isCreating, setIsCreating] = useState(false);
   const [newTagValue, setNewTagValue] = useState('');
   const [newTagColor, setNewTagColor] = useState<string>('cyan');
+
+  const isSubActionActive = Boolean(editingCat || deletingCat || isCreating);
+
+  useEscapeKey(
+    () => {
+      if (editingCat) setEditingCat(null);
+      if (deletingCat) setDeletingCat(null);
+      if (isCreating) setIsCreating(false);
+    },
+    { enabled: isOpen && isSubActionActive, priority: 10 },
+  );
+
+  useEscapeKey(onClose, { enabled: isOpen && !isSubActionActive, priority: 0 });
 
   if (!isOpen) return null;
 

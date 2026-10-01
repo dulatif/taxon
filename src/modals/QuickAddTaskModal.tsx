@@ -1,6 +1,6 @@
 import { X } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useEffect } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 
 interface QuickAddTaskModalProps {
   isOpen: boolean;
@@ -17,16 +17,7 @@ export default function QuickAddTaskModal({
   onClose,
   onSubmit,
 }: QuickAddTaskModalProps) {
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        onClose();
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  useEscapeKey(onClose, { enabled: isOpen });
 
   return (
     <AnimatePresence>

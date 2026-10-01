@@ -4,6 +4,7 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
 import { PROJECT_CATEGORIES } from '../constants/categories';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { Project } from '../types';
 
 interface AddProjectModalProps {
@@ -38,6 +39,15 @@ export default function AddProjectModal({
   const [isCustomMode, setIsCustomMode] = useState(false);
   const [isDatePickerOpen, setIsDatePickerOpen] = useState(false);
   const [pickerMonth, setPickerMonth] = useState(new Date());
+
+  useEscapeKey(() => setIsDatePickerOpen(false), {
+    enabled: isOpen && isDatePickerOpen,
+    priority: 10,
+  });
+  useEscapeKey(onClose, {
+    enabled: isOpen && !isDatePickerOpen,
+    priority: 0,
+  });
 
   const formatDateStr = (d: Date) => {
     return d.toISOString().substring(0, 10);

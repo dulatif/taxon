@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { Sprint, Task } from '../types';
 
 interface SprintCompleteModalProps {
@@ -28,6 +29,8 @@ export default function SprintCompleteModal({
   onCancel,
   onConfirm,
 }: SprintCompleteModalProps) {
+  useEscapeKey(onCancel, { enabled: isOpen });
+
   const [rolloverAction, setRolloverAction] = useState<'next' | 'backlog' | 'keep'>('backlog');
   const [selectedTargetSprintId, setSelectedTargetSprintId] = useState<string | null>(null);
 
