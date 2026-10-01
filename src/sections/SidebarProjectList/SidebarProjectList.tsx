@@ -3,6 +3,7 @@ import { DragDropContext, Draggable, Droppable } from '@hello-pangea/dnd';
 import { ChevronRight, Pin, Plus } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import type { JumpState } from '../../hooks/useVimNavigation';
 import { getCategoryStyle } from '../../services/category-color';
 import type { Project } from '../../types';
 
@@ -15,6 +16,7 @@ interface SidebarProjectListProps {
   onAddProjectToCategory?: (category: string) => void;
   onDragEnd: (result: DropResult) => void;
   onTogglePinProject?: (projectId: string) => void;
+  jumpState?: JumpState;
 }
 
 export default function SidebarProjectList({
@@ -26,6 +28,7 @@ export default function SidebarProjectList({
   onAddProjectToCategory,
   onDragEnd,
   onTogglePinProject,
+  jumpState,
 }: SidebarProjectListProps) {
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
@@ -157,6 +160,13 @@ export default function SidebarProjectList({
                       }`}
                     />
                     <span className="truncate">{cat}</span>
+                    {jumpState?.isActive &&
+                      jumpState.stage === 'category' &&
+                      categories.indexOf(cat) < 9 && (
+                        <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+                          {categories.indexOf(cat) + 1}
+                        </kbd>
+                      )}
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -231,6 +241,15 @@ export default function SidebarProjectList({
                                           className={`w-2 h-2 rounded-full shrink-0 ${style.dot}`}
                                         />
                                         <span className="truncate">{project.name}</span>
+                                        {jumpState?.isActive &&
+                                          jumpState.stage === 'project' &&
+                                          jumpState.categoryIndex !== null &&
+                                          categories[jumpState.categoryIndex] === cat &&
+                                          index < 9 && (
+                                            <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+                                              {index + 1}
+                                            </kbd>
+                                          )}
                                       </div>
 
                                       {onTogglePinProject && (

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Toaster } from 'sonner';
 
 import CalendarView from './components/CalendarView';
@@ -14,6 +14,7 @@ import { useAppNavigation } from './hooks/useAppNavigation';
 import { useFocusTimer } from './hooks/useFocusTimer';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { useSystemTray } from './hooks/useSystemTray';
+import { useVimNavigation } from './hooks/useVimNavigation';
 import { useWorkspaceData } from './hooks/useWorkspaceData';
 
 import AppHeader from './layouts/AppHeader';
@@ -24,6 +25,7 @@ import AddProjectModal from './modals/AddProjectModal';
 import ImportConfirmModal from './modals/ImportConfirmModal';
 import ManageCategoriesModal from './modals/ManageCategoriesModal';
 import QuickAddTaskModal from './modals/QuickAddTaskModal';
+import { ShortcutsCheatsheetModal } from './modals/ShortcutsCheatsheetModal';
 import SpotlightSearchModal from './modals/SpotlightSearchModal';
 
 import { getCompletionsToday, getFocusedHoursToday } from './services/activityLogger';
@@ -68,6 +70,7 @@ export default function App() {
 
   const [isQuickAddTaskOpen, setIsQuickAddTaskOpen] = useState(false);
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
+  const [isCheatsheetOpen, setIsCheatsheetOpen] = useState(false);
 
   const [selectedDetailTaskId, setSelectedDetailTaskId] = useState<string | null>(null);
 
@@ -178,6 +181,38 @@ export default function App() {
   }, [currentView, projects, selectProject]);
 
   const { settings } = useSettings();
+
+  const sidebarCategories = useMemo(() => {
+    const active = settings.showCompletedProjectsInSidebar
+      ? projects
+      : projects.filter((p) => p.category !== 'Completed');
+    const cats = Array.from(new Set(active.map((p) => p.category))).filter(Boolean);
+    return cats.sort((a, b) => {
+      if (a === 'Completed') return 1;
+      if (b === 'Completed') return -1;
+      return a.localeCompare(b);
+    });
+  }, [projects, settings.showCompletedProjectsInSidebar]);
+
+  const getProjectsForCategory = useCallback(
+    (cat: string) => {
+      const active = settings.showCompletedProjectsInSidebar
+        ? projects
+        : projects.filter((p) => p.category !== 'Completed');
+      return active
+        .filter((p) => p.category === cat)
+        .sort((a, b) => (a.sortOrder ?? 999999) - (b.sortOrder ?? 999999));
+    },
+    [projects, settings.showCompletedProjectsInSidebar],
+  );
+
+  const { jumpState } = useVimNavigation({
+    categories: sidebarCategories,
+    getProjectsForCategory,
+    onSelectProject: (projId) => selectProject(projId),
+    onNavigate: (view) => navigateTo(view),
+    onOpenCheatsheet: () => setIsCheatsheetOpen(true),
+  });
 
   const focusTimer = useFocusTimer({
     onTimerComplete: () => {},
@@ -292,6 +327,7 @@ export default function App() {
             onLaunchFocusMode={focusTimer.launchFocusMode}
             onToggleTimer={focusTimer.toggleTimer}
             onOpenSpotlight={() => setIsSpotlightOpen(true)}
+            jumpState={jumpState}
           />
         }
         header={
@@ -558,6 +594,19 @@ export default function App() {
           onLaunchFocusMode={() => {
             document.getElementById('header-focus-mode')?.click();
           }}
+        />
+
+        {jumpState.isActive && (
+          <div className="fixed bottom-4 left-4 z-50 px-3.5 py-1.5 rounded-full bg-emerald-950/90 border border-emerald-500/50 text-emerald-300 text-xs font-mono font-bold shadow-lg animate-pulse flex items-center gap-2 pointer-events-none">
+            <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>{jumpState.indicatorText}</span>
+            <span className="text-[10px] text-text-muted font-normal">(Esc to cancel)</span>
+          </div>
+        )}
+
+        <ShortcutsCheatsheetModal
+          isOpen={isCheatsheetOpen}
+          onClose={() => setIsCheatsheetOpen(false)}
         />
       </AppLayout>
     </>

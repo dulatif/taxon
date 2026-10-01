@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import logo from '../assets/logo.png';
 import { PROJECT_CATEGORIES } from '../constants/categories';
 import { useSettings } from '../contexts/SettingsContext';
+import type { JumpState } from '../hooks/useVimNavigation';
 import NavigationList, { FOOTER_NAV_ITEMS } from '../sections/NavigationList/NavigationList';
 import SidebarProjectList from '../sections/SidebarProjectList/SidebarProjectList';
 import type { Project } from '../types';
@@ -26,6 +27,7 @@ interface SidebarProps {
   onLaunchFocusMode?: () => void;
   onToggleTimer?: () => void;
   onOpenSpotlight?: () => void;
+  jumpState?: JumpState;
 }
 
 export default function Sidebar({
@@ -46,6 +48,7 @@ export default function Sidebar({
   onLaunchFocusMode,
   onToggleTimer,
   onOpenSpotlight,
+  jumpState,
 }: SidebarProps) {
   const { settings, updateSetting } = useSettings();
   const activeProjects = settings.showCompletedProjectsInSidebar
@@ -200,6 +203,7 @@ export default function Sidebar({
           onAddProjectToCategory={onAddProjectToCategory}
           onDragEnd={onDragEnd}
           onTogglePinProject={onTogglePinProject}
+          jumpState={jumpState}
         />
       </div>
 
