@@ -1,4 +1,5 @@
 import { AlertTriangle, Calendar, CheckCircle2, Edit3, Target } from 'lucide-react';
+import MarkdownViewer from '../../components/MarkdownViewer';
 import type { Sprint } from '../../types';
 import { formatDateRange, getTodayStr } from '../../utils/format-date';
 
@@ -128,9 +129,12 @@ export default function SprintProgress({
       {sprint.goal && (
         <div className="flex items-start gap-2 text-xs text-text-primary bg-surface-primary/80 border border-border-primary rounded-lg p-2.5 mb-3">
           <Target className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <span>
-            <strong className="text-amber-400/90 font-mono">Sprint Goal:</strong> {sprint.goal}
-          </span>
+          <div className="flex-1 min-w-0 max-h-32 overflow-y-auto pr-1">
+            <strong className="text-amber-400/90 font-mono block mb-1">Sprint Goal:</strong>
+            <div className="text-xs text-text-muted [&_p]:mb-1 [&_p]:last:mb-0">
+              <MarkdownViewer content={sprint.goal} />
+            </div>
+          </div>
         </div>
       )}
 

@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
+import MarkdownViewer from '../components/MarkdownViewer';
 import { useEscapeKey } from '../hooks/useEscapeKey';
 import type { Sprint, Task } from '../types';
 
@@ -104,9 +105,12 @@ export default function SprintCompleteModal({
             {sprint.goal && (
               <div className="flex items-start gap-2 text-xs text-text-muted pt-2 border-t border-border-primary">
                 <Target className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <span>
-                  <strong className="text-text-primary">Goal:</strong> {sprint.goal}
-                </span>
+                <div className="flex-1 min-w-0 max-h-32 overflow-y-auto pr-1">
+                  <strong className="text-text-primary block mb-0.5">Goal:</strong>
+                  <div className="text-xs text-text-muted [&_p]:mb-1 [&_p]:last:mb-0">
+                    <MarkdownViewer content={sprint.goal} />
+                  </div>
+                </div>
               </div>
             )}
           </div>
