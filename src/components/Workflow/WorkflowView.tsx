@@ -337,9 +337,10 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = memo(
 
     return (
       <div
+        data-testid="workflow-canvas-container"
         className={
           isTheaterMode
-            ? 'fixed inset-0 z-50 bg-background flex flex-col w-screen h-screen overflow-hidden'
+            ? 'fixed top-10 inset-x-0 bottom-0 z-50 bg-background flex flex-col overflow-hidden'
             : 'w-full h-full relative overflow-hidden bg-background'
         }
       >
