@@ -258,18 +258,18 @@ export default function Sidebar({
               key={item.id}
               onClick={() => onViewChange(item.id)}
               id={`nav-${item.id}`}
-              className={`group flex items-center justify-between px-3 py-2 rounded-md text-[13px] transition-colors w-full cursor-pointer ${
+              className={`group flex items-center justify-between px-3 h-8 rounded-md text-[13px] transition-colors w-full cursor-pointer ${
                 currentView === item.id
                   ? 'bg-surface-active text-text-primary font-bold'
                   : 'text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 font-medium'
               }`}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <item.icon className="w-4 h-4 shrink-0" />
-                <span>{item.label}</span>
+                <span className="truncate">{item.label}</span>
               </div>
               {jumpState?.isActive && jumpState.stage === 'category' && item.id === 'settings' && (
-                <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+                <kbd className="px-1.5 py-0.5 bg-surface-tertiary text-text-muted border border-border-primary rounded text-[10px] font-mono font-medium leading-none shrink-0 shadow-2xs">
                   s
                 </kbd>
               )}

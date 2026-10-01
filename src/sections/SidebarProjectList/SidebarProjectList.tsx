@@ -151,9 +151,9 @@ export default function SidebarProjectList({
               <div key={cat} className="space-y-0.5">
                 <div
                   onClick={() => toggleCategory(cat)}
-                  className="group flex items-center justify-between px-3 py-1.5 rounded-md text-[13px] font-medium transition-colors w-full text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 cursor-pointer select-none"
+                  className="group flex items-center justify-between px-3 h-8 rounded-md text-[13px] font-medium transition-colors w-full text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 cursor-pointer select-none"
                 >
-                  <div className="flex items-center gap-3 overflow-hidden">
+                  <div className="flex items-center gap-3 overflow-hidden min-w-0">
                     <ChevronRight
                       className={`w-4 h-4 shrink-0 transition-transform duration-200 ${
                         isExpanded ? 'rotate-90' : ''
@@ -163,7 +163,7 @@ export default function SidebarProjectList({
                     {jumpState?.isActive &&
                       jumpState.stage === 'category' &&
                       categories.indexOf(cat) < 9 && (
-                        <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+                        <kbd className="px-1.5 py-0.5 bg-surface-tertiary text-text-muted border border-border-primary rounded text-[10px] font-mono font-medium leading-none shrink-0 shadow-2xs">
                           {categories.indexOf(cat) + 1}
                         </kbd>
                       )}
@@ -227,7 +227,7 @@ export default function SidebarProjectList({
                                       role="button"
                                       tabIndex={0}
                                       onClick={() => onProjectSelect(project.id)}
-                                      className={`group flex items-center justify-between px-3 py-1.5 rounded-md text-[13px] transition-colors w-full cursor-pointer active:cursor-grabbing select-none ${
+                                      className={`group flex items-center justify-between px-3 h-8 rounded-md text-[13px] transition-colors w-full cursor-pointer active:cursor-grabbing select-none ${
                                         snapshot.isDragging
                                           ? 'bg-surface-hover text-text-primary ring-1 ring-white/30 z-50 font-bold'
                                           : isSelected
@@ -246,7 +246,7 @@ export default function SidebarProjectList({
                                           jumpState.categoryIndex !== null &&
                                           categories[jumpState.categoryIndex] === cat &&
                                           index < 9 && (
-                                            <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+                                            <kbd className="px-1.5 py-0.5 bg-surface-tertiary text-text-muted border border-border-primary rounded text-[10px] font-mono font-medium leading-none shrink-0 shadow-2xs">
                                               {index + 1}
                                             </kbd>
                                           )}
