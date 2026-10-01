@@ -1,4 +1,13 @@
-import { AlertTriangle, Calendar, CheckCircle2, Edit3, Target } from 'lucide-react';
+import {
+  AlertTriangle,
+  Calendar,
+  CheckCircle2,
+  ChevronDown,
+  ChevronUp,
+  Edit3,
+  Target,
+} from 'lucide-react';
+import { useState } from 'react';
 import MarkdownViewer from '../../components/MarkdownViewer';
 import type { Sprint } from '../../types';
 import { formatDateRange, getTodayStr } from '../../utils/format-date';
@@ -20,6 +29,7 @@ export default function SprintProgress({
   onEdit,
   onComplete,
 }: SprintProgressProps) {
+  const [isGoalExpanded, setIsGoalExpanded] = useState(false);
   const isOverdue = Boolean(sprint.endDate && sprint.endDate < getTodayStr());
 
   const getRemainingDaysText = () => {
@@ -127,11 +137,37 @@ export default function SprintProgress({
 
       {/* Goal if exists */}
       {sprint.goal && (
-        <div className="flex items-start gap-2 text-xs text-text-primary bg-surface-primary/80 border border-border-primary rounded-lg p-2.5 mb-3">
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-start gap-2 text-xs text-text-primary bg-surface-primary/80 border border-border-primary rounded-lg p-2.5 mb-3 cursor-default"
+        >
           <Target className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-          <div className="flex-1 min-w-0 max-h-32 overflow-y-auto pr-1">
-            <strong className="text-amber-400/90 font-mono block mb-1">Sprint Goal:</strong>
-            <div className="text-xs text-text-muted [&_p]:mb-1 [&_p]:last:mb-0">
+          <div className="flex-1 min-w-0 pr-1">
+            <div className="flex items-center justify-between mb-1">
+              <strong className="text-amber-400/90 font-mono block">Sprint Goal:</strong>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsGoalExpanded((prev) => !prev);
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-mono text-text-muted hover:text-amber-400 transition-colors px-1.5 py-0.5 rounded hover:bg-surface-secondary cursor-pointer select-none"
+                title={isGoalExpanded ? 'Collapse description' : 'Expand description'}
+              >
+                <span>{isGoalExpanded ? 'Collapse' : 'Expand'}</span>
+                {isGoalExpanded ? (
+                  <ChevronUp className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronDown className="w-3.5 h-3.5" />
+                )}
+              </button>
+            </div>
+            <div
+              data-testid="sprint-goal-container"
+              className={`text-xs text-text-muted [&_p]:mb-1 [&_p]:last:mb-0 transition-all ${
+                isGoalExpanded ? 'max-h-none overflow-visible' : 'max-h-32 overflow-y-auto pr-1'
+              }`}
+            >
               <MarkdownViewer content={sprint.goal} />
             </div>
           </div>

@@ -4,6 +4,8 @@ import {
   ArrowRight,
   Calendar,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Layers,
   Target,
 } from 'lucide-react';
@@ -34,6 +36,7 @@ export default function SprintCompleteModal({
 
   const [rolloverAction, setRolloverAction] = useState<'next' | 'backlog' | 'keep'>('backlog');
   const [selectedTargetSprintId, setSelectedTargetSprintId] = useState<string | null>(null);
+  const [isGoalExpanded, setIsGoalExpanded] = useState(false);
 
   useEffect(() => {
     if (plannedSprints.length > 0) {
@@ -105,9 +108,31 @@ export default function SprintCompleteModal({
             {sprint.goal && (
               <div className="flex items-start gap-2 text-xs text-text-muted pt-2 border-t border-border-primary">
                 <Target className="w-3.5 h-3.5 text-amber-400 shrink-0 mt-0.5" />
-                <div className="flex-1 min-w-0 max-h-32 overflow-y-auto pr-1">
-                  <strong className="text-text-primary block mb-0.5">Goal:</strong>
-                  <div className="text-xs text-text-muted [&_p]:mb-1 [&_p]:last:mb-0">
+                <div className="flex-1 min-w-0 pr-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <strong className="text-text-primary block">Goal:</strong>
+                    <button
+                      type="button"
+                      onClick={() => setIsGoalExpanded((prev) => !prev)}
+                      className="inline-flex items-center gap-0.5 text-[10px] font-mono text-text-muted hover:text-text-primary transition-colors px-1 py-0.5 rounded cursor-pointer select-none"
+                      title={isGoalExpanded ? 'Collapse goal' : 'Expand goal'}
+                    >
+                      <span>{isGoalExpanded ? 'Collapse' : 'Expand'}</span>
+                      {isGoalExpanded ? (
+                        <ChevronUp className="w-3 h-3" />
+                      ) : (
+                        <ChevronDown className="w-3 h-3" />
+                      )}
+                    </button>
+                  </div>
+                  <div
+                    data-testid="sprint-complete-goal-container"
+                    className={`text-xs text-text-muted [&_p]:mb-1 [&_p]:last:mb-0 transition-all ${
+                      isGoalExpanded
+                        ? 'max-h-none overflow-visible'
+                        : 'max-h-32 overflow-y-auto pr-1'
+                    }`}
+                  >
                     <MarkdownViewer content={sprint.goal} />
                   </div>
                 </div>
