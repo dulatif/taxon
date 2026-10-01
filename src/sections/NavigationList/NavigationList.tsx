@@ -11,11 +11,26 @@ import {
   Settings,
 } from 'lucide-react';
 
+import type { JumpState } from '../../hooks/useVimNavigation';
+
 interface NavigationListProps {
   currentView: string;
   selectedProjectId: string | null;
   onViewChange: (view: string) => void;
+  jumpState?: JumpState;
 }
+
+// eslint-disable-next-line react-refresh/only-export-components
+export const NAV_SHORTCUT_KEYS: Record<string, string> = {
+  dashboard: 'd',
+  inbox: 'i',
+  projects: 'p',
+  todo: 't',
+  scheduled: 'c',
+  history: 'w',
+  recurring: 'r',
+  analytics: 'a',
+};
 
 // eslint-disable-next-line react-refresh/only-export-components
 export const MAIN_NAV_ITEMS = [
@@ -39,15 +54,18 @@ export default function NavigationList({
   currentView,
   selectedProjectId,
   onViewChange,
+  jumpState,
 }: NavigationListProps) {
   const getItemClass = (id: string) => {
     const isPrimary = currentView === id && selectedProjectId === null;
-    return `group flex items-center px-3 py-2 rounded-md text-[13px] transition-colors w-full cursor-pointer ${
+    return `group flex items-center justify-between px-3 py-2 rounded-md text-[13px] transition-colors w-full cursor-pointer ${
       isPrimary
         ? 'bg-surface-active text-text-primary font-bold'
         : 'text-text-muted hover:text-text-primary hover:bg-surface-secondary/50 font-medium'
     }`;
   };
+
+  const showJumpBadge = jumpState?.isActive && jumpState.stage === 'category';
 
   return (
     <nav className="space-y-1 pb-4 border-b border-border-primary/50 shrink-0">
@@ -62,6 +80,11 @@ export default function NavigationList({
             <item.icon className="w-4 h-4 shrink-0" />
             <span>{item.label}</span>
           </div>
+          {showJumpBadge && NAV_SHORTCUT_KEYS[item.id] && (
+            <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+              {NAV_SHORTCUT_KEYS[item.id]}
+            </kbd>
+          )}
         </button>
       ))}
     </nav>

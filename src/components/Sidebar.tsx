@@ -192,6 +192,7 @@ export default function Sidebar({
           currentView={currentView}
           selectedProjectId={selectedProjectId}
           onViewChange={onViewChange}
+          jumpState={jumpState}
         />
 
         <SidebarProjectList
@@ -267,6 +268,11 @@ export default function Sidebar({
                 <item.icon className="w-4 h-4 shrink-0" />
                 <span>{item.label}</span>
               </div>
+              {jumpState?.isActive && jumpState.stage === 'category' && item.id === 'settings' && (
+                <kbd className="px-1.5 py-0.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 rounded text-[10px] font-mono font-bold shrink-0">
+                  s
+                </kbd>
+              )}
             </button>
           ))}
         </div>
