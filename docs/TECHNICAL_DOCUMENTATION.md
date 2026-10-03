@@ -4,6 +4,8 @@
 
 Taxon is a local-first, privacy-focused task and project management suite consisting of a Tauri desktop GUI, a headless CLI companion, and an interactive Terminal User Interface (TUI).
 
+> Looking for the desktop interface manual and agent pairing guide? See the [GUI User Guide](GUI_USER_GUIDE.md).
+
 ```
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                                TAXON SUITE                              │

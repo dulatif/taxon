@@ -72,9 +72,10 @@ To build the Tauri desktop application:
 pnpm tauri build
 ```
 
-## 📖 Technical Documentation
+## 📖 Documentation
 
-For in-depth architecture specifications, database schemas, two-way sync algorithms, and complete keyboard navigation guides, see [docs/TECHNICAL_DOCUMENTATION.md](docs/TECHNICAL_DOCUMENTATION.md).
+- **[GUI User Guide](docs/GUI_USER_GUIDE.md)**: Comprehensive manual for using the desktop GUI, Kanban boards, Pomodoro timer, DAG workflows, Git worktrees, and AI agent verification.
+- **[Technical Architecture & TUI Documentation](docs/TECHNICAL_DOCUMENTATION.md)**: In-depth architecture specifications, database schemas, two-way sync algorithms, and headless CLI/TUI guides.
 
 ## 🔒 Data Privacy
 
